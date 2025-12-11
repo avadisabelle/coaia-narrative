@@ -1025,7 +1025,7 @@ Action step: "${actionStepTitle}"
     }
     
     // Proceed with telescoping using the assessed current reality
-    return this.addActionStep(parentChartId, actionStepTitle, finalCurrentReality, dueDate);
+    return this.addActionStep(parentChartId, actionStepTitle, dueDate, finalCurrentReality);
   }
 
   async removeActionStep(parentChartId: string, actionStepName: string): Promise<void> {
