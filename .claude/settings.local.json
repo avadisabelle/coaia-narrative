@@ -12,7 +12,10 @@
       "mcp__coaia-memory__list_active_charts",
       "mcp__dummy-coaia-memory-charts__list_active_charts",
       "mcp__dummy-coaia-memory-charts__add_observations",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(npm run:*)"
     ],
     "additionalDirectories": [
       "/media/jgi/F/Dropbox/jgt/edu/llm_mastery/arenas_250706/CreatingYourLifeCourse",
