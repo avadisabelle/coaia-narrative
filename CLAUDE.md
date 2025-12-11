@@ -46,9 +46,12 @@ npx coaia-memory --memory-path ./my-charts.jsonl
     "coaia-memory": {
       "command": "npx",
       "args": ["-y", "coaia-memory", "--memory-path", "/path/to/your/charts.jsonl"],
+      "env": {
+        "COAIA_TOOLS": "STC_TOOLS,init_llm_guidance"
+      },
       "autoapprove": [
         "create_structural_tension_chart",
-        "telescope_action_step", 
+        "telescope_action_step",
         "mark_action_complete",
         "get_chart_progress",
         "list_active_charts",
@@ -59,6 +62,42 @@ npx coaia-memory --memory-path ./my-charts.jsonl
     }
   }
 }
+```
+
+### Tool Configuration via Environment Variables
+
+Selectively enable/disable MCP tools using environment variables:
+
+**COAIA_TOOLS** - Comma/space separated list of tool groups or individual tool names
+- Default: `"STC_TOOLS,init_llm_guidance"`
+
+**COAIA_DISABLED_TOOLS** - Comma/space separated list of tools to exclude (applied after COAIA_TOOLS)
+
+**Available Tool Groups:**
+- `STC_TOOLS` - All structural tension chart tools (11 tools) ✨ recommended
+- `KG_TOOLS` - All knowledge graph tools (9 tools)
+- `CORE_TOOLS` - Essential tools only (4 tools)
+
+**Examples:**
+
+Enable STC tools only (default):
+```bash
+COAIA_TOOLS="STC_TOOLS" npx coaia-memory --memory-path ./charts.jsonl
+```
+
+Enable both STC and KG tools:
+```bash
+COAIA_TOOLS="STC_TOOLS,KG_TOOLS" npx coaia-memory --memory-path ./charts.jsonl
+```
+
+Enable STC tools but disable deletion operations:
+```bash
+COAIA_TOOLS="STC_TOOLS" COAIA_DISABLED_TOOLS="delete_entities,delete_relations" npx coaia-memory
+```
+
+Enable only specific individual tools:
+```bash
+COAIA_TOOLS="create_structural_tension_chart,list_active_charts,mark_action_complete" npx coaia-memory
 ```
 
 ## Core Tools

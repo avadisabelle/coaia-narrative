@@ -14,13 +14,21 @@ const OUTPUT_DIR = process.cwd();
 // Key files to consolidate - ordered by importance
 const GUIDANCE_SOURCES = [
   {
-    file: 'delayed-resolution-principle.md',
+    file: 'llms-delayed-resolution-principle.md',
     sections: ['CRITICAL: Delayed Resolution Principle', 'Critical Warning for LLMs', 'Examples of Proper Current Reality'],
     priority: 1
   },
   {
-    file: 'llms-structural-tension-charts.txt', 
-    sections: ['Current Reality Guidelines', 'When to Use Which Tool', 'Common LLM Mistakes to Avoid'],
+    file: 'llms-structural-tension-charts.txt',
+    sections: [
+      'CRITICAL: Action Steps Are NOT a To-Do List',
+      'Current Reality Guidelines',
+      'Goal Refinement Checklist',
+      'The Three Types of Action',
+      'Creator Moment of Truth',
+      'When to Use Which Tool',
+      'Common LLM Mistakes to Avoid'
+    ],
     priority: 2
   },
   {
@@ -32,6 +40,7 @@ const GUIDANCE_SOURCES = [
 
 /**
  * Extract specific sections from a markdown/text file
+ * Captures content including subsections (### headers) under the target ## sections
  */
 function extractSections(content, sectionsToExtract) {
   if (!sectionsToExtract || sectionsToExtract.length === 0) {
@@ -45,12 +54,12 @@ function extractSections(content, sectionsToExtract) {
   let capturedContent = [];
 
   for (const line of lines) {
-    // Check if this line starts a section we want
-    const matchedSection = sectionsToExtract.find(section => 
+    // Check if this line starts a section we want (## level)
+    const matchedSection = sectionsToExtract.find(section =>
       line.includes(section) || line.toLowerCase().includes(section.toLowerCase())
     );
-    
-    if (matchedSection) {
+
+    if (matchedSection && (line.startsWith('## ') || line.startsWith('# '))) {
       // Save previous section if we were capturing
       if (capturing && capturedContent.length > 0) {
         sections.push({
@@ -58,21 +67,21 @@ function extractSections(content, sectionsToExtract) {
           content: capturedContent.join('\n').trim()
         });
       }
-      
+
       // Start new section
       currentSection = matchedSection;
       capturing = true;
       capturedContent = [line];
       continue;
     }
-    
-    // Check if we've hit another major section (stop capturing)
-    if (capturing && (line.startsWith('##') || line.startsWith('# '))) {
-      // Stop if this is a different major section
-      const isTargetSection = sectionsToExtract.some(section => 
+
+    // Only stop capturing at another ## level section (not ### subsections)
+    // that isn't one of our target sections
+    if (capturing && line.startsWith('## ')) {
+      const isTargetSection = sectionsToExtract.some(section =>
         line.includes(section) || line.toLowerCase().includes(section.toLowerCase())
       );
-      
+
       if (!isTargetSection) {
         // Save current section and stop capturing
         sections.push({
@@ -82,14 +91,27 @@ function extractSections(content, sectionsToExtract) {
         capturing = false;
         currentSection = null;
         capturedContent = [];
+        continue;
       }
     }
-    
+
+    // Also stop at # level headers (top-level)
+    if (capturing && line.startsWith('# ') && !line.startsWith('## ')) {
+      sections.push({
+        title: currentSection,
+        content: capturedContent.join('\n').trim()
+      });
+      capturing = false;
+      currentSection = null;
+      capturedContent = [];
+      continue;
+    }
+
     if (capturing) {
       capturedContent.push(line);
     }
   }
-  
+
   // Don't forget the last section
   if (capturing && capturedContent.length > 0) {
     sections.push({
@@ -97,7 +119,7 @@ function extractSections(content, sectionsToExtract) {
       content: capturedContent.join('\n').trim()
     });
   }
-  
+
   return sections.map(s => s.content).join('\n\n---\n\n');
 }
 
