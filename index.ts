@@ -2101,7 +2101,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("COAIA Memory - Creative Oriented AI Assistant Memory Server running on stdio");
+  console.error("COAIA Narrative - Creative Oriented AI Assistant Memory Server - Narrative Beat Extension running on stdio");
 }
 
 main().catch((error) => {
