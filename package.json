@@ -1,46 +1,43 @@
 {
-  "name": "coaia-memory",
-  "version": "2.3.2",
-  "description": "Creative-Oriented AI Assistant Memory - MCP server with structural tension charts and advancing pattern support, based on principles by Robert Fritz",
-  "license": "MIT",
-  "author": "J.Guillaume D.-Isabelle <jgi@jgwill.com> (https://github.com/jgwill)",
-  "contributors": [
-    "Shane Holloman (original mcp-knowledge-graph foundation)",
-    "Robert Fritz (structural tension methodology - https://robertfritz.com)"
-  ],
-  "homepage": "https://github.com/guillaumedescoteauxisabelle/coaia-memory",
-  "bugs": "https://github.com/guillaumedescoteauxisabelle/coaia-memory/issues",
-  "type": "module",
-  "bin": {
-    "coaia-memory": "dist/index.js"
-  },
-  "files": [
-    "dist"
-  ],
-  "keywords": [
-    "assistant",
-    "memory",
-    "MCP",
-    "knowledge graph",
-    "structural tension",
-    "creative",
-    "creative-orientation",
-    "structural-dynamics"
-  ],
+  "name": "coaia-narrative",
+  "version": "0.1.0",
+  "description": "Creative Orientation AI Agentic Memories - Narrative Beat Extension with IAIP relational integration",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "build": "npm run build:guidance && tsc && shx chmod +x dist/*.js",
-    "build:guidance": "node scripts/consolidate-guidance.js",
-    "prepare": "npm run build",
-    "watch": "tsc --watch"
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts"
   },
+  "keywords": [
+    "coaia",
+    "narrative",
+    "structural-tension-chart",
+    "mcp",
+    "memory",
+    "iaip",
+    "four-directions",
+    "relational"
+  ],
+  "author": "avadisabelle",
+  "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.0.1",
-    "minimist": "^1.2.8"
+    "coaia-memory": "^2.3.1"
+  },
+  "peerDependencies": {
+    "@anthropic-sdk/sdk": "^7.0.0"
   },
   "devDependencies": {
-    "@types/minimist": "^1.2.5",
-    "@types/node": "^22.9.3",
-    "shx": "^0.3.4",
-    "typescript": "^5.6.2"
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "jest": "^29.0.0",
+    "@types/jest": "^29.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/avadisabelle/coaia-narrative"
   }
 }
