@@ -3,7 +3,7 @@
 
     "test-coaia-narrative": {
          "command": "npx",
-         "args": ["-y", "coaia-narrative@0.4.4", "--memory-path", "/src/memories/test-coaia-narrative.jsonl"]
+         "args": ["-y", "coaia-narrative@0.4.8", "--memory-path", "/src/memories/test-coaia-narrative.jsonl"]
     }
 
   }
