@@ -4,11 +4,17 @@
   "description": "Creative Orientation AI Agentic Memories - Narrative Beat Extension with IAIP relational integration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "type": "module",
+  "bin": {
+    "coaia-narrative": "dist/mcp/mcp-server.js"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "jest",
-    "lint": "eslint src/**/*.ts"
+    "test": "node --test dist/**/*.test.js",
+    "lint": "eslint src/**/*.ts",
+    "start": "node dist/mcp/mcp-server.js",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "coaia",
@@ -23,18 +29,29 @@
   "author": "avadisabelle",
   "license": "MIT",
   "dependencies": {
-    "coaia-memory": "^2.3.1"
+    "@modelcontextprotocol/sdk": "^0.6.0",
+    "zod": "^3.23.0"
   },
   "peerDependencies": {
-    "@anthropic-sdk/sdk": "^7.0.0"
+    "coaia-memory": "^2.3.1"
   },
   "devDependencies": {
+    "@types/minimist": "^1.2.5",
     "@types/node": "^20.0.0",
-    "typescript": "^5.0.0",
-    "eslint": "^8.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "jest": "^29.0.0",
-    "@types/jest": "^29.0.0"
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "typescript": "^5.0.0"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE",
+    "DESIGN.md",
+    "IMPLEMENTATION_ROADMAP.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
   },
   "repository": {
     "type": "git",

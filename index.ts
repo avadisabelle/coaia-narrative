@@ -187,6 +187,11 @@ const TOOL_GROUPS = {
     'update_action_step_title',
     'creator_moment_of_truth'
   ],
+  NARRATIVE_TOOLS: [
+    'create_narrative_beat',
+    'telescope_narrative_beat',
+    'list_narrative_beats'
+  ],
   KG_TOOLS: [
     'create_entities',
     'create_relations',
@@ -216,7 +221,7 @@ function getEnabledTools(): Set<string> {
   );
 
   // Determine which tools to enable
-  const enabledGroupsStr = process.env.COAIA_TOOLS || 'STC_TOOLS,init_llm_guidance';
+  const enabledGroupsStr = process.env.COAIA_TOOLS || 'STC_TOOLS,NARRATIVE_TOOLS,init_llm_guidance';
   const enabledGroups = enabledGroupsStr.split(/[,\s]+/).filter(t => t.trim());
 
   enabledGroups.forEach(group => {
@@ -242,6 +247,7 @@ const MEMORY_FILE_PATH = memoryPath || path.join(__dirname, 'memory.jsonl');
 
 // We are storing our memory using entities, relations, and observations in a graph structure
 // Extended for Creative Orientation AI Assistant (COAIA) with structural tension support
+// AND narrative beat support for multi-universe story capture
 interface Entity {
   name: string;
   entityType: string;
@@ -256,6 +262,27 @@ interface Entity {
     level?: number;
     createdAt?: string;
     updatedAt?: string;
+    // Narrative beat specific metadata
+    act?: number;
+    type_dramatic?: string;
+    universes?: string[];
+    timestamp?: string;
+    relationalAlignment?: {
+      assessed: boolean;
+      score: number | null;
+      principles: string[];
+    };
+    fourDirections?: {
+      north_vision: string | null;
+      east_intention: string | null;
+      south_emotion: string | null;
+      west_introspection: string | null;
+    };
+    narrative?: {
+      description: string;
+      prose: string;
+      lessons: string[];
+    };
   };
 }
 
@@ -266,6 +293,8 @@ interface Relation {
   metadata?: {
     createdAt?: string;
     strength?: number;
+    context?: string;
+    description?: string;
   };
 }
 
@@ -284,6 +313,21 @@ class KnowledgeGraphManager {
         const item = JSON.parse(line);
         if (item.type === "entity") graph.entities.push(item as Entity);
         if (item.type === "relation") graph.relations.push(item as Relation);
+        // Support narrative_beat entities (convert to entity format)
+        if (item.type === "narrative_beat") {
+          const narrativeBeat: Entity = {
+            name: item.name,
+            entityType: 'narrative_beat',
+            observations: item.observations || [],
+            metadata: {
+              ...item.metadata,
+              narrative: item.narrative,
+              relationalAlignment: item.relational_alignment,
+              fourDirections: item.four_directions
+            }
+          };
+          graph.entities.push(narrativeBeat);
+        }
         return graph;
       }, { entities: [], relations: [] });
     } catch (error) {
@@ -904,6 +948,155 @@ Current Reality: "${currentReality}"
     await this.saveGraph(graph);
   }
 
+  // Narrative beat creation functionality
+  async createNarrativeBeat(
+    parentChartId: string,
+    title: string,
+    act: number,
+    type_dramatic: string,
+    universes: string[],
+    description: string,
+    prose: string,
+    lessons: string[],
+    assessRelationalAlignment = false,
+    initiateFourDirectionsInquiry = false,
+    filePath?: string
+  ): Promise<{ entity: Entity; beatName: string }> {
+    const timestamp = Date.now();
+    const beatName = `${parentChartId}_beat_${timestamp}`;
+    
+    // Create narrative beat entity
+    const entity: Entity = {
+      name: beatName,
+      entityType: 'narrative_beat',
+      observations: [
+        `Act ${act} ${type_dramatic}`,
+        `Timestamp: ${new Date().toISOString()}`,
+        `Universe: ${universes.join(', ')}`
+      ],
+      metadata: {
+        chartId: parentChartId,
+        act,
+        type_dramatic,
+        universes,
+        timestamp: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        narrative: {
+          description,
+          prose,
+          lessons
+        },
+        relationalAlignment: {
+          assessed: false,
+          score: null,
+          principles: []
+        },
+        fourDirections: {
+          north_vision: null,
+          east_intention: null,
+          south_emotion: null,
+          west_introspection: null
+        }
+      }
+    };
+
+    // Add to graph
+    await this.createEntities([entity]);
+
+    // Create relation to parent chart if it exists
+    const graph = await this.loadGraph();
+    const parentChart = graph.entities.find(e => 
+      e.entityType === 'structural_tension_chart' && e.metadata?.chartId === parentChartId
+    );
+    
+    if (parentChart) {
+      await this.createRelations([{
+        from: beatName,
+        to: `${parentChartId}_chart`,
+        relationType: 'documents',
+        metadata: { 
+          createdAt: new Date().toISOString(),
+          description: 'Narrative beat documents chart progress'
+        }
+      }]);
+    }
+
+    // TODO: IAIP integration would go here
+    if (assessRelationalAlignment) {
+      console.log('🔮 Relational alignment assessment requested (iaip-mcp integration pending)');
+    }
+
+    if (initiateFourDirectionsInquiry) {
+      console.log('🧭 Four Directions inquiry requested (iaip-mcp integration pending)');
+    }
+
+    return { entity, beatName };
+  }
+
+  async telescopeNarrativeBeat(
+    parentBeatName: string,
+    newCurrentReality: string,
+    initialSubBeats?: Array<{
+      title: string;
+      type_dramatic: string;
+      description: string;
+      prose: string;
+      lessons: string[];
+    }>
+  ): Promise<{ parentBeat: Entity; subBeats: Entity[] }> {
+    const graph = await this.loadGraph();
+    const parentBeat = graph.entities.find(e => 
+      e.name === parentBeatName && e.entityType === 'narrative_beat'
+    );
+    
+    if (!parentBeat) {
+      throw new Error(`Parent narrative beat not found: ${parentBeatName}`);
+    }
+
+    // Update parent beat's current reality (add to observations)
+    parentBeat.observations.push(`Telescoped: ${newCurrentReality}`);
+    if (parentBeat.metadata) {
+      parentBeat.metadata.updatedAt = new Date().toISOString();
+    }
+
+    const subBeats: Entity[] = [];
+
+    // Create sub-beats if provided
+    if (initialSubBeats && initialSubBeats.length > 0) {
+      for (let i = 0; i < initialSubBeats.length; i++) {
+        const subBeat = initialSubBeats[i];
+        
+        const result = await this.createNarrativeBeat(
+          parentBeatName, // Use parent beat as chart ID
+          subBeat.title,
+          i + 1, // Sequential act numbers
+          subBeat.type_dramatic,
+          parentBeat.metadata?.universes || ['engineer-world'],
+          subBeat.description,
+          subBeat.prose,
+          subBeat.lessons
+        );
+        
+        subBeats.push(result.entity);
+      }
+    }
+
+    await this.saveGraph(graph);
+
+    return { parentBeat, subBeats };
+  }
+
+  async listNarrativeBeats(parentChartId?: string): Promise<Entity[]> {
+    const graph = await this.loadGraph();
+    const beats = graph.entities.filter(e => e.entityType === 'narrative_beat');
+    
+    if (parentChartId) {
+      return beats.filter(beat => beat.metadata?.chartId === parentChartId);
+    }
+    
+    return beats;
+  }
+
   async addActionStep(
     parentChartId: string,
     actionStepTitle: string,
@@ -1064,9 +1257,9 @@ const knowledgeGraphManager = new KnowledgeGraphManager();
 
 // The server instance and tools exposed to AI models
 const server = new Server({
-  name: "coaia-memory",
-  version: "2.2.9",
-  description: "COAIA Memory - Structural Tension Charts based on Robert Fritz methodology. 🚨 NEW LLM? Run 'init_llm_guidance' first to understand delayed resolution principle and avoid common mistakes."
+  name: "coaia-narrative",
+  version: "0.1.0",
+  description: "COAIA Narrative - Structural Tension Charts with Narrative Beat Extension for multi-universe story capture. Extends coaia-memory with relational and ceremonial integration. 🚨 NEW LLM? Run 'init_llm_guidance' first."
 },    {
     capabilities: {
       tools: {},
@@ -1438,6 +1631,72 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             }
           }
         }
+      },
+      {
+        name: "create_narrative_beat",
+        description: "Create a new narrative beat with multi-universe perspective and optional IAIP integration. Documents story progression across three archetypal universes (engineer-world, ceremony-world, story-engine-world).",
+        inputSchema: {
+          type: "object",
+          properties: {
+            parentChartId: { type: "string", description: "ID of the parent structural tension chart" },
+            title: { type: "string", description: "Title of the narrative beat" },
+            act: { type: "number", description: "Act number in the narrative sequence" },
+            type_dramatic: { type: "string", description: "Dramatic type (e.g. 'Crisis/Antagonist Force', 'Setup', 'Turning Point')" },
+            universes: { 
+              type: "array", 
+              items: { type: "string" },
+              description: "Universe perspectives (engineer-world, ceremony-world, story-engine-world)" 
+            },
+            description: { type: "string", description: "Detailed description of the narrative beat" },
+            prose: { type: "string", description: "Prose narrative of the beat" },
+            lessons: { 
+              type: "array", 
+              items: { type: "string" },
+              description: "Key lessons or insights from this beat" 
+            },
+            assessRelationalAlignment: { type: "boolean", description: "Whether to call iaip-mcp assess_relational_alignment" },
+            initiateFourDirectionsInquiry: { type: "boolean", description: "Whether to call iaip-mcp get_direction_guidance" },
+            filePath: { type: "string", description: "Path to narrative JSONL file (optional)" }
+          },
+          required: ["parentChartId", "title", "act", "type_dramatic", "universes", "description", "prose", "lessons"]
+        }
+      },
+      {
+        name: "telescope_narrative_beat",
+        description: "Telescope a narrative beat into sub-beats for detailed exploration. Creates detailed sub-narrative structure from a parent beat.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            parentBeatName: { type: "string", description: "Name of the parent narrative beat to telescope" },
+            newCurrentReality: { type: "string", description: "Updated current reality for the telescoped beat" },
+            initialSubBeats: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  title: { type: "string" },
+                  type_dramatic: { type: "string" },
+                  description: { type: "string" },
+                  prose: { type: "string" },
+                  lessons: { type: "array", items: { type: "string" } }
+                },
+                required: ["title", "type_dramatic", "description", "prose", "lessons"]
+              },
+              description: "Optional initial sub-beats to create"
+            }
+          },
+          required: ["parentBeatName", "newCurrentReality"]
+        }
+      },
+      {
+        name: "list_narrative_beats",
+        description: "List all narrative beats, optionally filtered by parent chart ID. Shows multi-universe story progression.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            parentChartId: { type: "string", description: "Optional: Filter by parent chart ID" }
+          }
+        }
       }
     ];
 
@@ -1726,6 +1985,86 @@ Use format="full" for complete guidance.` }] };
       
       // Default: full guidance
       return { content: [{ type: "text", text: LLM_GUIDANCE }] };
+    case "create_narrative_beat":
+      const narrativeBeatResult = await knowledgeGraphManager.createNarrativeBeat(
+        args.parentChartId as string,
+        args.title as string,
+        args.act as number,
+        args.type_dramatic as string,
+        args.universes as string[],
+        args.description as string,
+        args.prose as string,
+        args.lessons as string[],
+        args.assessRelationalAlignment as boolean,
+        args.initiateFourDirectionsInquiry as boolean,
+        args.filePath as string
+      );
+      
+      return { content: [{ type: "text", text: `✅ Created narrative beat: ${narrativeBeatResult.entity.name}
+      
+**Title**: ${args.title}
+**Act**: ${args.act} (${args.type_dramatic})  
+**Universes**: ${(args.universes as string[]).join(', ')}
+**Parent Chart**: ${args.parentChartId}
+
+**Description**: ${args.description}
+
+**Prose**: ${args.prose}
+
+**Lessons**:
+${(args.lessons as string[]).map(lesson => `• ${lesson}`).join('\n')}
+
+${args.assessRelationalAlignment ? '🔮 Relational alignment assessment requested' : ''}
+${args.initiateFourDirectionsInquiry ? '🧭 Four Directions inquiry requested' : ''}
+
+The narrative beat has been created and linked to the structural tension chart. This beat captures the story progression across the specified universe perspectives.` }] };
+    case "telescope_narrative_beat":
+      const telescopeNarrativeResult = await knowledgeGraphManager.telescopeNarrativeBeat(
+        args.parentBeatName as string,
+        args.newCurrentReality as string,
+        args.initialSubBeats as Array<{title: string; type_dramatic: string; description: string; prose: string; lessons: string[]}>
+      );
+      
+      return { content: [{ type: "text", text: `✅ Telescoped narrative beat: ${telescopeNarrativeResult.parentBeat.name}
+
+**Current Reality Updated**: ${args.newCurrentReality}
+**Sub-beats Created**: ${telescopeNarrativeResult.subBeats.length}
+
+${telescopeNarrativeResult.subBeats.length > 0 ? '**Sub-beats**:\n' + telescopeNarrativeResult.subBeats.map(beat => `• ${beat.metadata?.narrative?.description || beat.name} (${beat.metadata?.type_dramatic})`).join('\n') : ''}
+
+The parent beat has been expanded with detailed sub-narrative structure. Each sub-beat maintains the universe perspectives and can be further developed.` }] };
+    case "list_narrative_beats":
+      const narrativeBeatsResult = await knowledgeGraphManager.listNarrativeBeats(args.parentChartId as string);
+      
+      if (narrativeBeatsResult.length === 0) {
+        return { content: [{ type: "text", text: args.parentChartId ? 
+          `No narrative beats found for chart: ${args.parentChartId}` : 
+          `No narrative beats found. Create your first beat with: create_narrative_beat` }] };
+      }
+      
+      let narrativeText = args.parentChartId ? 
+        `## Narrative Beats for Chart: ${args.parentChartId}\n\n` : 
+        `## All Narrative Beats\n\n`;
+      
+      narrativeBeatsResult.forEach(beat => {
+        const meta = beat.metadata;
+        narrativeText += `### ${meta?.narrative?.description || beat.name}\n`;
+        narrativeText += `**Act**: ${meta?.act || 'Unknown'} (${meta?.type_dramatic || 'Unknown type'})\n`;
+        narrativeText += `**Universes**: ${meta?.universes?.join(', ') || 'Unknown'}\n`;
+        narrativeText += `**Created**: ${meta?.createdAt ? new Date(meta.createdAt).toLocaleDateString() : 'Unknown'}\n\n`;
+        
+        if (meta?.narrative?.prose) {
+          narrativeText += `**Prose**: ${meta.narrative.prose}\n\n`;
+        }
+        
+        if (meta?.narrative?.lessons && meta.narrative.lessons.length > 0) {
+          narrativeText += `**Lessons**:\n${meta.narrative.lessons.map(lesson => `• ${lesson}`).join('\n')}\n\n`;
+        }
+        
+        narrativeText += '---\n\n';
+      });
+      
+      return { content: [{ type: "text", text: narrativeText }] };
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
