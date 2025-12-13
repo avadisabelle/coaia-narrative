@@ -1,0 +1,1 @@
+claude "we want to create the ./rispecs/<...> based on the RISE framework for this coaia-spiral tool (probably the ./index.ts).  Make sure that if another LLM would take your specs, it would generate a tools as powerful as this one" --model haiku --allow-dangerously-skip-permissions
