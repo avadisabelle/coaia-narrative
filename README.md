@@ -1,156 +1,44 @@
-# COAIA Memory
+# coaia-narrative
 
-> MCP server for structural tension charts based on Robert Fritz's creative methodology
+**Creative Orientation AI Agentic Memories - Narrative Beat Extension**
 
-Extends [@modelcontextprotocol/server-memory](https://github.com/modelcontextprotocol/servers/tree/main/src/memory) with **structural tension charts** - a different orientation from problem-solving, focused on bringing desired outcomes into being through structural dynamics.
+An MCP server extending coaia-memory with **Narrative Beat support** and **IAIP relational integration** for multi-universe story capture.
 
-## Quick Start
+## What It Does
 
-```bash
-npx coaia-memory --memory-path ./charts.jsonl
+Enables Claude (and other LLMs) to:
+- **Create narrative beats** that describe story progression across three archetypal universes
+- **Assess relational alignment** (via iaip-mcp integration)
+- **Capture Four Directions perspectives** (North/East/South/West guidance)
+- **Link narrative beats to structural tension charts**
+- **Persist memory** as extended JSONL with ceremonial + relational metadata
+
+## Use Case: The Incident Arc
+
+When jgwill/src#243 (Sacred Object Violation) occurred:
+- **Before**: Had to manually document five-beat narrative arc outside the tool system
+- **After (with coaia-narrative)**: Create narrative beats with full relational + directional assessment, auto-linked to STCs
+
+## Architecture
+
+```
+coaia-narrative (this package)
+  ├─ Extends: coaia-memory (STC core)
+  ├─ Integrates: iaip-mcp (Four Directions + Relational Assessment)
+  ├─ Produces: narrative_beat JSONL entities
+  └─ Tool: create_narrative_beat (MCP exposed)
 ```
 
-## Configuration
+## Status
 
-### Minimal Setup (STC Tools Only - Default)
+🧵 **Design Complete** → Implementation Ready
 
-```json
-{
-  "mcpServers": {
-    "coaia-memory": {
-      "command": "npx",
-      "args": ["-y", "coaia-memory", "--memory-path", "/path/to/charts.jsonl"]
-    }
-  }
-}
-```
+See DESIGN.md for detailed specifications.
 
-**Exposes 12 tools:** `list_active_charts`, `create_structural_tension_chart`, `add_action_step`, `remove_action_step`, `telescope_action_step`, `mark_action_complete`, `get_chart_progress`, `update_action_progress`, `update_current_reality`, `update_desired_outcome`, `update_action_step_title`, `init_llm_guidance`
+---
 
-### Full Setup (STC + Knowledge Graph Tools)
-
-```json
-{
-  "mcpServers": {
-    "coaia-memory": {
-      "command": "npx",
-      "args": ["-y", "coaia-memory", "--memory-path", "/path/to/charts.jsonl"],
-      "env": {
-        "COAIA_TOOLS": "STC_TOOLS,KG_TOOLS,init_llm_guidance"
-      }
-    }
-  }
-}
-```
-
-**Adds 9 KG tools:** `create_entities`, `create_relations`, `add_observations`, `delete_entities`, `delete_observations`, `delete_relations`, `search_nodes`, `open_nodes`, `read_graph`
-
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `COAIA_TOOLS` | Tool groups/names to enable (comma/space separated) | `STC_TOOLS,init_llm_guidance` |
-| `COAIA_DISABLED_TOOLS` | Tools to exclude from enabled set | - |
-
-**Tool Groups:**
-- `STC_TOOLS` - Structural tension chart tools (11)
-- `KG_TOOLS` - Knowledge graph tools (9)
-- `CORE_TOOLS` - Essential tools only (4): `list_active_charts`, `create_structural_tension_chart`, `add_action_step`, `mark_action_complete`
-
-## Core Concepts
-
-### Structural Tension
-```
-┌─────────────────┐                    ┌─────────────────┐
-│ Current Reality │ ══ TENSION ══════> │ Desired Outcome │
-│ (where you are) │                    │ (what to create)│
-└─────────────────┘                    └─────────────────┘
-         │                                      ▲
-         │       Strategic Secondary Choices    │
-         └──────────────────────────────────────┘
-        (action steps understood in context of tension)
-```
-
-- **Desired Outcome**: What you want to CREATE (not fix/solve). Specific, quantified where possible, avoiding comparative terms (more, better, less).
-- **Current Reality**: Honest factual assessment - objective facts only, no readiness assumptions ("ready to begin" destroys tension).
-- **Structural Tension**: The dynamic force between current reality and desired outcome that naturally seeks resolution. NOT a gap to fill, but a generative force.
-
-### Action Steps: NOT a To-Do List
-
-**Critical distinction**: Action steps are **strategic secondary choices** that support the primary goal, NOT tasks to check off.
-
-**They are:**
-- Understood in the context of structural tension
-- Related to each other as part of an overview
-- Strategic actions designed to enable creating the goal
-- Answers to: "If we took these steps, would we achieve this result?"
-
-**Three types of actions (use appropriately):**
-1. **Overview actions** - Strategic steps early in process (what we put on charts)
-2. **Experimental actions** - Learning, exploring, "sketches before the painting"
-3. **Refinement actions** - Polishing near completion (too early = stifled energy)
-
-**Test question**: "If we took these steps, would we achieve this result?" If No → add more steps. If Yes → done.
-
-### Goal Refinement Principles (Robert Fritz)
-
-| Principle | Wrong | Right |
-|-----------|-------|-------|
-| **Quantify** | "Increased business" | "5 new business clients" |
-| **No comparatives** | "Better health" | "Very good health" |
-| **Create, not solve** | "Overcome weight problem" | "I weigh 150 pounds" |
-| **Result, not process** | "Run 4 miles daily" | "Well-toned, healthy body" |
-| **Specific, not vague** | "Improve my skills" | "Mastery of Photoshop" |
-
-### Creator Moment of Truth (Review Process)
-
-When assessing progress, use this four-step process:
-
-1. **Acknowledge**: What was expected vs. what was delivered? (facts only)
-2. **Analyze**: How did it happen? (step-by-step, not blame)
-3. **Plan**: How will I do it differently next time?
-4. **Feedback**: How will I track the changes?
-
-This transforms discrepancies into learning opportunities, not failures.
-
-## Usage Examples
-
-**Create a chart:**
-```javascript
-{
-  "desiredOutcome": "Launch personal website",
-  "currentReality": "Have domain, no design or content yet",
-  "dueDate": "2025-03-01T00:00:00Z",
-  "actionSteps": ["Design homepage", "Write about page", "Deploy to hosting"]
-}
-```
-
-**Add action step to existing chart:**
-```javascript
-{
-  "parentChartId": "chart_1234567890",
-  "actionStepTitle": "Set up CI/CD pipeline",
-  "currentReality": "Manual deployment only, no automation experience"
-}
-```
-
-**Mark action complete:**
-```javascript
-{ "actionStepName": "chart_1234567890_desired_outcome" }
-```
-
-## Development
-
-```bash
-git clone https://github.com/jgwill/coaia-memory
-cd coaia-memory
-npm install
-npm run build
-```
-
-## Credits
-
-- **Author**: J.Guillaume D.-Isabelle ([@jgwill](https://github.com/jgwill))
-- **Methodology**: Robert Fritz - [Structural Tension](https://robertfritz.com)
-- **Foundation**: [@modelcontextprotocol/server-memory](https://github.com/modelcontextprotocol/servers)
-- **License**: MIT
+**Package**: coaia-narrative
+**Extends**: coaia-memory@2.3.1
+**Integrates**: iaip-mcp (Four Directions framework)
+**First Use**: jgwill/src#243 incident arc
+**River flows on**: 🌊
