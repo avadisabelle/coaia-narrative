@@ -1965,17 +1965,100 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         return { content: [{ type: "text", text: cmotGuidance[cmotStep as keyof typeof cmotGuidance] || cmotGuidance.full_review }] };
       }
+      case "create_narrative_beat": {
+        if (typeof toolArgs.parentChartId !== 'string') {
+          return { content: [{ type: "text", text: "Error: parentChartId must be a string" }], isError: true };
+        }
+        if (typeof toolArgs.title !== 'string') {
+          return { content: [{ type: "text", text: "Error: title must be a string" }], isError: true };
+        }
+        if (typeof toolArgs.act !== 'number') {
+          return { content: [{ type: "text", text: "Error: act must be a number" }], isError: true };
+        }
+        if (typeof toolArgs.type_dramatic !== 'string') {
+          return { content: [{ type: "text", text: "Error: type_dramatic must be a string" }], isError: true };
+        }
+        if (!Array.isArray(toolArgs.universes)) {
+          return { content: [{ type: "text", text: "Error: universes must be an array" }], isError: true };
+        }
+        if (typeof toolArgs.description !== 'string') {
+          return { content: [{ type: "text", text: "Error: description must be a string" }], isError: true };
+        }
+        if (typeof toolArgs.prose !== 'string') {
+          return { content: [{ type: "text", text: "Error: prose must be a string" }], isError: true };
+        }
+        if (!Array.isArray(toolArgs.lessons)) {
+          return { content: [{ type: "text", text: "Error: lessons must be an array" }], isError: true };
+        }
+
+        const beatResult = await knowledgeGraphManager.createNarrativeBeat(
+          toolArgs.parentChartId,
+          toolArgs.title,
+          toolArgs.act,
+          toolArgs.type_dramatic,
+          toolArgs.universes,
+          toolArgs.description,
+          toolArgs.prose,
+          toolArgs.lessons,
+          (toolArgs.assessRelationalAlignment as boolean) || false,
+          (toolArgs.initiateFourDirectionsInquiry as boolean) || false,
+          toolArgs.filePath as string | undefined
+        );
+        return { content: [{ type: "text", text: JSON.stringify(beatResult, null, 2) }] };
+      }
+      case "telescope_narrative_beat": {
+        if (typeof toolArgs.parentBeatName !== 'string') {
+          return { content: [{ type: "text", text: "Error: parentBeatName must be a string" }], isError: true };
+        }
+        if (typeof toolArgs.newCurrentReality !== 'string') {
+          return { content: [{ type: "text", text: "Error: newCurrentReality must be a string" }], isError: true };
+        }
+
+        const telescopeResult = await knowledgeGraphManager.telescopeNarrativeBeat(
+          toolArgs.parentBeatName,
+          toolArgs.newCurrentReality,
+          (Array.isArray(toolArgs.initialSubBeats) ? toolArgs.initialSubBeats : []) as Array<any>
+        );
+        return { content: [{ type: "text", text: JSON.stringify(telescopeResult, null, 2) }] };
+      }
+      case "list_narrative_beats": {
+        const parentChartId = toolArgs.parentChartId as string | undefined;
+        const beatsResult = await knowledgeGraphManager.listNarrativeBeats(parentChartId);
+
+        if (beatsResult.length === 0) {
+          return { content: [{ type: "text", text: "No narrative beats found." }] };
+        }
+
+        let beatsText = "## 📖 Narrative Beats\n\n";
+        beatsResult.forEach((beat) => {
+          const act = beat.metadata?.act || '?';
+          const type = beat.metadata?.type_dramatic || 'Unknown';
+          const universes = beat.metadata?.universes?.join(', ') || 'Unknown';
+          const lessons = beat.metadata?.narrative?.lessons || [];
+
+          beatsText += `### Act ${act}: ${type}\n`;
+          beatsText += `**Name**: ${beat.name}\n`;
+          beatsText += `**Universes**: ${universes}\n`;
+          beatsText += `**Description**: ${beat.metadata?.narrative?.description || 'N/A'}\n`;
+          if (lessons.length > 0) {
+            beatsText += `**Lessons**: ${lessons.join(', ')}\n`;
+          }
+          beatsText += "\n";
+        });
+
+        return { content: [{ type: "text", text: beatsText }] };
+      }
       case "init_llm_guidance": {
         const format = toolArgs.format as string || "full";
-        
+
         if (format === "save_directive") {
           return { content: [{ type: "text", text: `## 💡 RECOMMENDED: Save This Guidance\n\n**Claude Code**: Add this guidance to CLAUDE.md in your project directory\n**Gemini**: Save as GEMINI.md in your workspace  \n**Other Agents**: Create AGENTS.md or similar session memory file\n\nThis ensures you remember COAIA Memory's structural tension principles across our entire conversation.\n\n**Quick Command**: Use format="full" to get the complete guidance content to save.` }] };
         }
-        
+
         if (format === "quick") {
           return { content: [{ type: "text", text: `## 🚨 COAIA Memory Quick Reference\n\n**CRITICAL**: "Ready to begin" = WRONG. Current reality must be factual assessment.\n\n**Core Tools**:\n1. \`list_active_charts\` → Start here, see all charts\n2. \`create_structural_tension_chart\` → New chart (outcome + reality + actions)\n3. \`add_action_step\` → Add strategic actions (creates telescoped chart)\n4. \`telescope_action_step\` → Break down actions into detailed sub-charts\n\n**Common Mistakes**:\n❌ "Ready to begin Django tutorial" \n✅ "Never used Django, completed Python basics"\n\nUse format="full" for complete guidance.` }] };
         }
-        
+
         // Default: full guidance
         return { content: [{ type: "text", text: LLM_GUIDANCE }] };
       }
