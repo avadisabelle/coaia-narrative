@@ -35,6 +35,34 @@ OPTIONS:
    --memory-path PATH    Custom path for memory storage (default: ./memory.jsonl)
    --help, -h           Show this help message
 
+ENVIRONMENT VARIABLES:
+   COAIA_TOOLS          Comma or space separated list of tool groups and/or individual tools to enable
+                        (default: "STC_TOOLS,init_llm_guidance")
+
+   COAIA_DISABLED_TOOLS Comma or space separated list of tools to disable
+                        (useful for selectively removing tools from a group)
+
+TOOL GROUPS:
+   STC_TOOLS            All structural tension chart tools (11 tools) - recommended for creative work
+   KG_TOOLS             All knowledge graph tools (9 tools) - for traditional entity/relation work
+   CORE_TOOLS           Essential tools only (4 tools) - minimal viable set
+
+EXAMPLES:
+   # Use only STC tools (default)
+   coaia-memory --memory-path ./memory.jsonl
+
+   # Enable both STC and KG tools
+   COAIA_TOOLS="STC_TOOLS KG_TOOLS" coaia-memory --memory-path ./memory.jsonl
+
+   # Use only core tools
+   COAIA_TOOLS="CORE_TOOLS" coaia-memory --memory-path ./memory.jsonl
+
+   # Enable STC tools but disable specific tools
+   COAIA_TOOLS="STC_TOOLS" COAIA_DISABLED_TOOLS="delete_entities,delete_relations" coaia-memory
+
+   # Enable specific individual tools
+   COAIA_TOOLS="create_structural_tension_chart add_action_step list_active_charts" coaia-memory
+
 CORE FEATURES:
    
    📊 Structural Tension Charts
@@ -141,6 +169,70 @@ let memoryPath = argv['memory-path'];
 // If a custom path is provided, ensure it's absolute
 if (memoryPath && !isAbsolute(memoryPath)) {
     memoryPath = path.resolve(process.cwd(), memoryPath);
+}
+
+// Tool filtering configuration
+const TOOL_GROUPS = {
+  STC_TOOLS: [
+    'create_structural_tension_chart',
+    'telescope_action_step',
+    'add_action_step',
+    'remove_action_step',
+    'mark_action_complete',
+    'get_chart_progress',
+    'list_active_charts',
+    'update_action_progress',
+    'update_current_reality',
+    'update_desired_outcome',
+    'update_action_step_title',
+    'creator_moment_of_truth'
+  ],
+  KG_TOOLS: [
+    'create_entities',
+    'create_relations',
+    'add_observations',
+    'delete_entities',
+    'delete_observations',
+    'delete_relations',
+    'search_nodes',
+    'open_nodes',
+    'read_graph'
+  ],
+  CORE_TOOLS: [
+    'list_active_charts',
+    'create_structural_tension_chart',
+    'add_action_step',
+    'mark_action_complete'
+  ]
+};
+
+function getEnabledTools(): Set<string> {
+  const enabledTools = new Set<string>();
+
+  // Check for COAIA_DISABLED_TOOLS env var (comma or space separated)
+  const disabledStr = process.env.COAIA_DISABLED_TOOLS || '';
+  const disabledTools = new Set(
+    disabledStr.split(/[,\s]+/).filter(t => t.trim())
+  );
+
+  // Determine which tools to enable
+  const enabledGroupsStr = process.env.COAIA_TOOLS || 'STC_TOOLS,init_llm_guidance';
+  const enabledGroups = enabledGroupsStr.split(/[,\s]+/).filter(t => t.trim());
+
+  enabledGroups.forEach(group => {
+    const groupTools = (TOOL_GROUPS as Record<string, string[]>)[group];
+    if (groupTools) {
+      groupTools.forEach(tool => enabledTools.add(tool));
+    } else {
+      // Assume it's an individual tool name
+      enabledTools.add(group);
+    }
+  });
+
+  // Remove disabled tools
+  disabledTools.forEach(tool => enabledTools.delete(tool));
+
+  return enabledTools;
 }
 
 // Define the path to the JSONL file
@@ -933,7 +1025,7 @@ Action step: "${actionStepTitle}"
     }
     
     // Proceed with telescoping using the assessed current reality
-    return this.addActionStep(parentChartId, actionStepTitle, finalCurrentReality, dueDate);
+    return this.addActionStep(parentChartId, actionStepTitle, dueDate, finalCurrentReality);
   }
 
   async removeActionStep(parentChartId: string, actionStepName: string): Promise<void> {
@@ -982,8 +1074,9 @@ const server = new Server({
   },);
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return {
-    tools: [
+  const enabledTools = getEnabledTools();
+
+  const allTools = [
       {
         name: "create_entities",
         description: "ADVANCED: Create traditional knowledge graph entities. For structural tension charts, use create_structural_tension_chart or add_action_step instead.",
@@ -1311,21 +1404,48 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         }
       },
       {
+        name: "creator_moment_of_truth",
+        description: "Guide through the Creator Moment of Truth - a four-step review process for assessing chart progress. Transforms discrepancies between expected and delivered into learning opportunities. Use when reviewing progress or when action steps aren't going as planned.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            chartId: { type: "string", description: "ID of the chart to review" },
+            step: {
+              type: "string",
+              enum: ["full_review", "acknowledge", "analyze", "plan", "feedback"],
+              default: "full_review",
+              description: "Which step to guide through: 'full_review' for complete process, or individual steps"
+            },
+            userInput: {
+              type: "string",
+              description: "Optional: User's observations or responses for the current step"
+            }
+          },
+          required: ["chartId"]
+        }
+      },
+      {
         name: "init_llm_guidance",
         description: "🚨 NEW LLM? Essential guidance for understanding COAIA Memory's structural tension methodology, delayed resolution principle, and proper tool usage. Run this FIRST to avoid common mistakes.",
         inputSchema: {
           type: "object",
           properties: {
-            format: { 
-              type: "string", 
-              enum: ["full", "quick", "save_directive"], 
+            format: {
+              type: "string",
+              enum: ["full", "quick", "save_directive"],
               default: "full",
               description: "Level of detail: 'full' for complete guidance, 'quick' for essentials only, 'save_directive' for session memory instructions"
             }
           }
         }
       }
-    ],
+    ];
+
+  // Filter tools based on enabled tools set
+  const filteredTools = allTools.filter(tool => enabledTools.has(tool.name));
+
+  return {
+    tools: filteredTools,
   };
 });
 
@@ -1460,6 +1580,117 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         args.newTitle as string
       );
       return { content: [{ type: "text", text: `Action step title updated for '${args.actionStepName}'` }] };
+    case "creator_moment_of_truth":
+      const cmotChartId = args.chartId as string;
+      const cmotStep = (args.step as string) || "full_review";
+      const cmotUserInput = args.userInput as string;
+
+      // Get chart progress for context
+      const cmotProgress = await knowledgeGraphManager.getChartProgress(cmotChartId);
+      const cmotGraph = await knowledgeGraphManager.readGraph();
+      const cmotDesiredOutcome = cmotGraph.entities.find(e =>
+        e.name === `${cmotChartId}_desired_outcome`
+      );
+      const cmotCurrentReality = cmotGraph.entities.find(e =>
+        e.name === `${cmotChartId}_current_reality`
+      );
+
+      const cmotGuidance = {
+        full_review: `## Creator Moment of Truth - Chart Review
+
+**Chart**: ${cmotChartId}
+**Desired Outcome**: ${cmotDesiredOutcome?.observations[0] || 'Unknown'}
+**Current Reality**: ${cmotCurrentReality?.observations.join('; ') || 'Unknown'}
+**Progress**: ${Math.round(cmotProgress.progress * 100)}% (${cmotProgress.completedActions}/${cmotProgress.totalActions} action steps)
+
+---
+
+### The Four-Step Review Process
+
+Guide the user through each step to transform discrepancies into learning:
+
+**Step 1: ACKNOWLEDGE THE TRUTH**
+What difference exists between what was expected and what was delivered?
+- Report facts only, no excuses
+- "We expected X, we delivered Y"
+- Ask: "Looking at this chart, what expected progress didn't happen? What did happen instead?"
+
+**Step 2: ANALYZE HOW IT HAPPENED**
+How did this come to pass?
+- Step-by-step tracking (not blame)
+- What assumptions were made?
+- How was it approached?
+- Ask: "Walk me through what happened. What did you tell yourself? What assumptions turned out to be wrong?"
+
+**Step 3: CREATE A PLAN FOR NEXT TIME**
+Given what you discovered, how will you change your approach?
+- What patterns need to change?
+- What specific actions will be different?
+- Ask: "Based on what you learned, what will you do differently? What new action steps should we add?"
+
+**Step 4: SET UP A FEEDBACK SYSTEM**
+How will you track whether you're actually making the changes?
+- Simple self-management system
+- How to notice old patterns returning
+- Ask: "How will you know if you're falling back to old patterns? What will remind you of the new approach?"
+
+---
+
+**After completing the review**: Update current reality with new observations, adjust action steps as needed.
+
+**Remember**: The goal is not perfection but effectiveness. Discrepancies are learning opportunities, not failures.`,
+
+        acknowledge: `## Step 1: ACKNOWLEDGE THE TRUTH
+
+**Chart Progress**: ${Math.round(cmotProgress.progress * 100)}%
+**Desired Outcome**: ${cmotDesiredOutcome?.observations[0] || 'Unknown'}
+
+**Question**: What difference exists between what was expected and what was delivered?
+
+Guidelines:
+- Simply report the facts
+- No excuses, no blame
+- "We expected X, we delivered Y"
+- Focus on seeing reality clearly
+
+${cmotUserInput ? `\n**User's Observation**: ${cmotUserInput}\n\nNext: Proceed to Step 2 (analyze) to explore how this came to pass.` : 'Please share what you expected vs. what actually happened.'}`,
+
+        analyze: `## Step 2: ANALYZE HOW IT HAPPENED
+
+**Question**: How did this come to pass?
+
+Guidelines:
+- Step-by-step tracking (this is co-exploration, not blame)
+- What assumptions were made?
+- What did you tell yourself?
+- How did you approach it?
+
+${cmotUserInput ? `\n**User's Analysis**: ${cmotUserInput}\n\nNext: Proceed to Step 3 (plan) to create adjustments based on these insights.` : 'Walk through the sequence of events. What assumptions turned out not to be true?'}`,
+
+        plan: `## Step 3: CREATE A PLAN FOR NEXT TIME
+
+**Question**: Given what you discovered, how will you change your approach?
+
+Guidelines:
+- What assumptions turned out not to be true?
+- What patterns need to change?
+- What specific actions will you take differently?
+
+${cmotUserInput ? `\n**User's Plan**: ${cmotUserInput}\n\nNext: Use add_action_step or update_current_reality to record these changes, then proceed to Step 4 (feedback).` : 'What concrete adjustments will you make? Should we add new action steps or update the chart?'}`,
+
+        feedback: `## Step 4: SET UP A FEEDBACK SYSTEM
+
+**Question**: How will you track whether you're actually making the changes?
+
+Guidelines:
+- Simple system for self-management
+- How will you notice if you're falling back to old patterns?
+- What will remind you of the new approach?
+
+${cmotUserInput ? `\n**User's Feedback System**: ${cmotUserInput}\n\n✅ **Review Complete**. Use update_current_reality to record key learnings from this review.` : 'What simple tracking will help you stay on the new course?'}`
+      };
+
+      return { content: [{ type: "text", text: cmotGuidance[cmotStep as keyof typeof cmotGuidance] || cmotGuidance.full_review }] };
     case "init_llm_guidance":
       const format = args.format as string || "full";
       

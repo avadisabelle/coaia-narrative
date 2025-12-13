@@ -1,202 +1,156 @@
-# COAIA Memory - Creative-Oriented AI Assistant Memory System
+# COAIA Memory
 
-> MCP server implementing structural tension charts and advancing pattern support based on Robert Fritz's creative methodology
+> MCP server for structural tension charts based on Robert Fritz's creative methodology
 
-## What is COAIA Memory?
+Extends [@modelcontextprotocol/server-memory](https://github.com/modelcontextprotocol/servers/tree/main/src/memory) with **structural tension charts** - a different orientation from problem-solving, focused on bringing desired outcomes into being through structural dynamics.
 
-COAIA Memory extends traditional knowledge graphs with **structural tension charts** - a powerful framework for organizing creative processes around desired outcomes rather than problem-solving. Based on Robert Fritz's structural tension methodology, it helps AI assistants maintain creative orientation and support advancing patterns.
+## Quick Start
 
-**Current Version**: v2.3.0 (LLM-Intelligent Enhancement)
-
-## Key Features
-
-### 🎯 Structural Tension Charts
-- **Desired Outcomes**: Clear, specific results you want to create
-- **Current Reality**: Honest assessment of where you are now  
-- **Structural Tension**: The unresolved tension between current reality and desired outcome that naturally seeks resolution
-- **Action Steps**: Strategic secondary actions - intermediary end results that advance toward the primary goal
-- **Due Dates**: Time organization that creates momentum
-
-### 🔭 Telescoping Support
-- Break down complex action steps into detailed sub-charts
-- Proper due date inheritance from parent steps
-- Hierarchical navigation between overview and details
-- Maintains structural tension at every level
-
-### 📈 Advancing Pattern Tracking
-- Completed action steps become part of current reality, changing the structural dynamic
-- Each completion advances the system toward equilibrium (desired outcome)
-- Success creates new structural tension for continued advancement
-- Prevents oscillating patterns through proper structural design
-
-### 🗣️ Natural Language Ready
-- Conversational patterns documented for intuitive interaction
-- Creative-oriented language (focus on creation vs problem-solving)
-- AI assistants can guide users through structural tension exercises
-
-### 🔗 Traditional Knowledge Graph
-- Full entity, relation, and observation management
-- Search and retrieval capabilities
-- Compatible with existing MCP knowledge graph workflows
-
-## Installation & Usage
-
-### As NPX Package
 ```bash
-npx coaia-memory --memory-path ./my-charts.jsonl
+npx coaia-memory --memory-path ./charts.jsonl
 ```
 
-### In Claude Desktop Config
+## Configuration
+
+### Minimal Setup (STC Tools Only - Default)
+
 ```json
 {
   "mcpServers": {
     "coaia-memory": {
       "command": "npx",
-      "args": ["-y", "coaia-memory", "--memory-path", "/path/to/your/charts.jsonl"],
-      "autoapprove": [
-        "create_structural_tension_chart",
-        "telescope_action_step", 
-        "mark_action_complete",
-        "get_chart_progress",
-        "list_active_charts",
-        "create_entities",
-        "create_relations",
-        "add_observations"
-      ]
+      "args": ["-y", "coaia-memory", "--memory-path", "/path/to/charts.jsonl"]
     }
   }
 }
 ```
 
-### Local Development
+**Exposes 12 tools:** `list_active_charts`, `create_structural_tension_chart`, `add_action_step`, `remove_action_step`, `telescope_action_step`, `mark_action_complete`, `get_chart_progress`, `update_action_progress`, `update_current_reality`, `update_desired_outcome`, `update_action_step_title`, `init_llm_guidance`
+
+### Full Setup (STC + Knowledge Graph Tools)
+
+```json
+{
+  "mcpServers": {
+    "coaia-memory": {
+      "command": "npx",
+      "args": ["-y", "coaia-memory", "--memory-path", "/path/to/charts.jsonl"],
+      "env": {
+        "COAIA_TOOLS": "STC_TOOLS,KG_TOOLS,init_llm_guidance"
+      }
+    }
+  }
+}
+```
+
+**Adds 9 KG tools:** `create_entities`, `create_relations`, `add_observations`, `delete_entities`, `delete_observations`, `delete_relations`, `search_nodes`, `open_nodes`, `read_graph`
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `COAIA_TOOLS` | Tool groups/names to enable (comma/space separated) | `STC_TOOLS,init_llm_guidance` |
+| `COAIA_DISABLED_TOOLS` | Tools to exclude from enabled set | - |
+
+**Tool Groups:**
+- `STC_TOOLS` - Structural tension chart tools (11)
+- `KG_TOOLS` - Knowledge graph tools (9)
+- `CORE_TOOLS` - Essential tools only (4): `list_active_charts`, `create_structural_tension_chart`, `add_action_step`, `mark_action_complete`
+
+## Core Concepts
+
+### Structural Tension
+```
+┌─────────────────┐                    ┌─────────────────┐
+│ Current Reality │ ══ TENSION ══════> │ Desired Outcome │
+│ (where you are) │                    │ (what to create)│
+└─────────────────┘                    └─────────────────┘
+         │                                      ▲
+         │       Strategic Secondary Choices    │
+         └──────────────────────────────────────┘
+        (action steps understood in context of tension)
+```
+
+- **Desired Outcome**: What you want to CREATE (not fix/solve). Specific, quantified where possible, avoiding comparative terms (more, better, less).
+- **Current Reality**: Honest factual assessment - objective facts only, no readiness assumptions ("ready to begin" destroys tension).
+- **Structural Tension**: The dynamic force between current reality and desired outcome that naturally seeks resolution. NOT a gap to fill, but a generative force.
+
+### Action Steps: NOT a To-Do List
+
+**Critical distinction**: Action steps are **strategic secondary choices** that support the primary goal, NOT tasks to check off.
+
+**They are:**
+- Understood in the context of structural tension
+- Related to each other as part of an overview
+- Strategic actions designed to enable creating the goal
+- Answers to: "If we took these steps, would we achieve this result?"
+
+**Three types of actions (use appropriately):**
+1. **Overview actions** - Strategic steps early in process (what we put on charts)
+2. **Experimental actions** - Learning, exploring, "sketches before the painting"
+3. **Refinement actions** - Polishing near completion (too early = stifled energy)
+
+**Test question**: "If we took these steps, would we achieve this result?" If No → add more steps. If Yes → done.
+
+### Goal Refinement Principles (Robert Fritz)
+
+| Principle | Wrong | Right |
+|-----------|-------|-------|
+| **Quantify** | "Increased business" | "5 new business clients" |
+| **No comparatives** | "Better health" | "Very good health" |
+| **Create, not solve** | "Overcome weight problem" | "I weigh 150 pounds" |
+| **Result, not process** | "Run 4 miles daily" | "Well-toned, healthy body" |
+| **Specific, not vague** | "Improve my skills" | "Mastery of Photoshop" |
+
+### Creator Moment of Truth (Review Process)
+
+When assessing progress, use this four-step process:
+
+1. **Acknowledge**: What was expected vs. what was delivered? (facts only)
+2. **Analyze**: How did it happen? (step-by-step, not blame)
+3. **Plan**: How will I do it differently next time?
+4. **Feedback**: How will I track the changes?
+
+This transforms discrepancies into learning opportunities, not failures.
+
+## Usage Examples
+
+**Create a chart:**
+```javascript
+{
+  "desiredOutcome": "Launch personal website",
+  "currentReality": "Have domain, no design or content yet",
+  "dueDate": "2025-03-01T00:00:00Z",
+  "actionSteps": ["Design homepage", "Write about page", "Deploy to hosting"]
+}
+```
+
+**Add action step to existing chart:**
+```javascript
+{
+  "parentChartId": "chart_1234567890",
+  "actionStepTitle": "Set up CI/CD pipeline",
+  "currentReality": "Manual deployment only, no automation experience"
+}
+```
+
+**Mark action complete:**
+```javascript
+{ "actionStepName": "chart_1234567890_desired_outcome" }
+```
+
+## Development
+
 ```bash
-git clone <repository>
+git clone https://github.com/jgwill/coaia-memory
 cd coaia-memory
 npm install
 npm run build
 ```
 
-## Core Tools
-
-### Structural Tension Chart Management
-- `create_structural_tension_chart` - Create new chart with outcome, reality, and action steps
-- `telescope_action_step` - Break down action steps into detailed sub-charts
-- `mark_action_complete` - Complete actions and update current reality
-- `get_chart_progress` - Monitor chart advancement
-- `list_active_charts` - Overview of all active charts
-
-### Traditional Knowledge Graph Operations
-- `create_entities` - Add new entities (people, concepts, events)
-- `create_relations` - Connect entities with relationships
-- `add_observations` - Record new information about entities
-- Plus full CRUD operations for entities, relations, and observations
-
-## Example Usage
-
-### Creating a Chart
-```javascript
-// Natural language: "I want to learn Python web development in 6 weeks"
-{
-  "desiredOutcome": "Learn Python web development", 
-  "currentReality": "I know basic Python but no web frameworks",
-  "dueDate": "2025-09-15T00:00:00Z",
-  "actionSteps": [
-    "Complete Django tutorial",
-    "Build practice project", 
-    "Deploy something live"
-  ]
-}
-```
-
-### Telescoping Detail
-```javascript
-// Natural language: "Break down the Django tutorial step"
-{
-  "actionStepName": "chart_123_action_1",
-  "newCurrentReality": "Never used Django, familiar with Python basics"
-}
-```
-
-### Tracking Progress
-```javascript
-// Natural language: "I finished the Django tutorial"
-{
-  "actionStepName": "chart_123_action_1"
-}
-```
-
-## Creative Orientation Principles
-
-### Focus on Creation, Not Problem-Solving
-- **Use**: "I want to create...", "My desired outcome is..."
-- **Avoid**: "I need to fix...", "The problem is...", "I want to stop..."
-
-### Structural Tension Awareness  
-- Always pair desired outcomes with current reality to create structural tension
-- This unresolved tension naturally seeks resolution through advancement
-- Action steps are strategic intermediary results that change the structural dynamic
-- Completed actions flow into current reality, creating new tension for continued advancement
-
-### Advancing Patterns
-- Success builds on success
-- Completed actions become part of current reality
-- Momentum creates natural progression toward goals
-
-## Development & Testing
-
-### Build & Test
-```bash
-npm install
-npm run build
-```
-
-### Test Environment
-```bash
-cd test-environment
-claude-code  # Launch with pre-configured MCP setup
-```
-
-## Release Status
-
-### ✅ Validated in v2.0.0-rc.1
-- **Core Structural Tension Charts**: Fully functional with proper entity relationships
-- **Telescoping Support**: Action steps break down into sub-charts with due date inheritance
-- **Advancing Pattern Tracking**: Completions flow into current reality, system advances naturally
-- **MCP Integration**: All tools working correctly in Claude Code CLI environment
-- **Real-World Testing**: Validated with actual user interactions in test environment
-
-### Next Milestone
-**Guided Chart Creation**: Transform from passive storage to active coaching system that helps users create meaningful structural tension charts with proper creative orientation validation.
-
-## Architecture
-
-### Enhanced Entity Types
-- `structural_tension_chart` - Container for chart components
-- `desired_outcome` - What you want to create
-- `current_reality` - Where you are now  
-- `action_step` - Strategic actions with due dates
-
-### Creative Relations
-- `creates_tension_with` - Between current reality and desired outcome
-- `advances_toward` - Action steps advancing toward outcomes
-- `telescopes_into` - Hierarchical chart relationships
-- `flows_into` - Completed actions updating reality
-
-### Metadata Support
-- Due dates and completion tracking
-- Chart hierarchy and telescoping relationships
-- Creative phases (germination, assimilation, completion)
-- Timestamps and progress metrics
-
 ## Credits
 
-- **Author**: J.Guillaume D.-Isabelle <jgi@jgwill.com> (https://github.com/jgwill)
-- **Methodology**: Robert Fritz - Structural Tension (https://robertfritz.com)  
-- **Foundation**: Shane Holloman - Original MCP Knowledge Graph
+- **Author**: J.Guillaume D.-Isabelle ([@jgwill](https://github.com/jgwill))
+- **Methodology**: Robert Fritz - [Structural Tension](https://robertfritz.com)
+- **Foundation**: [@modelcontextprotocol/server-memory](https://github.com/modelcontextprotocol/servers)
 - **License**: MIT
-
-## Philosophy
-
-COAIA Memory embodies the principle that **structure determines behavior**. By organizing memory around structural tension rather than problem-solving patterns, it naturally supports creative advancement and helps users build the life they want to create.
-
-The system recognizes that structural tension is the fundamental organizing principle of the creative process - not a problem to be solved, but a generative force to be harnessed.

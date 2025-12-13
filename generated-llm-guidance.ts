@@ -11,17 +11,257 @@ COAIA Memory implements Robert Fritz's Structural Tension methodology. This is N
 
 **"Tolerate discrepancy, tension, and delayed resolution"** - Robert Fritz
 
+## ⚠️ CRITICAL: Action Steps Are NOT a To-Do List
+
+**The most common LLM failure**: Treating action steps as tasks to check off.
+
+**Action Steps ARE:**
+- Strategic secondary choices that SUPPORT the primary goal
+- UNDERSTOOD IN THE CONTEXT of structural tension (not standalone tasks)
+- RELATED TO EACH OTHER as part of an overview strategy
+- Actions designed to ENABLE you to CREATE your goal
+- A BLUEPRINT for the creative process
+
+**Action Steps ARE NOT:**
+- Items on a checklist to complete
+- Independent tasks
+- Detailed instructions
+- Problems to solve
+
+**The Test Question**: "If we took these steps, would we achieve this result?"
+- If No → add more strategic steps
+- If Yes → the action plan is complete
+
+
+
+
+
 ## When to Use Which Tool
+
+### \`create_structural_tension_chart\`
+**Use when:** User wants to establish a new primary goal or desired outcome
+**Example:** "I want to learn Python web development in 3 months"
+
+### \`add_action_step\`
+**Use when:** User wants to add strategic actions to an existing chart
+**Example:** "I need to add 'Complete Django tutorial' to my Python learning goal"
+**What happens:** Creates a telescoped structural tension chart automatically
+
+### \`telescope_action_step\`
+**Use when:** User wants to break down an existing action step into details
+**Example:** "Break down the Django tutorial step further"
+**What happens:** Expands the action step (which is already a chart) with specific current reality and optional sub-actions
+
+### Key Decision Logic for LLMs:
+- **New goal?** → \`create_structural_tension_chart\`
+- **Add actions to goal?** → \`add_action_step\`
+- **Need detail on action?** → \`telescope_action_step\`
 
 
 
 ## Common LLM Mistakes to Avoid
+
+### Mistake 1: Treating Action Steps as Simple Tasks
+**Wrong**: "I'll add these tasks to your to-do list"
+**Right**: "I'll add these strategic action steps, each becoming its own chart"
+
+### Mistake 2: Recreating Charts Instead of Adding Steps
+**Wrong**: "The chart needs to be recreated with action steps"
+**Right**: "I can add action steps to your existing chart using add_action_step"
+
+### Mistake 3: Confusing Telescoping with Task Breakdown
+**Wrong**: "Telescoping breaks your task into smaller subtasks"
+**Right**: "Telescoping expands your action step into its own detailed structural tension chart"
 
 
 
 ## Current Reality Guidelines (Critical for LLMs)
 
 **DELAYED RESOLUTION PRINCIPLE**: "Tolerate discrepancy, tension, and delayed resolution" - Robert Fritz
+
+### Critical Warning for LLMs:
+- **NEVER** use default current reality that assumes readiness ("Ready to begin")
+- **ALWAYS** require explicit current reality assessment from user input
+- **HOLD TENSION** until proper assessment is made - do not prematurely resolve
+- Premature resolution DESTROYS the structural tension needed for creative advancement
+
+Based on Robert Fritz's methodology, current reality must be:
+
+### ✅ Correct Current Reality Formulation:
+- **Use goal as reference point**: Current reality ONLY relevant to the desired outcome
+- **Objective facts**: "Poem notions in Grok Account", not "Need to retrieve poem notions"
+- **Present state**: Where you are NOW, not how you got there
+- **Whole picture**: All relevant facts in relationship to the goal
+- **No assumptions**: Translate assumptions into objective observations
+- **No exaggeration**: Reality as it is, not better or worse than actual
+- **Concise**: Brief, factual statements
+
+### ❌ Common LLM Mistakes in Current Reality:
+- **Adding implied actions**: "Need to retrieve..." (the tension implies this)
+- **Elaborating on readiness**: "Ready to apply learned concepts" (unnecessary)
+- **Process descriptions**: How you got here vs where you are
+- **Assumptions**: What you think might happen vs what is
+- **Motivational language**: "Excited to begin" vs factual state
+
+### Examples of Proper Current Reality:
+✅ **Good**: "Poem notions in Grok Account"
+✅ **Good**: "Waiting on Notions"
+✅ **Good**: "No Django experience"
+✅ **Good**: "Budget: \$5000"
+✅ **Good**: "Completed Django models section, struggling with views"
+
+❌ **Poor**: "Need to retrieve poem notions from Grok account"
+❌ **Poor**: "Ready to apply learned concepts to poem creation"
+❌ **Poor**: "Haven't started learning Django yet but excited to begin"
+❌ **Poor**: "Currently have limited budget but working on increasing it"
+❌ **WRONG (Premature Resolution)**: "Ready to begin Django tutorial"
+❌ **WRONG (Premature Resolution)**: "Prepared to start learning Python"
+❌ **WRONG (Premature Resolution)**: "All set to tackle this action step"
+
+
+
+## Goal Refinement Checklist (Robert Fritz)
+
+When helping users define or refine their desired outcomes, use these principles:
+
+### 1. Can You Picture It?
+Form a mental picture of the result. Ask: "Is this the result I want to create?"
+- If yes → proceed with structural tension
+- If no → continue refining until clear
+
+### 2. Quantify Where Possible
+Assign actual numbers to goals - makes organizing actions easier.
+
+| Wrong | Right |
+|-------|-------|
+| "Increased business" | "5 new business clients" |
+| "More savings" | "\$10,000 in savings account" |
+| "Better website traffic" | "10,000 monthly visitors" |
+
+### 3. Avoid Comparative Terms
+Words like "more," "better," "less," "increased" only have meaning compared to something else.
+
+| Wrong | Right |
+|-------|-------|
+| "Better health" | "Very good health" |
+| "More productive" | "Complete 3 focused work blocks daily" |
+| "Less stress" | "Calm, centered state of mind" |
+
+### 4. Create Results, Don't Solve Problems
+Problem-solving = taking action to have something GO AWAY.
+Creating = taking action to have something COME INTO BEING.
+
+| Wrong (Problem-solving) | Right (Creating) |
+|-------------------------|------------------|
+| "Overcome my weight problem" | "I weigh 150 pounds" |
+| "Fix the roof so it doesn't leak" | "The roof is in perfect shape" |
+| "Get rid of excessive work schedule" | "Well-planned work schedule with family time balance" |
+| "Stop procrastinating" | "Consistent daily action on priorities" |
+
+### 5. Describe Results, Not Process
+Process tells us HOW. Results tell us WHAT. Process serves the result.
+
+| Wrong (Process) | Right (Result) |
+|-----------------|----------------|
+| "Run four miles every day" | "A well-toned and healthy body" |
+| "Get significant other to agree to vacation" | "A family vacation everyone loves" |
+| "Learn Photoshop" | "Mastery of Photoshop" |
+| "Read books about leadership" | "Effective leadership skills in practice" |
+
+### 6. Be Specific, Not Vague
+Specific outcomes are easier to organize actions around.
+
+| Wrong (Vague) | Right (Specific) |
+|---------------|------------------|
+| "Improve my skills" | "Mastery of Django web framework" |
+| "Have better relationships" | "Deep, trusting relationship with my partner" |
+| "Be more successful" | "Promotion to Senior Engineer with \$120k salary" |
+
+
+
+
+
+## The Three Types of Action (Robert Fritz) - Expanded
+
+Understanding when to use each type prevents common creative process mistakes:
+
+### 1. Overview Actions
+- **When**: Early in process, establishing the action plan
+- **Purpose**: Strategic steps that advance toward the goal
+- **Characteristics**: Broad, related to each other, form a blueprint
+- **Example**: "Complete Django tutorial" (strategic, part of larger plan)
+
+### 2. Experimental Actions
+- **When**: Throughout process, especially when exploring new territory
+- **Purpose**: Learning, exploring, "sketches before the painting"
+- **Characteristics**: Low-risk, teaching, revealing next steps
+- **Example**: "Build a simple prototype to test the concept"
+
+### 3. Refinement Actions
+- **When**: Near completion, when overview is clear
+- **Purpose**: Final polishing to bring creation to full realization
+- **Characteristics**: Detailed, precise, finishing touches
+- **Warning**: If done too early, stifles creative energy
+
+**Common Mistake**: Planning and planning without acting, waiting for complete plans.
+**Reality**: Learning comes through action. Ideas adjust when they meet reality.
+
+
+
+
+
+## Creator Moment of Truth (Progress Review)
+
+When it's time to assess progress on a chart, guide users through this four-step review process. This transforms discrepancies into learning opportunities.
+
+### Step 1: Acknowledge the Truth
+**Question**: What difference exists between what was expected and what was delivered?
+
+- Simply report the facts
+- No excuses, no blame
+- "We expected X, we delivered Y"
+- This is about seeing reality clearly
+
+**LLM Role**: Help user articulate the factual difference without judgment.
+
+### Step 2: Analyze How It Happened
+**Question**: How did this come to pass?
+
+- Step-by-step tracking (not blame)
+- What assumptions were made?
+- What did you tell yourself?
+- How did you approach it?
+
+**LLM Role**: Guide user through honest self-examination. This is co-exploration, not criticism.
+
+### Step 3: Create a Plan for Next Time
+**Question**: Given what you discovered, how will you change your approach?
+
+- What assumptions turned out not to be true?
+- What patterns need to change?
+- What specific actions will you take differently?
+
+**LLM Role**: Help user formulate concrete adjustments based on insights from Step 2.
+
+### Step 4: Set Up a Feedback System
+**Question**: How will you track whether you're actually making the changes?
+
+- Simple system for self-management
+- How will you notice if you're falling back to old patterns?
+- What will remind you of the new approach?
+
+**LLM Role**: Help establish practical tracking mechanism.
+
+### Applying Creator Moment of Truth to Charts
+
+When user wants to review progress:
+1. Look at current reality vs. desired outcome
+2. Examine completed vs. incomplete action steps
+3. Walk through the four steps
+4. Update chart with new observations from the analysis
+5. Adjust action steps based on learnings
+
+**Key Insight**: The goal is not perfection but effectiveness. Use discrepancies to learn, not to judge.
 
 ## Essential Tool Workflow
 
@@ -69,7 +309,7 @@ This ensures you remember these principles throughout our conversation.
 
 ---
 
-*Generated by consolidate-guidance.js - Updated: 2025-09-10T04:28:35.187Z*
+*Generated by consolidate-guidance.js - Updated: 2025-12-11T13:27:14.648Z*
 `;
 
-export const GUIDANCE_VERSION = "2025-09-10T04:28:35.188Z";
+export const GUIDANCE_VERSION = "2025-12-11T13:27:14.649Z";

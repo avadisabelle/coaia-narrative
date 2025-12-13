@@ -1,6 +1,6 @@
 {
   "name": "coaia-memory",
-  "version": "2.2.12",
+  "version": "2.3.2",
   "description": "Creative-Oriented AI Assistant Memory - MCP server with structural tension charts and advancing pattern support, based on principles by Robert Fritz",
   "license": "MIT",
   "author": "J.Guillaume D.-Isabelle <jgi@jgwill.com> (https://github.com/jgwill)",
@@ -8,8 +8,8 @@
     "Shane Holloman (original mcp-knowledge-graph foundation)",
     "Robert Fritz (structural tension methodology - https://robertfritz.com)"
   ],
-  "homepage": "https://github.com/miadisabelle/mcp-knowledge-graph",
-  "bugs": "https://github.com/miadisabelle/mcp-knowledge-graph/issues",
+  "homepage": "https://github.com/guillaumedescoteauxisabelle/coaia-memory",
+  "bugs": "https://github.com/guillaumedescoteauxisabelle/coaia-memory/issues",
   "type": "module",
   "bin": {
     "coaia-memory": "dist/index.js"
