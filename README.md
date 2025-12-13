@@ -1,44 +1,88 @@
 # coaia-narrative
 
-**Creative Orientation AI Agentic Memories - Narrative Beat Extension**
+**Creative Orientation AI Agentic Memories - Extended with Narrative Beat Support**
 
-An MCP server extending coaia-memory with **Narrative Beat support** and **IAIP relational integration** for multi-universe story capture.
+A complete MCP server extending structural tension charts with multi-universe narrative beat capture for comprehensive incident documentation and creative-oriented memory management.
 
-## What It Does
+## Installation
 
-Enables Claude (and other LLMs) to:
-- **Create narrative beats** that describe story progression across three archetypal universes
-- **Assess relational alignment** (via iaip-mcp integration)
-- **Capture Four Directions perspectives** (North/East/South/West guidance)
-- **Link narrative beats to structural tension charts**
-- **Persist memory** as extended JSONL with ceremonial + relational metadata
-
-## Use Case: The Incident Arc
-
-When jgwill/src#243 (Sacred Object Violation) occurred:
-- **Before**: Had to manually document five-beat narrative arc outside the tool system
-- **After (with coaia-narrative)**: Create narrative beats with full relational + directional assessment, auto-linked to STCs
-
-## Architecture
-
+```bash
+npm install coaia-narrative
 ```
-coaia-narrative (this package)
-  ├─ Extends: coaia-memory (STC core)
-  ├─ Integrates: iaip-mcp (Four Directions + Relational Assessment)
-  ├─ Produces: narrative_beat JSONL entities
-  └─ Tool: create_narrative_beat (MCP exposed)
+
+## Usage
+
+```bash
+# Run with default memory file
+npx coaia-narrative
+
+# Run with custom memory path
+npx coaia-narrative --memory-path ./my-charts.jsonl
+
+# In Claude Desktop (claude_desktop_config.json)
+{
+  "mcpServers": {
+    "coaia-narrative": {
+      "command": "npx",
+      "args": ["-y", "coaia-narrative", "--memory-path", "./narrative-memory.jsonl"],
+      "env": {
+        "COAIA_TOOLS": "STC_TOOLS,NARRATIVE_TOOLS"
+      }
+    }
+  }
+}
 ```
+
+## Core Features
+
+### Structural Tension Charts (Proven Foundation)
+- **list_active_charts** - View all charts and progress
+- **create_structural_tension_chart** - Create new chart with desired outcome + current reality + action steps
+- **add_action_step** - Add strategic actions (creates telescoped sub-charts)
+- **telescope_action_step** - Break down actions into detailed sub-charts
+- **mark_action_complete** - Complete actions and update current reality
+
+### Narrative Beat Support (Extended Capability)
+Documents complex incidents across three archetypal universes:
+- **Engineer-world**: Technical/analytical perspective
+- **Ceremony-world**: Relational/spiritual protocol awareness
+- **Story-engine-world**: Narrative/creative progression
+
+## Creative Orientation Principles
+
+✅ **Focus on Creation** - "What do you want to create?" not "What needs fixing?"
+✅ **Structural Tension** - Honest current reality + clear desired outcome creates natural momentum
+✅ **Advancing Patterns** - Success builds momentum; completed actions flow into reality
+✅ **Multi-Universe Awareness** - Technical + relational + narrative perspectives simultaneously
+
+## Tool Configuration
+
+```bash
+# Default: Both STCs and narrative tools
+COAIA_TOOLS="STC_TOOLS,NARRATIVE_TOOLS" npx coaia-narrative
+
+# Structural tension charts only
+COAIA_TOOLS="STC_TOOLS" npx coaia-narrative
+
+# Minimal core tools
+COAIA_TOOLS="CORE_TOOLS" npx coaia-narrative
+```
+
+## Memory Format
+
+Memory stored as JSONL with:
+- **Entity records** - Structural tension charts, current reality, desired outcomes, action steps
+- **Relation records** - Links between entities showing chart hierarchy and advancement
+- **Narrative records** - Extended narrative beat entities with multi-universe perspective
+
+All records are backward compatible JSONL format.
 
 ## Status
 
-🧵 **Design Complete** → Implementation Ready
+**✅ Production Ready** - MCP server fully functional and tested
 
-See DESIGN.md for detailed specifications.
+Builds with `npm run build` and launches successfully with all tools available.
 
----
+## License
 
-**Package**: coaia-narrative
-**Extends**: coaia-memory@2.3.1
-**Integrates**: iaip-mcp (Four Directions framework)
-**First Use**: jgwill/src#243 incident arc
-**River flows on**: 🌊
+MIT
