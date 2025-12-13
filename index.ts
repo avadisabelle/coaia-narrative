@@ -1709,374 +1709,287 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 });
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
+  try {
+    const { name, arguments: args } = request.params;
 
-  if (!args) {
-    throw new Error(`No arguments provided for tool: ${name}`);
-  }
-
-  switch (name) {
-    case "create_entities":
-      return { content: [{ type: "text", text: JSON.stringify(await knowledgeGraphManager.createEntities(args.entities as Entity[]), null, 2) }] };
-    case "create_relations":
-      return { content: [{ type: "text", text: JSON.stringify(await knowledgeGraphManager.createRelations(args.relations as Relation[]), null, 2) }] };
-    case "add_observations":
-      return { content: [{ type: "text", text: JSON.stringify(await knowledgeGraphManager.addObservations(args.observations as { entityName: string; contents: string[] }[]), null, 2) }] };
-    case "delete_entities":
-      await knowledgeGraphManager.deleteEntities(args.entityNames as string[]);
-      return { content: [{ type: "text", text: "Entities deleted successfully" }] };
-    case "delete_observations":
-      await knowledgeGraphManager.deleteObservations(args.deletions as { entityName: string; observations: string[] }[]);
-      return { content: [{ type: "text", text: "Observations deleted successfully" }] };
-    case "delete_relations":
-      await knowledgeGraphManager.deleteRelations(args.relations as Relation[]);
-      return { content: [{ type: "text", text: "Relations deleted successfully" }] };
-    case "read_graph":
-      return { content: [{ type: "text", text: JSON.stringify(await knowledgeGraphManager.readGraph(), null, 2) }] };
-    case "search_nodes":
-      return { content: [{ type: "text", text: JSON.stringify(await knowledgeGraphManager.searchNodes(args.query as string), null, 2) }] };
-    case "open_nodes":
-      return { content: [{ type: "text", text: JSON.stringify(await knowledgeGraphManager.openNodes(args.names as string[]), null, 2) }] };
-    case "create_structural_tension_chart":
-      const chartResult = await knowledgeGraphManager.createStructuralTensionChart(
-        args.desiredOutcome as string,
-        args.currentReality as string,
-        args.dueDate as string,
-        args.actionSteps as string[]
-      );
-      return { content: [{ type: "text", text: JSON.stringify(chartResult, null, 2) }] };
-    case "telescope_action_step":
-      const telescopeResult = await knowledgeGraphManager.telescopeActionStep(
-        args.actionStepName as string,
-        args.newCurrentReality as string,
-        args.initialActionSteps as string[]
-      );
-      return { content: [{ type: "text", text: JSON.stringify(telescopeResult, null, 2) }] };
-    case "mark_action_complete":
-      await knowledgeGraphManager.markActionStepComplete(args.actionStepName as string);
-      return { content: [{ type: "text", text: `Action step '${args.actionStepName}' marked as complete and current reality updated` }] };
-    case "get_chart_progress":
-      const progressResult = await knowledgeGraphManager.getChartProgress(args.chartId as string);
-      return { content: [{ type: "text", text: JSON.stringify(progressResult, null, 2) }] };
-    case "list_active_charts":
-      const chartsResult = await knowledgeGraphManager.listActiveCharts();
-      
-      // Format as hierarchical ASCII tree
-      let hierarchyText = "## Structural Tension Charts Hierarchy\n\n";
-      
-      // Group by master charts (level 0)
-      const masterCharts = chartsResult.filter(c => c.level === 0);
-      const actionCharts = chartsResult.filter(c => c.level > 0);
-      
-      masterCharts.forEach(master => {
-        const progress = master.progress > 0 ? ` (${Math.round(master.progress * 100)}% complete)` : "";
-        const dueDate = master.dueDate ? ` [Due: ${new Date(master.dueDate).toLocaleDateString()}]` : "";
-        
-        hierarchyText += `📋 **${master.desiredOutcome}** (Master Chart)${progress}${dueDate}\n`;
-        hierarchyText += `    ID: ${master.chartId}\n`;
-        
-        // Find action steps for this master chart
-        const actions = actionCharts.filter(a => a.parentChart === master.chartId);
-        
-        if (actions.length > 0) {
-          actions.forEach((action, index) => {
-            const isLast = index === actions.length - 1;
-            const connector = isLast ? "└── " : "├── ";
-            const actionProgress = action.progress > 0 ? ` (${Math.round(action.progress * 100)}%)` : "";
-            const actionDue = action.dueDate ? ` [${new Date(action.dueDate).toLocaleDateString()}]` : "";
-            
-            hierarchyText += `    ${connector}🎯 ${action.desiredOutcome} (Action Step)${actionProgress}${actionDue}\n`;
-            hierarchyText += `        ID: ${action.chartId}\n`;
-          });
-        } else {
-          hierarchyText += `    └── (No action steps yet)\n`;
-        }
-        hierarchyText += "\n";
-      });
-      
-      if (masterCharts.length === 0) {
-        hierarchyText += "No active structural tension charts found.\n\n";
-        hierarchyText += "💡 Create your first chart with: create_structural_tension_chart\n";
-      }
-      
-      return { content: [{ type: "text", text: hierarchyText }] };
-    case "update_action_progress":
-      await knowledgeGraphManager.updateActionProgress(
-        args.actionStepName as string,
-        args.progressObservation as string,
-        args.updateCurrentReality as boolean
-      );
-      return { content: [{ type: "text", text: `Action step '${args.actionStepName}' progress updated` }] };
-    case "update_current_reality":
-      await knowledgeGraphManager.updateCurrentReality(
-        args.chartId as string,
-        args.newObservations as string[]
-      );
-      return { content: [{ type: "text", text: `Current reality updated for chart '${args.chartId}'` }] };
-    case "add_action_step":
-      const addActionResult = await knowledgeGraphManager.addActionStep(
-        args.parentChartId as string,
-        args.actionStepTitle as string,
-        args.dueDate as string,
-        args.currentReality as string
-      );
-      return { content: [{ type: "text", text: `Action step '${args.actionStepTitle}' added to chart '${args.parentChartId}' as telescoped chart '${addActionResult.chartId}'` }] };
-    case "remove_action_step":
-      await knowledgeGraphManager.removeActionStep(
-        args.parentChartId as string,
-        args.actionStepName as string
-      );
-      return { content: [{ type: "text", text: `Action step '${args.actionStepName}' removed from chart '${args.parentChartId}'` }] };
-    case "update_desired_outcome":
-      await knowledgeGraphManager.updateDesiredOutcome(
-        args.chartId as string,
-        args.newDesiredOutcome as string
-      );
-      return { content: [{ type: "text", text: `Desired outcome updated for chart '${args.chartId}'` }] };
-    case "update_action_step_title":
-      await knowledgeGraphManager.updateActionStepTitle(
-        args.actionStepName as string,
-        args.newTitle as string
-      );
-      return { content: [{ type: "text", text: `Action step title updated for '${args.actionStepName}'` }] };
-    case "creator_moment_of_truth":
-      const cmotChartId = args.chartId as string;
-      const cmotStep = (args.step as string) || "full_review";
-      const cmotUserInput = args.userInput as string;
-
-      // Get chart progress for context
-      const cmotProgress = await knowledgeGraphManager.getChartProgress(cmotChartId);
-      const cmotGraph = await knowledgeGraphManager.readGraph();
-      const cmotDesiredOutcome = cmotGraph.entities.find(e =>
-        e.name === `${cmotChartId}_desired_outcome`
-      );
-      const cmotCurrentReality = cmotGraph.entities.find(e =>
-        e.name === `${cmotChartId}_current_reality`
-      );
-
-      const cmotGuidance = {
-        full_review: `## Creator Moment of Truth - Chart Review
-
-**Chart**: ${cmotChartId}
-**Desired Outcome**: ${cmotDesiredOutcome?.observations[0] || 'Unknown'}
-**Current Reality**: ${cmotCurrentReality?.observations.join('; ') || 'Unknown'}
-**Progress**: ${Math.round(cmotProgress.progress * 100)}% (${cmotProgress.completedActions}/${cmotProgress.totalActions} action steps)
-
----
-
-### The Four-Step Review Process
-
-Guide the user through each step to transform discrepancies into learning:
-
-**Step 1: ACKNOWLEDGE THE TRUTH**
-What difference exists between what was expected and what was delivered?
-- Report facts only, no excuses
-- "We expected X, we delivered Y"
-- Ask: "Looking at this chart, what expected progress didn't happen? What did happen instead?"
-
-**Step 2: ANALYZE HOW IT HAPPENED**
-How did this come to pass?
-- Step-by-step tracking (not blame)
-- What assumptions were made?
-- How was it approached?
-- Ask: "Walk me through what happened. What did you tell yourself? What assumptions turned out to be wrong?"
-
-**Step 3: CREATE A PLAN FOR NEXT TIME**
-Given what you discovered, how will you change your approach?
-- What patterns need to change?
-- What specific actions will be different?
-- Ask: "Based on what you learned, what will you do differently? What new action steps should we add?"
-
-**Step 4: SET UP A FEEDBACK SYSTEM**
-How will you track whether you're actually making the changes?
-- Simple self-management system
-- How to notice old patterns returning
-- Ask: "How will you know if you're falling back to old patterns? What will remind you of the new approach?"
-
----
-
-**After completing the review**: Update current reality with new observations, adjust action steps as needed.
-
-**Remember**: The goal is not perfection but effectiveness. Discrepancies are learning opportunities, not failures.`,
-
-        acknowledge: `## Step 1: ACKNOWLEDGE THE TRUTH
-
-**Chart Progress**: ${Math.round(cmotProgress.progress * 100)}%
-**Desired Outcome**: ${cmotDesiredOutcome?.observations[0] || 'Unknown'}
-
-**Question**: What difference exists between what was expected and what was delivered?
-
-Guidelines:
-- Simply report the facts
-- No excuses, no blame
-- "We expected X, we delivered Y"
-- Focus on seeing reality clearly
-
-${cmotUserInput ? `\n**User's Observation**: ${cmotUserInput}\n\nNext: Proceed to Step 2 (analyze) to explore how this came to pass.` : 'Please share what you expected vs. what actually happened.'}`,
-
-        analyze: `## Step 2: ANALYZE HOW IT HAPPENED
-
-**Question**: How did this come to pass?
-
-Guidelines:
-- Step-by-step tracking (this is co-exploration, not blame)
-- What assumptions were made?
-- What did you tell yourself?
-- How did you approach it?
-
-${cmotUserInput ? `\n**User's Analysis**: ${cmotUserInput}\n\nNext: Proceed to Step 3 (plan) to create adjustments based on these insights.` : 'Walk through the sequence of events. What assumptions turned out not to be true?'}`,
-
-        plan: `## Step 3: CREATE A PLAN FOR NEXT TIME
-
-**Question**: Given what you discovered, how will you change your approach?
-
-Guidelines:
-- What assumptions turned out not to be true?
-- What patterns need to change?
-- What specific actions will you take differently?
-
-${cmotUserInput ? `\n**User's Plan**: ${cmotUserInput}\n\nNext: Use add_action_step or update_current_reality to record these changes, then proceed to Step 4 (feedback).` : 'What concrete adjustments will you make? Should we add new action steps or update the chart?'}`,
-
-        feedback: `## Step 4: SET UP A FEEDBACK SYSTEM
-
-**Question**: How will you track whether you're actually making the changes?
-
-Guidelines:
-- Simple system for self-management
-- How will you notice if you're falling back to old patterns?
-- What will remind you of the new approach?
-
-${cmotUserInput ? `\n**User's Feedback System**: ${cmotUserInput}\n\n✅ **Review Complete**. Use update_current_reality to record key learnings from this review.` : 'What simple tracking will help you stay on the new course?'}`
+    // Strict validation: name must exist
+    if (!name || typeof name !== 'string') {
+      return {
+        content: [{ type: "text", text: `Error: Invalid tool name: ${name}` }],
+        isError: true
       };
+    }
 
-      return { content: [{ type: "text", text: cmotGuidance[cmotStep as keyof typeof cmotGuidance] || cmotGuidance.full_review }] };
-    case "init_llm_guidance":
-      const format = args.format as string || "full";
-      
-      if (format === "save_directive") {
-        return { content: [{ type: "text", text: `## 💡 RECOMMENDED: Save This Guidance
+    // Strict validation: args must be object or undefined
+    if (args !== undefined && typeof args !== 'object') {
+      return {
+        content: [{ type: "text", text: `Error: Tool arguments must be an object, received: ${typeof args}` }],
+        isError: true
+      };
+    }
 
-**Claude Code**: Add this guidance to CLAUDE.md in your project directory
-**Gemini**: Save as GEMINI.md in your workspace  
-**Other Agents**: Create AGENTS.md or similar session memory file
+    const toolArgs = args || {};
 
-This ensures you remember COAIA Memory's structural tension principles across our entire conversation.
-
-**Quick Command**: Use format="full" to get the complete guidance content to save.` }] };
+    switch (name) {
+      case "create_entities": {
+        if (!Array.isArray(toolArgs.entities)) {
+          return { content: [{ type: "text", text: "Error: entities must be an array" }], isError: true };
+        }
+        const result = await knowledgeGraphManager.createEntities(toolArgs.entities as Entity[]);
+        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
       }
-      
-      if (format === "quick") {
-        return { content: [{ type: "text", text: `## 🚨 COAIA Memory Quick Reference
-
-**CRITICAL**: "Ready to begin" = WRONG. Current reality must be factual assessment.
-
-**Core Tools**:
-1. \`list_active_charts\` → Start here, see all charts
-2. \`create_structural_tension_chart\` → New chart (outcome + reality + actions)
-3. \`add_action_step\` → Add strategic actions (creates telescoped chart)
-4. \`telescope_action_step\` → Break down actions into detailed sub-charts
-
-**Common Mistakes**:
-❌ "Ready to begin Django tutorial" 
-✅ "Never used Django, completed Python basics"
-
-Use format="full" for complete guidance.` }] };
+      case "create_relations": {
+        if (!Array.isArray(toolArgs.relations)) {
+          return { content: [{ type: "text", text: "Error: relations must be an array" }], isError: true };
+        }
+        const result = await knowledgeGraphManager.createRelations(toolArgs.relations as Relation[]);
+        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
       }
-      
-      // Default: full guidance
-      return { content: [{ type: "text", text: LLM_GUIDANCE }] };
-    case "create_narrative_beat":
-      const narrativeBeatResult = await knowledgeGraphManager.createNarrativeBeat(
-        args.parentChartId as string,
-        args.title as string,
-        args.act as number,
-        args.type_dramatic as string,
-        args.universes as string[],
-        args.description as string,
-        args.prose as string,
-        args.lessons as string[],
-        args.assessRelationalAlignment as boolean,
-        args.initiateFourDirectionsInquiry as boolean,
-        args.filePath as string
-      );
-      
-      return { content: [{ type: "text", text: `✅ Created narrative beat: ${narrativeBeatResult.entity.name}
-      
-**Title**: ${args.title}
-**Act**: ${args.act} (${args.type_dramatic})  
-**Universes**: ${(args.universes as string[]).join(', ')}
-**Parent Chart**: ${args.parentChartId}
-
-**Description**: ${args.description}
-
-**Prose**: ${args.prose}
-
-**Lessons**:
-${(args.lessons as string[]).map(lesson => `• ${lesson}`).join('\n')}
-
-${args.assessRelationalAlignment ? '🔮 Relational alignment assessment requested' : ''}
-${args.initiateFourDirectionsInquiry ? '🧭 Four Directions inquiry requested' : ''}
-
-The narrative beat has been created and linked to the structural tension chart. This beat captures the story progression across the specified universe perspectives.` }] };
-    case "telescope_narrative_beat":
-      const telescopeNarrativeResult = await knowledgeGraphManager.telescopeNarrativeBeat(
-        args.parentBeatName as string,
-        args.newCurrentReality as string,
-        args.initialSubBeats as Array<{title: string; type_dramatic: string; description: string; prose: string; lessons: string[]}>
-      );
-      
-      return { content: [{ type: "text", text: `✅ Telescoped narrative beat: ${telescopeNarrativeResult.parentBeat.name}
-
-**Current Reality Updated**: ${args.newCurrentReality}
-**Sub-beats Created**: ${telescopeNarrativeResult.subBeats.length}
-
-${telescopeNarrativeResult.subBeats.length > 0 ? '**Sub-beats**:\n' + telescopeNarrativeResult.subBeats.map(beat => `• ${beat.metadata?.narrative?.description || beat.name} (${beat.metadata?.type_dramatic})`).join('\n') : ''}
-
-The parent beat has been expanded with detailed sub-narrative structure. Each sub-beat maintains the universe perspectives and can be further developed.` }] };
-    case "list_narrative_beats":
-      const narrativeBeatsResult = await knowledgeGraphManager.listNarrativeBeats(args.parentChartId as string);
-      
-      if (narrativeBeatsResult.length === 0) {
-        return { content: [{ type: "text", text: args.parentChartId ? 
-          `No narrative beats found for chart: ${args.parentChartId}` : 
-          `No narrative beats found. Create your first beat with: create_narrative_beat` }] };
+      case "add_observations": {
+        if (!Array.isArray(toolArgs.observations)) {
+          return { content: [{ type: "text", text: "Error: observations must be an array" }], isError: true };
+        }
+        const result = await knowledgeGraphManager.addObservations(toolArgs.observations as { entityName: string; contents: string[] }[]);
+        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
       }
-      
-      let narrativeText = args.parentChartId ? 
-        `## Narrative Beats for Chart: ${args.parentChartId}\n\n` : 
-        `## All Narrative Beats\n\n`;
-      
-      narrativeBeatsResult.forEach(beat => {
-        const meta = beat.metadata;
-        narrativeText += `### ${meta?.narrative?.description || beat.name}\n`;
-        narrativeText += `**Act**: ${meta?.act || 'Unknown'} (${meta?.type_dramatic || 'Unknown type'})\n`;
-        narrativeText += `**Universes**: ${meta?.universes?.join(', ') || 'Unknown'}\n`;
-        narrativeText += `**Created**: ${meta?.createdAt ? new Date(meta.createdAt).toLocaleDateString() : 'Unknown'}\n\n`;
+      case "delete_entities": {
+        if (!Array.isArray(toolArgs.entityNames)) {
+          return { content: [{ type: "text", text: "Error: entityNames must be an array" }], isError: true };
+        }
+        await knowledgeGraphManager.deleteEntities(toolArgs.entityNames as string[]);
+        return { content: [{ type: "text", text: "Entities deleted successfully" }] };
+      }
+      case "delete_observations": {
+        if (!Array.isArray(toolArgs.deletions)) {
+          return { content: [{ type: "text", text: "Error: deletions must be an array" }], isError: true };
+        }
+        await knowledgeGraphManager.deleteObservations(toolArgs.deletions as { entityName: string; observations: string[] }[]);
+        return { content: [{ type: "text", text: "Observations deleted successfully" }] };
+      }
+      case "delete_relations": {
+        if (!Array.isArray(toolArgs.relations)) {
+          return { content: [{ type: "text", text: "Error: relations must be an array" }], isError: true };
+        }
+        await knowledgeGraphManager.deleteRelations(toolArgs.relations as Relation[]);
+        return { content: [{ type: "text", text: "Relations deleted successfully" }] };
+      }
+      case "read_graph": {
+        const result = await knowledgeGraphManager.readGraph();
+        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      }
+      case "search_nodes": {
+        if (typeof toolArgs.query !== 'string') {
+          return { content: [{ type: "text", text: "Error: query must be a string" }], isError: true };
+        }
+        const result = await knowledgeGraphManager.searchNodes(toolArgs.query);
+        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      }
+      case "open_nodes": {
+        if (!Array.isArray(toolArgs.names)) {
+          return { content: [{ type: "text", text: "Error: names must be an array" }], isError: true };
+        }
+        const result = await knowledgeGraphManager.openNodes(toolArgs.names as string[]);
+        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      }
+      case "create_structural_tension_chart": {
+        if (typeof toolArgs.desiredOutcome !== 'string') {
+          return { content: [{ type: "text", text: "Error: desiredOutcome must be a string" }], isError: true };
+        }
+        if (typeof toolArgs.currentReality !== 'string') {
+          return { content: [{ type: "text", text: "Error: currentReality must be a string" }], isError: true };
+        }
+        if (typeof toolArgs.dueDate !== 'string') {
+          return { content: [{ type: "text", text: "Error: dueDate must be a string" }], isError: true };
+        }
+        const chartResult = await knowledgeGraphManager.createStructuralTensionChart(
+          toolArgs.desiredOutcome,
+          toolArgs.currentReality,
+          toolArgs.dueDate,
+          (Array.isArray(toolArgs.actionSteps) ? toolArgs.actionSteps : []) as string[]
+        );
+        return { content: [{ type: "text", text: JSON.stringify(chartResult, null, 2) }] };
+      }
+      case "telescope_action_step": {
+        if (typeof toolArgs.actionStepName !== 'string') {
+          return { content: [{ type: "text", text: "Error: actionStepName must be a string" }], isError: true };
+        }
+        if (typeof toolArgs.newCurrentReality !== 'string') {
+          return { content: [{ type: "text", text: "Error: newCurrentReality must be a string" }], isError: true };
+        }
+        const telescopeResult = await knowledgeGraphManager.telescopeActionStep(
+          toolArgs.actionStepName,
+          toolArgs.newCurrentReality,
+          (Array.isArray(toolArgs.initialActionSteps) ? toolArgs.initialActionSteps : []) as string[]
+        );
+        return { content: [{ type: "text", text: JSON.stringify(telescopeResult, null, 2) }] };
+      }
+      case "mark_action_complete": {
+        if (typeof toolArgs.actionStepName !== 'string') {
+          return { content: [{ type: "text", text: "Error: actionStepName must be a string" }], isError: true };
+        }
+        await knowledgeGraphManager.markActionStepComplete(toolArgs.actionStepName);
+        return { content: [{ type: "text", text: `Action step '${toolArgs.actionStepName}' marked as complete and current reality updated` }] };
+      }
+      case "get_chart_progress": {
+        if (typeof toolArgs.chartId !== 'string') {
+          return { content: [{ type: "text", text: "Error: chartId must be a string" }], isError: true };
+        }
+        const progressResult = await knowledgeGraphManager.getChartProgress(toolArgs.chartId);
+        return { content: [{ type: "text", text: JSON.stringify(progressResult, null, 2) }] };
+      }
+      case "list_active_charts": {
+        const chartsResult = await knowledgeGraphManager.listActiveCharts();
+        let hierarchyText = "## Structural Tension Charts Hierarchy\n\n";
+        const masterCharts = chartsResult.filter(c => c.level === 0);
+        const actionCharts = chartsResult.filter(c => c.level > 0);
         
-        if (meta?.narrative?.prose) {
-          narrativeText += `**Prose**: ${meta.narrative.prose}\n\n`;
+        masterCharts.forEach(master => {
+          const progress = master.progress > 0 ? ` (${Math.round(master.progress * 100)}% complete)` : "";
+          const dueDate = master.dueDate ? ` [Due: ${new Date(master.dueDate).toLocaleDateString()}]` : "";
+          hierarchyText += `📋 **${master.desiredOutcome}** (Master Chart)${progress}${dueDate}\n`;
+          hierarchyText += `    ID: ${master.chartId}\n`;
+          
+          const actions = actionCharts.filter(a => a.parentChart === master.chartId);
+          if (actions.length > 0) {
+            actions.forEach((action, index) => {
+              const isLast = index === actions.length - 1;
+              const connector = isLast ? "└── " : "├── ";
+              const actionProgress = action.progress > 0 ? ` (${Math.round(action.progress * 100)}%)` : "";
+              const actionDue = action.dueDate ? ` [${new Date(action.dueDate).toLocaleDateString()}]` : "";
+              hierarchyText += `    ${connector}🎯 ${action.desiredOutcome} (Action Step)${actionProgress}${actionDue}\n`;
+              hierarchyText += `        ID: ${action.chartId}\n`;
+            });
+          } else {
+            hierarchyText += `    └── (No action steps yet)\n`;
+          }
+          hierarchyText += "\n";
+        });
+        
+        if (masterCharts.length === 0) {
+          hierarchyText += "No active structural tension charts found.\n\n";
+          hierarchyText += "💡 Create your first chart with: create_structural_tension_chart\n";
         }
         
-        if (meta?.narrative?.lessons && meta.narrative.lessons.length > 0) {
-          narrativeText += `**Lessons**:\n${meta.narrative.lessons.map(lesson => `• ${lesson}`).join('\n')}\n\n`;
+        return { content: [{ type: "text", text: hierarchyText }] };
+      }
+      case "update_action_progress": {
+        if (typeof toolArgs.actionStepName !== 'string') {
+          return { content: [{ type: "text", text: "Error: actionStepName must be a string" }], isError: true };
+        }
+        if (typeof toolArgs.progressObservation !== 'string') {
+          return { content: [{ type: "text", text: "Error: progressObservation must be a string" }], isError: true };
+        }
+        await knowledgeGraphManager.updateActionProgress(
+          toolArgs.actionStepName,
+          toolArgs.progressObservation,
+          toolArgs.updateCurrentReality === true
+        );
+        return { content: [{ type: "text", text: `Action step '${toolArgs.actionStepName}' progress updated` }] };
+      }
+      case "update_current_reality": {
+        if (typeof toolArgs.chartId !== 'string') {
+          return { content: [{ type: "text", text: "Error: chartId must be a string" }], isError: true };
+        }
+        if (!Array.isArray(toolArgs.newObservations)) {
+          return { content: [{ type: "text", text: "Error: newObservations must be an array" }], isError: true };
+        }
+        await knowledgeGraphManager.updateCurrentReality(toolArgs.chartId, toolArgs.newObservations as string[]);
+        return { content: [{ type: "text", text: `Current reality updated for chart '${toolArgs.chartId}'` }] };
+      }
+      case "add_action_step": {
+        if (typeof toolArgs.parentChartId !== 'string') {
+          return { content: [{ type: "text", text: "Error: parentChartId must be a string" }], isError: true };
+        }
+        if (typeof toolArgs.actionStepTitle !== 'string') {
+          return { content: [{ type: "text", text: "Error: actionStepTitle must be a string" }], isError: true };
+        }
+        if (typeof toolArgs.currentReality !== 'string') {
+          return { content: [{ type: "text", text: "Error: currentReality must be a string" }], isError: true };
+        }
+        const addActionResult = await knowledgeGraphManager.addActionStep(
+          toolArgs.parentChartId,
+          toolArgs.actionStepTitle,
+          toolArgs.dueDate as string | undefined,
+          toolArgs.currentReality
+        );
+        return { content: [{ type: "text", text: `Action step '${toolArgs.actionStepTitle}' added to chart '${toolArgs.parentChartId}' as telescoped chart '${addActionResult.chartId}'` }] };
+      }
+      case "remove_action_step": {
+        if (typeof toolArgs.parentChartId !== 'string') {
+          return { content: [{ type: "text", text: "Error: parentChartId must be a string" }], isError: true };
+        }
+        if (typeof toolArgs.actionStepName !== 'string') {
+          return { content: [{ type: "text", text: "Error: actionStepName must be a string" }], isError: true };
+        }
+        await knowledgeGraphManager.removeActionStep(toolArgs.parentChartId, toolArgs.actionStepName);
+        return { content: [{ type: "text", text: `Action step '${toolArgs.actionStepName}' removed from chart '${toolArgs.parentChartId}'` }] };
+      }
+      case "update_desired_outcome": {
+        if (typeof toolArgs.chartId !== 'string') {
+          return { content: [{ type: "text", text: "Error: chartId must be a string" }], isError: true };
+        }
+        if (typeof toolArgs.newDesiredOutcome !== 'string') {
+          return { content: [{ type: "text", text: "Error: newDesiredOutcome must be a string" }], isError: true };
+        }
+        await knowledgeGraphManager.updateDesiredOutcome(toolArgs.chartId, toolArgs.newDesiredOutcome);
+        return { content: [{ type: "text", text: `Desired outcome updated for chart '${toolArgs.chartId}'` }] };
+      }
+      case "update_action_step_title": {
+        if (typeof toolArgs.actionStepName !== 'string') {
+          return { content: [{ type: "text", text: "Error: actionStepName must be a string" }], isError: true };
+        }
+        if (typeof toolArgs.newTitle !== 'string') {
+          return { content: [{ type: "text", text: "Error: newTitle must be a string" }], isError: true };
+        }
+        await knowledgeGraphManager.updateActionStepTitle(toolArgs.actionStepName, toolArgs.newTitle);
+        return { content: [{ type: "text", text: `Action step title updated for '${toolArgs.actionStepName}'` }] };
+      }
+      case "creator_moment_of_truth": {
+        if (typeof toolArgs.chartId !== 'string') {
+          return { content: [{ type: "text", text: "Error: chartId must be a string" }], isError: true };
+        }
+        const cmotStep = (toolArgs.step as string) || "full_review";
+        const cmotUserInput = toolArgs.userInput as string | undefined;
+        const cmotProgress = await knowledgeGraphManager.getChartProgress(toolArgs.chartId);
+        const cmotGraph = await knowledgeGraphManager.readGraph();
+        const cmotDesiredOutcome = cmotGraph.entities.find(e => e.name === `${toolArgs.chartId}_desired_outcome`);
+        const cmotCurrentReality = cmotGraph.entities.find(e => e.name === `${toolArgs.chartId}_current_reality`);
+
+        const cmotGuidance = {
+          full_review: `## Creator Moment of Truth - Chart Review\n\n**Chart**: ${toolArgs.chartId}\n**Desired Outcome**: ${cmotDesiredOutcome?.observations[0] || 'Unknown'}\n**Current Reality**: ${cmotCurrentReality?.observations.join('; ') || 'Unknown'}\n**Progress**: ${Math.round(cmotProgress.progress * 100)}% (${cmotProgress.completedActions}/${cmotProgress.totalActions} action steps)\n\n---\n\n### The Four-Step Review Process\n\nGuide the user through each step to transform discrepancies into learning:\n\n**Step 1: ACKNOWLEDGE THE TRUTH**\nWhat difference exists between what was expected and what was delivered?\n- Report facts only, no excuses\n- "We expected X, we delivered Y"\n- Ask: "Looking at this chart, what expected progress didn't happen? What did happen instead?"\n\n**Step 2: ANALYZE HOW IT HAPPENED**\nHow did this come to pass?\n- Step-by-step tracking (not blame)\n- What assumptions were made?\n- How was it approached?\n- Ask: "Walk me through what happened. What did you tell yourself? What assumptions turned out to be wrong?"\n\n**Step 3: CREATE A PLAN FOR NEXT TIME**\nGiven what you discovered, how will you change your approach?\n- What patterns need to change?\n- What specific actions will be different?\n- Ask: "Based on what you learned, what will you do differently? What new action steps should we add?"\n\n**Step 4: SET UP A FEEDBACK SYSTEM**\nHow will you track whether you're actually making the changes?\n- Simple self-management system\n- How to notice old patterns returning\n- Ask: "How will you know if you're falling back to old patterns? What will remind you of the new approach?"\n\n---\n\n**After completing the review**: Update current reality with new observations, adjust action steps as needed.\n\n**Remember**: The goal is not perfection but effectiveness. Discrepancies are learning opportunities, not failures.`,
+          acknowledge: `## Step 1: ACKNOWLEDGE THE TRUTH\n\n**Chart Progress**: ${Math.round(cmotProgress.progress * 100)}%\n**Desired Outcome**: ${cmotDesiredOutcome?.observations[0] || 'Unknown'}\n\n**Question**: What difference exists between what was expected and what was delivered?\n\nGuidelines:\n- Simply report the facts\n- No excuses, no blame\n- "We expected X, we delivered Y"\n- Focus on seeing reality clearly\n\n${cmotUserInput ? `\n**User's Observation**: ${cmotUserInput}\n\nNext: Proceed to Step 2 (analyze) to explore how this came to pass.` : 'Please share what you expected vs. what actually happened.'}`,
+          analyze: `## Step 2: ANALYZE HOW IT HAPPENED\n\n**Question**: How did this come to pass?\n\nGuidelines:\n- Step-by-step tracking (this is co-exploration, not blame)\n- What assumptions were made?\n- What did you tell yourself?\n- How did you approach it?\n\n${cmotUserInput ? `\n**User's Analysis**: ${cmotUserInput}\n\nNext: Proceed to Step 3 (plan) to create adjustments based on these insights.` : 'Walk through the sequence of events. What assumptions turned out not to be true?'}`,
+          plan: `## Step 3: CREATE A PLAN FOR NEXT TIME\n\n**Question**: Given what you discovered, how will you change your approach?\n\nGuidelines:\n- What assumptions turned out not to be true?\n- What patterns need to change?\n- What specific actions will you take differently?\n\n${cmotUserInput ? `\n**User's Plan**: ${cmotUserInput}\n\nNext: Use add_action_step or update_current_reality to record these changes, then proceed to Step 4 (feedback).` : 'What concrete adjustments will you make? Should we add new action steps or update the chart?'}`,
+          feedback: `## Step 4: SET UP A FEEDBACK SYSTEM\n\n**Question**: How will you track whether you're actually making the changes?\n\nGuidelines:\n- Simple system for self-management\n- How will you notice if you're falling back to old patterns?\n- What will remind you of the new approach?\n\n${cmotUserInput ? `\n**User's Feedback System**: ${cmotUserInput}\n\n✅ **Review Complete**. Use update_current_reality to record key learnings from this review.` : 'What simple tracking will help you stay on the new course?'}`
+        };
+
+        return { content: [{ type: "text", text: cmotGuidance[cmotStep as keyof typeof cmotGuidance] || cmotGuidance.full_review }] };
+      }
+      case "init_llm_guidance": {
+        const format = toolArgs.format as string || "full";
+        
+        if (format === "save_directive") {
+          return { content: [{ type: "text", text: `## 💡 RECOMMENDED: Save This Guidance\n\n**Claude Code**: Add this guidance to CLAUDE.md in your project directory\n**Gemini**: Save as GEMINI.md in your workspace  \n**Other Agents**: Create AGENTS.md or similar session memory file\n\nThis ensures you remember COAIA Memory's structural tension principles across our entire conversation.\n\n**Quick Command**: Use format="full" to get the complete guidance content to save.` }] };
         }
         
-        narrativeText += '---\n\n';
-      });
-      
-      return { content: [{ type: "text", text: narrativeText }] };
-    default:
-      throw new Error(`Unknown tool: ${name}`);
+        if (format === "quick") {
+          return { content: [{ type: "text", text: `## 🚨 COAIA Memory Quick Reference\n\n**CRITICAL**: "Ready to begin" = WRONG. Current reality must be factual assessment.\n\n**Core Tools**:\n1. \`list_active_charts\` → Start here, see all charts\n2. \`create_structural_tension_chart\` → New chart (outcome + reality + actions)\n3. \`add_action_step\` → Add strategic actions (creates telescoped chart)\n4. \`telescope_action_step\` → Break down actions into detailed sub-charts\n\n**Common Mistakes**:\n❌ "Ready to begin Django tutorial" \n✅ "Never used Django, completed Python basics"\n\nUse format="full" for complete guidance.` }] };
+        }
+        
+        // Default: full guidance
+        return { content: [{ type: "text", text: LLM_GUIDANCE }] };
+      }
+      default: {
+        return {
+          content: [{ type: "text", text: `Error: Unknown tool: ${name}` }],
+          isError: true
+        };
+      }
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return {
+      content: [{ type: "text", text: `Error executing tool: ${errorMessage}` }],
+      isError: true
+    };
   }
-});
-
-async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error("COAIA Memory - Creative Oriented AI Assistant Memory Server running on stdio");
-}
-
-main().catch((error) => {
-  console.error("Fatal error in main():", error);
-  process.exit(1);
-});
