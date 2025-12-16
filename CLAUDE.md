@@ -51,7 +51,7 @@ npx coaia-memory --memory-path ./my-charts.jsonl
       },
       "autoapprove": [
         "create_structural_tension_chart",
-        "telescope_action_step",
+        "manage_action_step",
         "mark_action_complete",
         "get_chart_progress",
         "list_active_charts",
@@ -104,12 +104,16 @@ COAIA_TOOLS="create_structural_tension_chart,list_active_charts,mark_action_comp
 
 ### Chart Management
 - `create_structural_tension_chart` - Create new chart with outcome, reality, and action steps
-- `telescope_action_step` - Break down action steps into detailed sub-charts
+- `manage_action_step` ✨ **RECOMMENDED** - Unified interface for adding OR expanding action steps (auto-detects intent)
 - `mark_action_complete` - Complete actions and update current reality
 - `get_chart_progress` - Monitor chart advancement
 - `list_active_charts` - Overview of all active charts
 - `update_action_progress` - Track progress on actions without marking complete
 - `update_current_reality` - Add observations directly to current reality
+
+### Deprecated Tools (Still Functional)
+- `telescope_action_step` ⚠️ - Use `manage_action_step` instead
+- `add_action_step` ⚠️ - Use `manage_action_step` instead
 
 ### Traditional Knowledge Graph
 - `create_entities` - Add new entities (people, concepts, events)
@@ -134,7 +138,28 @@ COAIA_TOOLS="create_structural_tension_chart,list_active_charts,mark_action_comp
 }
 ```
 
-### Telescoping Detail
+### Adding Action Step (Unified Interface) ✨ RECOMMENDED
+```javascript
+// Natural language: "Add 'Complete Django tutorial' to my Python learning goal"
+{
+  "parentReference": "chart_123",  // Chart ID for new action
+  "actionDescription": "Complete Django tutorial",
+  "currentReality": "Never used Django, familiar with Python basics"
+}
+```
+
+### Expanding Action Step (Unified Interface) ✨ RECOMMENDED
+```javascript
+// Natural language: "Break down the Django tutorial step"
+{
+  "parentReference": "chart_123_action_1",  // Entity name for expansion
+  "actionDescription": "Complete Django tutorial",
+  "currentReality": "Working through official tutorial",  // Optional
+  "initialActionSteps": ["Models", "Views", "Templates"]
+}
+```
+
+### Telescoping Detail (Legacy - Deprecated)
 ```javascript
 // Natural language: "Break down the Django tutorial step"
 {
