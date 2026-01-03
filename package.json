@@ -1,12 +1,13 @@
 {
   "name": "coaia-narrative",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Creative Orientation AI Agentic Memories - Narrative Beat Extension with IAIP relational integration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
   "bin": {
-    "coaia-narrative": "dist/index.js"
+    "coaia-narrative": "dist/index.js",
+    "cnarrative": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
