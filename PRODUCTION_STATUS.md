@@ -46,7 +46,7 @@ coaia-narrative --memory-path ./charts.jsonl
 
 ## Tool Support (30+ tools)
 
-### Structural Tension Charts (12 tools)
+### Structural Tension Charts (11 tools)
 - create_structural_tension_chart
 - telescope_action_step
 - add_action_step
@@ -56,8 +56,7 @@ coaia-narrative --memory-path ./charts.jsonl
 - list_active_charts
 - update_action_progress
 - update_current_reality
-- update_desired_outcome
-- update_action_step_title
+- update_desired_outcome (works for both master charts AND action steps)
 - creator_moment_of_truth
 
 ### Knowledge Graph (9 tools)
@@ -148,9 +147,9 @@ coaia-narrative/
 
 ## Version
 
-**Current**: 0.2.0
+**Current**: 0.5.0
 **Release Ready**: Yes
-**Breaking Changes**: None (backward compatible with coaia-memory)
+**Breaking Changes**: Removed redundant `update_action_step_title` tool (use `update_desired_outcome` instead)
 
 ---
 

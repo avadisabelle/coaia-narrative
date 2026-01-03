@@ -185,7 +185,6 @@ const TOOL_GROUPS = {
     'update_action_progress',
     'update_current_reality',
     'update_desired_outcome',
-    'update_action_step_title',
     'creator_moment_of_truth'
   ],
   NARRATIVE_TOOLS: [
@@ -931,23 +930,7 @@ Current Reality: "${currentReality}"
     await this.saveGraph(graph);
   }
 
-  async updateActionStepTitle(actionStepName: string, newTitle: string): Promise<void> {
-    const graph = await this.loadGraph();
-    const actionStepEntity = graph.entities.find(e => e.name === actionStepName);
-    
-    if (!actionStepEntity) {
-      throw new Error(`Action step ${actionStepName} not found`);
-    }
 
-    // Replace the first observation (which is the action step title)
-    actionStepEntity.observations[0] = newTitle;
-    
-    if (actionStepEntity.metadata) {
-      actionStepEntity.metadata.updatedAt = new Date().toISOString();
-    }
-
-    await this.saveGraph(graph);
-  }
 
   // Narrative beat creation functionality
   async createNarrativeBeat(
@@ -1771,26 +1754,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "update_desired_outcome",
-        description: "Simple update of a chart's desired outcome (goal). Much easier than complex observation editing.",
+        description: "Update a chart's desired outcome (goal). Works for BOTH master charts AND action steps (which are telescoped charts). Provide the chart ID of the chart you want to update - whether it's a master chart or an action step chart.",
         inputSchema: {
           type: "object",
           properties: {
-            chartId: { type: "string", description: "ID of the chart to update" },
+            chartId: { type: "string", description: "ID of the chart to update (works for master charts like 'chart_123' or action step charts like 'chart_456')" },
             newDesiredOutcome: { type: "string", description: "New desired outcome text" }
           },
           required: ["chartId", "newDesiredOutcome"]
-        }
-      },
-      {
-        name: "update_action_step_title",
-        description: "Simple update of an action step's title. Much easier than complex observation editing.",
-        inputSchema: {
-          type: "object",
-          properties: {
-            actionStepName: { type: "string", description: "Name of the action step entity to update (e.g. 'chart_123_desired_outcome')" },
-            newTitle: { type: "string", description: "New action step title" }
-          },
-          required: ["actionStepName", "newTitle"]
         }
       },
       {
@@ -2155,15 +2126,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
         await knowledgeGraphManager.updateDesiredOutcome(toolArgs.chartId as string, toolArgs.newDesiredOutcome as string);
         return { content: [{ type: "text", text: `Desired outcome updated for chart '${toolArgs.chartId as string}'` }] };
-      }
-      case "update_action_step_title": {
-        const valResult = validate(toolArgs, {
-          actionStepName: ValidationSchemas.nonEmptyString(),
-          newTitle: ValidationSchemas.nonEmptyString()
-        });
-        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
-        await knowledgeGraphManager.updateActionStepTitle(toolArgs.actionStepName as string, toolArgs.newTitle as string);
-        return { content: [{ type: "text", text: `Action step title updated for '${toolArgs.actionStepName as string}'` }] };
       }
       case "creator_moment_of_truth": {
         const valResult = validate(toolArgs, {
