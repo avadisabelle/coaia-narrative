@@ -25,6 +25,27 @@ interface Entity {
     level?: number;
     createdAt?: string;
     updatedAt?: string;
+    // Narrative beat specific metadata
+    act?: number;
+    type_dramatic?: string;
+    universes?: string[];
+    timestamp?: string;
+    narrative?: {
+      description?: string;
+      prose?: string;
+      lessons?: string[];
+    };
+    relationalAlignment?: {
+      assessed?: boolean;
+      score?: number | null;
+      principles?: string[];
+    };
+    fourDirections?: {
+      north_vision?: string | null;
+      east_intention?: string | null;
+      south_emotion?: string | null;
+      west_introspection?: string | null;
+    };
   };
 }
 
@@ -227,6 +248,9 @@ async function viewChart(chartId: string, memoryPath: string): Promise<void> {
   const actionSteps = graph.entities.filter(e => 
     e.entityType === 'action_step' && e.metadata?.chartId === chartId
   );
+  const narrativeBeats = graph.entities.filter(e =>
+    e.entityType === 'narrative_beat' && e.metadata?.chartId === chartId
+  ).sort((a, b) => (a.metadata?.act || 0) - (b.metadata?.act || 0));
 
   console.log('\n╔═══════════════════════════════════════════════════════════════════════════════╗');
   console.log(`║                        STRUCTURAL TENSION CHART VIEW                          ║`);
@@ -295,6 +319,70 @@ async function viewChart(chartId: string, memoryPath: string): Promise<void> {
     });
   }
   
+  // Display narrative beats
+  if (narrativeBeats.length > 0) {
+    console.log('─'.repeat(79));
+    console.log('\n📖 NARRATIVE BEATS (Story progression):');
+    console.log('─'.repeat(79) + '\n');
+    
+    narrativeBeats.forEach((beat, idx) => {
+      const act = beat.metadata?.act || '?';
+      const type = beat.metadata?.type_dramatic || 'Unknown';
+      const universes = beat.metadata?.universes || [];
+      const timestamp = beat.metadata?.timestamp 
+        ? new Date(beat.metadata.timestamp).toLocaleString()
+        : 'Unknown';
+      
+      console.log(`  ${idx + 1}. Act ${act}: ${type}`);
+      console.log(`     🌍 Universes: ${universes.join(', ')}`);
+      console.log(`     🕒 Timestamp: ${timestamp}`);
+      
+      if (beat.metadata?.narrative?.description) {
+        console.log(`\n     📝 Description:`);
+        wordWrap(beat.metadata.narrative.description, 72).forEach(line => {
+          console.log(`        ${line}`);
+        });
+      }
+      
+      if (beat.metadata?.narrative?.prose) {
+        console.log(`\n     ✨ Prose:`);
+        wordWrap(beat.metadata.narrative.prose, 72).forEach(line => {
+          console.log(`        ${line}`);
+        });
+      }
+      
+      if (beat.metadata?.narrative?.lessons && beat.metadata.narrative.lessons.length > 0) {
+        console.log(`\n     💡 Lessons:`);
+        beat.metadata.narrative.lessons.forEach(lesson => {
+          wordWrap(lesson, 68).forEach((line, i) => {
+            console.log(`        ${i === 0 ? '•' : ' '} ${line}`);
+          });
+        });
+      }
+      
+      // Four Directions if present
+      const dirs = beat.metadata?.fourDirections;
+      if (dirs && (dirs.north_vision || dirs.east_intention || dirs.south_emotion || dirs.west_introspection)) {
+        console.log(`\n     🧭 Four Directions:`);
+        if (dirs.north_vision) console.log(`        North (Vision): ${dirs.north_vision}`);
+        if (dirs.east_intention) console.log(`        East (Intention): ${dirs.east_intention}`);
+        if (dirs.south_emotion) console.log(`        South (Emotion): ${dirs.south_emotion}`);
+        if (dirs.west_introspection) console.log(`        West (Introspection): ${dirs.west_introspection}`);
+      }
+      
+      // Relational alignment if assessed
+      const align = beat.metadata?.relationalAlignment;
+      if (align?.assessed && align.score !== null) {
+        console.log(`\n     🤝 Relational Alignment: ${align.score}/10`);
+        if (align.principles && align.principles.length > 0) {
+          console.log(`        Principles: ${align.principles.join(', ')}`);
+        }
+      }
+      
+      console.log('');
+    });
+  }
+  
   // Check for telescoped sub-charts
   const subCharts = graph.entities.filter(e =>
     e.entityType === 'structural_tension_chart' &&
@@ -351,6 +439,7 @@ COMMANDS:
 OPTIONS:
 
   --memory-path <path>          Path to memory JSONL file (default: ./memory.jsonl)
+  -M <path>                     Short alias for --memory-path
   --no-color                    Disable colored output
   --json                        Output in JSON format
 
@@ -364,6 +453,9 @@ EXAMPLES:
 
   # View chart using custom memory path
   cnarrative view chart_123 --memory-path /path/to/memory.jsonl
+  
+  # Same using short alias
+  cnarrative view chart_123 -M /path/to/memory.jsonl
 
   # Get statistics in JSON format
   cnarrative stats --json
@@ -393,6 +485,7 @@ async function showStats(memoryPath: string, jsonOutput: boolean = false): Promi
   const charts = graph.entities.filter(e => e.entityType === 'structural_tension_chart');
   const masterCharts = charts.filter(c => c.metadata?.level === 0);
   const actionCharts = charts.filter(c => c.metadata?.level === 1);
+  const narrativeBeats = graph.entities.filter(e => e.entityType === 'narrative_beat');
   
   let totalActions = 0;
   let completedActions = 0;
@@ -423,6 +516,7 @@ async function showStats(memoryPath: string, jsonOutput: boolean = false): Promi
     totalCharts: charts.length,
     masterCharts: masterCharts.length,
     actionCharts: actionCharts.length,
+    narrativeBeats: narrativeBeats.length,
     totalActions,
     completedActions,
     overdueCharts,
@@ -445,6 +539,11 @@ async function showStats(memoryPath: string, jsonOutput: boolean = false): Promi
   console.log(`  ✅ Action Steps: ${stats.completedActions} / ${stats.totalActions} completed`);
   console.log(`     ${getProgressBar(stats.overallProgress, 50)}`);
   console.log('');
+  
+  if (stats.narrativeBeats > 0) {
+    console.log(`  📖 Narrative Beats: ${stats.narrativeBeats}`);
+    console.log('');
+  }
   
   if (stats.overdueCharts > 0) {
     console.log(`  ⚠️  Overdue Charts: ${stats.overdueCharts}`);
@@ -510,7 +609,7 @@ async function showProgress(chartId: string, memoryPath: string): Promise<void> 
 async function main() {
   const args = minimist(process.argv.slice(2));
   const command = args._[0];
-  const memoryPath = args['memory-path'] || path.join(process.cwd(), 'memory.jsonl');
+  const memoryPath = args['memory-path'] || args['M'] || path.join(process.cwd(), 'memory.jsonl');
   const jsonOutput = args.json === true;
   
   try {
