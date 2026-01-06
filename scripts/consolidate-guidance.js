@@ -35,6 +35,17 @@ const GUIDANCE_SOURCES = [
     file: 'llms-creative-orientation.txt',
     sections: ['Creative Orientation vs Problem-Solving', 'Focus on Creation vs Problem-Solving'],
     priority: 3
+  },
+  {
+    file: 'llms-narrative-beats.txt',
+    sections: [
+      'When to Use Narrative Beats',
+      'The Three Narrative Beat Tools',
+      'Integration with Optional iaip-mcp Tools',
+      'Common LLM Mistakes with Narrative Beats',
+      'Workflow: From Action to Narrative Beat'
+    ],
+    priority: 4
   }
 ];
 

@@ -7,10 +7,33 @@ A complete MCP server extending structural tension charts with multi-universe na
 ## Installation
 
 ```bash
-npm install coaia-narrative
+npm install -g coaia-narrative
 ```
 
-## Usage
+## What's Included
+
+### 📡 MCP Server (`coaia-narrative`)
+Model Context Protocol server for AI assistants (Claude, Gemini, etc.) to create and manage structural tension charts.
+
+### 🖥️ CLI Visualizer (`cnarrative`) ✨ NEW in v0.6.0
+Human-friendly command-line interface for viewing and analyzing your charts with rich visual formatting.
+
+## Quick Start
+
+```bash
+# Use MCP server with AI assistants
+coaia-narrative --memory-path ./memory.jsonl
+
+# Visualize charts as a human
+cnarrative list                    # See all charts
+cnarrative view chart_1234567890   # Detailed view
+cnarrative stats                   # Summary statistics
+cnarrative help                    # Full CLI guide
+```
+
+**📖 See [CLI_GUIDE.md](./CLI_GUIDE.md) for complete CLI documentation.**
+
+## MCP Server Usage
 
 ```bash
 # Run with default memory file

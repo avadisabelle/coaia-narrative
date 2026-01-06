@@ -5,6 +5,71 @@ All notable changes to COAIA Memory will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-01-03
+
+### ✨ Major Feature: CLI Visualizer
+
+- **NEW: `cnarrative` Command** - Human-friendly CLI for chart visualization
+  - `cnarrative list` - Visual hierarchy of all charts with progress bars
+  - `cnarrative view <chartId>` - Detailed chart information
+  - `cnarrative stats` - Summary statistics (supports --json output)
+  - `cnarrative progress <chartId>` - Detailed progress report
+  - Rich visual formatting with Unicode box drawing
+  - Smart date formatting (due today, overdue, days remaining)
+  - Progress bars for completion tracking
+  - Word wrapping for long text
+
+### 📚 Documentation
+
+- Added comprehensive CLI_GUIDE.md
+- Updated README with CLI quick reference
+- Added example workflows and troubleshooting
+
+### 🎨 Visual Elements
+
+- Status indicators: ✅ ⏳ 🔄 ⚠️
+- Progress bars: ████████░░░░░░░░ 40%
+- Smart date formatting with emoji indicators
+- Hierarchical chart display
+- Current reality summaries
+
+### 🔧 Technical
+
+- Separate CLI entry point (cli.ts)
+- Shared memory loading utilities
+- Added to package.json bin as `cnarrative`
+- TypeScript compilation for CLI
+- Zero additional dependencies (uses existing minimist)
+
+## [2.4.0] - 2026-01-03
+
+### 🔧 Breaking Changes
+
+- **REMOVED `update_action_step_title`** - This tool was redundant and fundamentally broken. Since action steps are implemented as telescoped charts with `desired_outcome` entities, use `update_desired_outcome` with the action step's chart ID instead.
+
+### ✨ Enhancements
+
+- **Enhanced `update_desired_outcome`** - Now explicitly documented to work for BOTH master charts AND action steps. Simply provide the chart ID (whether master chart or action step chart).
+- **Improved Error Clarity** - Tool descriptions now clearly explain that action steps are charts, not separate entity types.
+
+### 📚 Migration Guide
+
+**Before:**
+```javascript
+update_action_step_title("chart_123_desired_outcome", "New Title") // ❌ BROKEN
+```
+
+**After:**
+```javascript
+update_desired_outcome("chart_456", "New Title") // ✅ Works for action step charts
+update_desired_outcome("chart_123", "New Title") // ✅ Works for master charts too
+```
+
+**How to find the chart ID for an action step:**
+1. Run `list_active_charts` to see hierarchy
+2. Each action step shows its chart ID (e.g., "ID: chart_456")
+3. Use that chart ID with `update_desired_outcome`
+
 ## [2.3.0] - 2025-08-31
 
 ### 🚀 LLM-Intelligent Enhancement

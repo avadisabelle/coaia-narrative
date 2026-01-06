@@ -12,6 +12,7 @@ import { LLM_GUIDANCE } from "./generated-llm-guidance.js";
 import { fileURLToPath } from 'url';
 import minimist from 'minimist';
 import { isAbsolute } from 'path';
+import { validate, ValidationSchemas } from './validation.js';
 
 // Parse args and handle paths safely
 const argv = minimist(process.argv.slice(2));
@@ -184,7 +185,6 @@ const TOOL_GROUPS = {
     'update_action_progress',
     'update_current_reality',
     'update_desired_outcome',
-    'update_action_step_title',
     'creator_moment_of_truth'
   ],
   NARRATIVE_TOOLS: [
@@ -930,23 +930,7 @@ Current Reality: "${currentReality}"
     await this.saveGraph(graph);
   }
 
-  async updateActionStepTitle(actionStepName: string, newTitle: string): Promise<void> {
-    const graph = await this.loadGraph();
-    const actionStepEntity = graph.entities.find(e => e.name === actionStepName);
-    
-    if (!actionStepEntity) {
-      throw new Error(`Action step ${actionStepName} not found`);
-    }
 
-    // Replace the first observation (which is the action step title)
-    actionStepEntity.observations[0] = newTitle;
-    
-    if (actionStepEntity.metadata) {
-      actionStepEntity.metadata.updatedAt = new Date().toISOString();
-    }
-
-    await this.saveGraph(graph);
-  }
 
   // Narrative beat creation functionality
   async createNarrativeBeat(
@@ -1194,19 +1178,19 @@ Action step: "${actionStepTitle}"
 
   // Enhanced method for LLMs to telescope with intelligent current reality extraction
   async telescopeActionStepWithContext(
-    parentChartId: string, 
-    actionStepTitle: string, 
+    parentChartId: string,
+    actionStepTitle: string,
     userContext: string,
     currentReality?: string,
     dueDate?: string
   ): Promise<{ chartId: string; actionStepName: string }> {
-    
+
     // If current reality not provided, try to extract from context
     let finalCurrentReality = currentReality;
     if (!finalCurrentReality) {
       finalCurrentReality = this.extractCurrentRealityFromContext(userContext, actionStepTitle) ?? undefined;
     }
-    
+
     // If still no current reality, provide guidance while maintaining tension
     if (!finalCurrentReality) {
       throw new Error(
@@ -1216,9 +1200,174 @@ Action step: "${actionStepTitle}"
         `rather than assuming readiness. Structural tension requires honest current reality assessment.`
       );
     }
-    
+
     // Proceed with telescoping using the assessed current reality
     return this.addActionStep(parentChartId, actionStepTitle, dueDate, finalCurrentReality);
+  }
+
+  // Unified interface for managing action steps - handles both creation and expansion
+  async manageActionStep(
+    parentReference: string,
+    actionDescription: string,
+    currentReality?: string,
+    initialActionSteps?: string[],
+    dueDate?: string
+  ): Promise<{ chartId: string; actionStepName: string }> {
+    const graph = await this.loadGraph();
+
+    // Pattern detection: Determine if parentReference is entity name or chart ID
+    const actionStepPattern = /^chart_\d+_action_\d+$/;
+    const desiredOutcomePattern = /^chart_\d+_desired_outcome$/;
+    const chartIdPattern = /^chart_\d+$/;
+
+    const isActionStepEntity = actionStepPattern.test(parentReference);
+    const isDesiredOutcomeEntity = desiredOutcomePattern.test(parentReference);
+    const isChartId = chartIdPattern.test(parentReference);
+
+    // Route 1: Expanding existing action_step entity (legacy pattern)
+    if (isActionStepEntity) {
+      const actionStep = graph.entities.find(e =>
+        e.name === parentReference && e.entityType === 'action_step'
+      );
+
+      if (!actionStep) {
+        // Provide helpful error with available actions
+        const allActionSteps = graph.entities
+          .filter(e => e.entityType === 'action_step')
+          .map(e => `- ${e.name}: "${e.observations[0]}"`);
+
+        throw new Error(`🔍 ACTION STEP ENTITY NOT FOUND
+
+Received: "${parentReference}"
+Expected: Valid action_step entity name (e.g., "chart_123_action_1")
+
+Available action steps in memory:
+${allActionSteps.length > 0 ? allActionSteps.join('\n') : '(none found)'}
+
+Tip: If creating a new action step, use the parent chart ID instead.`);
+      }
+
+      // Use telescoping logic for legacy action_step entities
+      const currentRealityToUse = currentReality || "Expanding action step into detailed sub-chart";
+      const telescopedResult = await this.telescopeActionStep(
+        parentReference,
+        currentRealityToUse,
+        initialActionSteps
+      );
+      // Transform result to include actionStepName
+      return {
+        chartId: telescopedResult.chartId,
+        actionStepName: `${telescopedResult.chartId}_desired_outcome`
+      };
+    }
+
+    // Route 2: Expanding existing desired_outcome entity (modern pattern)
+    if (isDesiredOutcomeEntity) {
+      const desiredOutcome = graph.entities.find(e =>
+        e.name === parentReference && e.entityType === 'desired_outcome'
+      );
+
+      if (!desiredOutcome || !desiredOutcome.metadata?.chartId) {
+        throw new Error(`🔍 DESIRED OUTCOME ENTITY NOT FOUND
+
+Received: "${parentReference}"
+Expected: Valid desired_outcome entity name (e.g., "chart_123_desired_outcome")
+
+Tip: If creating a new action step, use the parent chart ID instead.`);
+      }
+
+      // Use telescoping logic for desired_outcome entities
+      const currentRealityToUse = currentReality || "Expanding desired outcome into detailed sub-chart";
+      const telescopedResult = await this.telescopeActionStep(
+        parentReference,
+        currentRealityToUse,
+        initialActionSteps
+      );
+      // Transform result to include actionStepName
+      return {
+        chartId: telescopedResult.chartId,
+        actionStepName: `${telescopedResult.chartId}_desired_outcome`
+      };
+    }
+
+    // Route 3: Creating new action step under parent chart (modern pattern)
+    if (isChartId) {
+      // Validate parent chart exists
+      const parentChart = graph.entities.find(e =>
+        e.entityType === 'structural_tension_chart' &&
+        e.metadata?.chartId === parentReference
+      );
+
+      if (!parentChart) {
+        // Provide helpful error with available charts
+        const allCharts = graph.entities
+          .filter(e => e.entityType === 'structural_tension_chart')
+          .map(e => {
+            const outcome = graph.entities.find(o =>
+              o.name === `${e.metadata?.chartId}_desired_outcome`
+            );
+            return `- ${e.metadata?.chartId}: "${outcome?.observations[0] || 'Unknown'}"`;
+          });
+
+        throw new Error(`🔍 PARENT CHART NOT FOUND
+
+Received: "${parentReference}"
+Expected: Valid chart ID (e.g., "chart_123")
+
+Available charts in memory:
+${allCharts.length > 0 ? allCharts.join('\n') : '(none found)'}
+
+Tip: Use 'list_active_charts' to see all available charts.`);
+      }
+
+      // Enforce delayed resolution principle for new action creation
+      if (!currentReality) {
+        throw new Error(`🌊 DELAYED RESOLUTION PRINCIPLE VIOLATION
+
+Action step: "${actionDescription}"
+Parent chart: "${parentReference}"
+
+❌ **Problem**: Current reality assessment missing
+📚 **Principle**: "Tolerate discrepancy, tension, and delayed resolution" - Robert Fritz
+
+🎯 **What's Needed**: Honest assessment of actual current state relative to this action step.
+
+✅ **Examples**:
+- "Never used Django, completed Python basics"
+- "Built one API, struggling with authentication"
+- "Read 3 chapters, concepts still unclear"
+
+❌ **Avoid**: "Ready to begin", "Prepared to start", "All set to..."
+
+**Why This Matters**: Premature resolution destroys structural tension essential for creative advancement.
+
+💡 **Tip**: Run 'init_llm_guidance' for complete methodology overview.`);
+      }
+
+      // Create new action step as telescoped chart
+      return await this.addActionStep(
+        parentReference,
+        actionDescription,
+        dueDate,
+        currentReality
+      );
+    }
+
+    // Route 4: Invalid format - provide comprehensive guidance
+    throw new Error(`🚨 INVALID PARENT REFERENCE FORMAT
+
+Received: "${parentReference}"
+
+Valid formats:
+1. Chart ID: "chart_123" → Creates new action step
+2. Action entity: "chart_123_action_1" → Expands existing legacy action step
+3. Desired outcome: "chart_123_desired_outcome" → Expands existing modern action step
+
+Examples:
+- Create new action: manageActionStep("chart_123", "Complete tutorial", "Never used Django")
+- Expand existing: manageActionStep("chart_123_action_1", "Complete tutorial", undefined, ["Step 1", "Step 2"])
+
+💡 **Tip**: Use 'list_active_charts' to see available charts and their IDs.`);
   }
 
   async removeActionStep(parentChartId: string, actionStepName: string): Promise<void> {
@@ -1460,13 +1609,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "telescope_action_step",
-        description: "Break down an action step into a detailed structural tension chart. CRITICAL: Current reality must be an honest assessment of actual current state relative to this specific action step, NOT readiness or preparation statements. This maintains structural tension essential for creative advancement.",
+        description: "⚠️ DEPRECATED: Use 'manage_action_step' instead for unified interface. Break down an action step into a detailed structural tension chart. CRITICAL: Current reality must be an honest assessment of actual current state relative to this specific action step, NOT readiness or preparation statements. This maintains structural tension essential for creative advancement.",
         inputSchema: {
           type: "object",
           properties: {
             actionStepName: { type: "string", description: "Name of the action step to telescope" },
-            newCurrentReality: { 
-              type: "string", 
+            newCurrentReality: {
+              type: "string",
               description: "REQUIRED: Honest assessment of actual current state relative to this action step. Examples: 'Never used Django before', 'Completed models section, struggling with views'. AVOID: 'Ready to begin', 'Prepared to start'."
             },
             initialActionSteps: {
@@ -1541,15 +1690,46 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         }
       },
       {
-        name: "add_action_step",
-        description: "Add a strategic action step to an existing structural tension chart (creates telescoped chart). WARNING: Requires honest current reality assessment - avoid 'ready to begin' language. Action steps become full structural tension charts.",
+        name: "manage_action_step",
+        description: "✨ RECOMMENDED: Unified interface for managing action steps - handles both creation and expansion. Automatically detects whether you're creating a new action step (chart ID) or expanding an existing one (entity name). Provides clear error messages when parameters are invalid.",
         inputSchema: {
-          type: "object", 
+          type: "object",
+          properties: {
+            parentReference: {
+              type: "string",
+              description: "Chart ID (e.g., 'chart_123') to create new action step, OR action step entity name (e.g., 'chart_123_action_1' or 'chart_123_desired_outcome') to expand existing action step"
+            },
+            actionDescription: {
+              type: "string",
+              description: "Title/description of the action step"
+            },
+            currentReality: {
+              type: "string",
+              description: "REQUIRED for new action creation. Honest assessment of actual current state relative to this action step. Examples: 'Never used Django', 'Completed models, struggling with views'. AVOID: 'Ready to begin'. Optional when expanding existing actions."
+            },
+            initialActionSteps: {
+              type: "array",
+              items: { type: "string" },
+              description: "Optional list of sub-actions for the action step"
+            },
+            dueDate: {
+              type: "string",
+              description: "Optional due date (ISO string). Auto-distributed if not provided."
+            }
+          },
+          required: ["parentReference", "actionDescription"]
+        }
+      },
+      {
+        name: "add_action_step",
+        description: "⚠️ DEPRECATED: Use 'manage_action_step' instead for unified interface. Add a strategic action step to an existing structural tension chart (creates telescoped chart). WARNING: Requires honest current reality assessment - avoid 'ready to begin' language. Action steps become full structural tension charts.",
+        inputSchema: {
+          type: "object",
           properties: {
             parentChartId: { type: "string", description: "ID of the parent chart to add the action step to" },
             actionStepTitle: { type: "string", description: "Title of the action step (becomes desired outcome of telescoped chart)" },
-            dueDate: { 
-              type: "string", 
+            dueDate: {
+              type: "string",
               description: "Optional due date for the action step (ISO string). If not provided, auto-distributed between now and parent due date"
             },
             currentReality: {
@@ -1574,26 +1754,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "update_desired_outcome",
-        description: "Simple update of a chart's desired outcome (goal). Much easier than complex observation editing.",
+        description: "Update a chart's desired outcome (goal). Works for BOTH master charts AND action steps (which are telescoped charts). Provide the chart ID of the chart you want to update - whether it's a master chart or an action step chart.",
         inputSchema: {
           type: "object",
           properties: {
-            chartId: { type: "string", description: "ID of the chart to update" },
+            chartId: { type: "string", description: "ID of the chart to update (works for master charts like 'chart_123' or action step charts like 'chart_456')" },
             newDesiredOutcome: { type: "string", description: "New desired outcome text" }
           },
           required: ["chartId", "newDesiredOutcome"]
-        }
-      },
-      {
-        name: "update_action_step_title",
-        description: "Simple update of an action step's title. Much easier than complex observation editing.",
-        inputSchema: {
-          type: "object",
-          properties: {
-            actionStepName: { type: "string", description: "Name of the action step entity to update (e.g. 'chart_123_desired_outcome')" },
-            newTitle: { type: "string", description: "New action step title" }
-          },
-          required: ["actionStepName", "newTitle"]
         }
       },
       {
@@ -1721,7 +1889,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     // Strict validation: args must be object or undefined
-    if (args !== undefined && typeof args !== 'object') {
+    if (args !== undefined && (typeof args !== 'object' || args === null || Array.isArray(args))) {
       return {
         content: [{ type: "text", text: `Error: Tool arguments must be an object, received: ${typeof args}` }],
         isError: true
@@ -1732,44 +1900,62 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     switch (name) {
       case "create_entities": {
-        if (!Array.isArray(toolArgs.entities)) {
-          return { content: [{ type: "text", text: "Error: entities must be an array" }], isError: true };
-        }
+        const valResult = validate(toolArgs, { entities: ValidationSchemas.entityArray() });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
         const result = await knowledgeGraphManager.createEntities(toolArgs.entities as Entity[]);
         return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
       }
       case "create_relations": {
-        if (!Array.isArray(toolArgs.relations)) {
-          return { content: [{ type: "text", text: "Error: relations must be an array" }], isError: true };
-        }
+        const valResult = validate(toolArgs, { relations: ValidationSchemas.relationArray() });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
         const result = await knowledgeGraphManager.createRelations(toolArgs.relations as Relation[]);
         return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
       }
       case "add_observations": {
-        if (!Array.isArray(toolArgs.observations)) {
-          return { content: [{ type: "text", text: "Error: observations must be an array" }], isError: true };
-        }
+        const valResult = validate(toolArgs, {
+          observations: {
+            type: 'array',
+            required: true,
+            items: {
+              type: 'object',
+              properties: {
+                entityName: { type: 'string', required: true },
+                contents: { type: 'array', required: true, items: { type: 'string' } }
+              }
+            }
+          }
+        });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
         const result = await knowledgeGraphManager.addObservations(toolArgs.observations as { entityName: string; contents: string[] }[]);
         return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
       }
       case "delete_entities": {
-        if (!Array.isArray(toolArgs.entityNames)) {
-          return { content: [{ type: "text", text: "Error: entityNames must be an array" }], isError: true };
-        }
+        const valResult = validate(toolArgs, { entityNames: ValidationSchemas.stringArray() });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
         await knowledgeGraphManager.deleteEntities(toolArgs.entityNames as string[]);
         return { content: [{ type: "text", text: "Entities deleted successfully" }] };
       }
       case "delete_observations": {
-        if (!Array.isArray(toolArgs.deletions)) {
-          return { content: [{ type: "text", text: "Error: deletions must be an array" }], isError: true };
-        }
+        const valResult = validate(toolArgs, {
+          deletions: {
+            type: 'array',
+            required: true,
+            items: {
+              type: 'object',
+              properties: {
+                entityName: { type: 'string', required: true },
+                observations: { type: 'array', required: true, items: { type: 'string' } }
+              }
+            }
+          }
+        });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
         await knowledgeGraphManager.deleteObservations(toolArgs.deletions as { entityName: string; observations: string[] }[]);
         return { content: [{ type: "text", text: "Observations deleted successfully" }] };
       }
       case "delete_relations": {
-        if (!Array.isArray(toolArgs.relations)) {
-          return { content: [{ type: "text", text: "Error: relations must be an array" }], isError: true };
-        }
+        const valResult = validate(toolArgs, { relations: ValidationSchemas.relationArray() });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
         await knowledgeGraphManager.deleteRelations(toolArgs.relations as Relation[]);
         return { content: [{ type: "text", text: "Relations deleted successfully" }] };
       }
@@ -1778,63 +1964,57 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
       }
       case "search_nodes": {
-        if (typeof toolArgs.query !== 'string') {
-          return { content: [{ type: "text", text: "Error: query must be a string" }], isError: true };
-        }
-        const result = await knowledgeGraphManager.searchNodes(toolArgs.query);
+        const valResult = validate(toolArgs, { query: ValidationSchemas.nonEmptyString() });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
+        const result = await knowledgeGraphManager.searchNodes(toolArgs.query as string);
         return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
       }
       case "open_nodes": {
-        if (!Array.isArray(toolArgs.names)) {
-          return { content: [{ type: "text", text: "Error: names must be an array" }], isError: true };
-        }
+        const valResult = validate(toolArgs, { names: { type: 'array', required: true, minLength: 1, items: { type: 'string' } } });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
         const result = await knowledgeGraphManager.openNodes(toolArgs.names as string[]);
         return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
       }
       case "create_structural_tension_chart": {
-        if (typeof toolArgs.desiredOutcome !== 'string') {
-          return { content: [{ type: "text", text: "Error: desiredOutcome must be a string" }], isError: true };
-        }
-        if (typeof toolArgs.currentReality !== 'string') {
-          return { content: [{ type: "text", text: "Error: currentReality must be a string" }], isError: true };
-        }
-        if (typeof toolArgs.dueDate !== 'string') {
-          return { content: [{ type: "text", text: "Error: dueDate must be a string" }], isError: true };
-        }
+        const valResult = validate(toolArgs, {
+          desiredOutcome: ValidationSchemas.nonEmptyString(),
+          currentReality: ValidationSchemas.nonEmptyString(),
+          dueDate: ValidationSchemas.isoDate(),
+          actionSteps: { type: 'array', items: { type: 'string' } }
+        });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
         const chartResult = await knowledgeGraphManager.createStructuralTensionChart(
-          toolArgs.desiredOutcome,
-          toolArgs.currentReality,
-          toolArgs.dueDate,
+          toolArgs.desiredOutcome as string,
+          toolArgs.currentReality as string,
+          toolArgs.dueDate as string,
           (Array.isArray(toolArgs.actionSteps) ? toolArgs.actionSteps : []) as string[]
         );
         return { content: [{ type: "text", text: JSON.stringify(chartResult, null, 2) }] };
       }
       case "telescope_action_step": {
-        if (typeof toolArgs.actionStepName !== 'string') {
-          return { content: [{ type: "text", text: "Error: actionStepName must be a string" }], isError: true };
-        }
-        if (typeof toolArgs.newCurrentReality !== 'string') {
-          return { content: [{ type: "text", text: "Error: newCurrentReality must be a string" }], isError: true };
-        }
+        const valResult = validate(toolArgs, {
+          actionStepName: ValidationSchemas.nonEmptyString(),
+          newCurrentReality: ValidationSchemas.nonEmptyString(),
+          initialActionSteps: { type: 'array', items: { type: 'string' } }
+        });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
         const telescopeResult = await knowledgeGraphManager.telescopeActionStep(
-          toolArgs.actionStepName,
-          toolArgs.newCurrentReality,
+          toolArgs.actionStepName as string,
+          toolArgs.newCurrentReality as string,
           (Array.isArray(toolArgs.initialActionSteps) ? toolArgs.initialActionSteps : []) as string[]
         );
         return { content: [{ type: "text", text: JSON.stringify(telescopeResult, null, 2) }] };
       }
       case "mark_action_complete": {
-        if (typeof toolArgs.actionStepName !== 'string') {
-          return { content: [{ type: "text", text: "Error: actionStepName must be a string" }], isError: true };
-        }
-        await knowledgeGraphManager.markActionStepComplete(toolArgs.actionStepName);
-        return { content: [{ type: "text", text: `Action step '${toolArgs.actionStepName}' marked as complete and current reality updated` }] };
+        const valResult = validate(toolArgs, { actionStepName: ValidationSchemas.nonEmptyString() });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
+        await knowledgeGraphManager.markActionStepComplete(toolArgs.actionStepName as string);
+        return { content: [{ type: "text", text: `Action step '${toolArgs.actionStepName as string}' marked as complete and current reality updated` }] };
       }
       case "get_chart_progress": {
-        if (typeof toolArgs.chartId !== 'string') {
-          return { content: [{ type: "text", text: "Error: chartId must be a string" }], isError: true };
-        }
-        const progressResult = await knowledgeGraphManager.getChartProgress(toolArgs.chartId);
+        const valResult = validate(toolArgs, { chartId: ValidationSchemas.nonEmptyString() });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
+        const progressResult = await knowledgeGraphManager.getChartProgress(toolArgs.chartId as string);
         return { content: [{ type: "text", text: JSON.stringify(progressResult, null, 2) }] };
       }
       case "list_active_charts": {
@@ -1873,90 +2053,96 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: "text", text: hierarchyText }] };
       }
       case "update_action_progress": {
-        if (typeof toolArgs.actionStepName !== 'string') {
-          return { content: [{ type: "text", text: "Error: actionStepName must be a string" }], isError: true };
-        }
-        if (typeof toolArgs.progressObservation !== 'string') {
-          return { content: [{ type: "text", text: "Error: progressObservation must be a string" }], isError: true };
-        }
+        const valResult = validate(toolArgs, {
+          actionStepName: ValidationSchemas.nonEmptyString(),
+          progressObservation: ValidationSchemas.nonEmptyString(),
+          updateCurrentReality: { type: 'boolean' }
+        });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
         await knowledgeGraphManager.updateActionProgress(
-          toolArgs.actionStepName,
-          toolArgs.progressObservation,
+          toolArgs.actionStepName as string,
+          toolArgs.progressObservation as string,
           toolArgs.updateCurrentReality === true
         );
-        return { content: [{ type: "text", text: `Action step '${toolArgs.actionStepName}' progress updated` }] };
+        return { content: [{ type: "text", text: `Action step '${toolArgs.actionStepName as string}' progress updated` }] };
       }
       case "update_current_reality": {
-        if (typeof toolArgs.chartId !== 'string') {
-          return { content: [{ type: "text", text: "Error: chartId must be a string" }], isError: true };
-        }
-        if (!Array.isArray(toolArgs.newObservations)) {
-          return { content: [{ type: "text", text: "Error: newObservations must be an array" }], isError: true };
-        }
-        await knowledgeGraphManager.updateCurrentReality(toolArgs.chartId, toolArgs.newObservations as string[]);
-        return { content: [{ type: "text", text: `Current reality updated for chart '${toolArgs.chartId}'` }] };
+        const valResult = validate(toolArgs, {
+          chartId: ValidationSchemas.nonEmptyString(),
+          newObservations: { type: 'array', required: true, minLength: 1, items: { type: 'string' } }
+        });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
+        await knowledgeGraphManager.updateCurrentReality(toolArgs.chartId as string, toolArgs.newObservations as string[]);
+        return { content: [{ type: "text", text: `Current reality updated for chart '${toolArgs.chartId as string}'` }] };
+      }
+      case "manage_action_step": {
+        const valResult = validate(toolArgs, {
+          parentReference: ValidationSchemas.nonEmptyString(),
+          actionDescription: ValidationSchemas.nonEmptyString(),
+          currentReality: { type: 'string' },
+          initialActionSteps: { type: 'array', items: { type: 'string' } },
+          dueDate: { type: 'date' }
+        });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
+        const manageActionResult = await knowledgeGraphManager.manageActionStep(
+          toolArgs.parentReference as string,
+          toolArgs.actionDescription as string,
+          toolArgs.currentReality as string | undefined,
+          toolArgs.initialActionSteps as string[] | undefined,
+          toolArgs.dueDate as string | undefined
+        );
+        return { content: [{ type: "text", text: `Action step '${toolArgs.actionDescription as string}' managed for parent '${toolArgs.parentReference as string}'. Result: ${JSON.stringify(manageActionResult, null, 2)}` }] };
       }
       case "add_action_step": {
-        if (typeof toolArgs.parentChartId !== 'string') {
-          return { content: [{ type: "text", text: "Error: parentChartId must be a string" }], isError: true };
-        }
-        if (typeof toolArgs.actionStepTitle !== 'string') {
-          return { content: [{ type: "text", text: "Error: actionStepTitle must be a string" }], isError: true };
-        }
-        if (typeof toolArgs.currentReality !== 'string') {
-          return { content: [{ type: "text", text: "Error: currentReality must be a string" }], isError: true };
-        }
+        const valResult = validate(toolArgs, {
+          parentChartId: ValidationSchemas.nonEmptyString(),
+          actionStepTitle: ValidationSchemas.nonEmptyString(),
+          currentReality: ValidationSchemas.nonEmptyString(),
+          dueDate: { type: 'date' }
+        });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
         const addActionResult = await knowledgeGraphManager.addActionStep(
-          toolArgs.parentChartId,
-          toolArgs.actionStepTitle,
+          toolArgs.parentChartId as string,
+          toolArgs.actionStepTitle as string,
           toolArgs.dueDate as string | undefined,
-          toolArgs.currentReality
+          toolArgs.currentReality as string
         );
-        return { content: [{ type: "text", text: `Action step '${toolArgs.actionStepTitle}' added to chart '${toolArgs.parentChartId}' as telescoped chart '${addActionResult.chartId}'` }] };
+        return { content: [{ type: "text", text: `Action step '${toolArgs.actionStepTitle as string}' added to chart '${toolArgs.parentChartId as string}' as telescoped chart '${addActionResult.chartId}'` }] };
       }
       case "remove_action_step": {
-        if (typeof toolArgs.parentChartId !== 'string') {
-          return { content: [{ type: "text", text: "Error: parentChartId must be a string" }], isError: true };
-        }
-        if (typeof toolArgs.actionStepName !== 'string') {
-          return { content: [{ type: "text", text: "Error: actionStepName must be a string" }], isError: true };
-        }
-        await knowledgeGraphManager.removeActionStep(toolArgs.parentChartId, toolArgs.actionStepName);
-        return { content: [{ type: "text", text: `Action step '${toolArgs.actionStepName}' removed from chart '${toolArgs.parentChartId}'` }] };
+        const valResult = validate(toolArgs, {
+          parentChartId: ValidationSchemas.nonEmptyString(),
+          actionStepName: ValidationSchemas.nonEmptyString()
+        });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
+        await knowledgeGraphManager.removeActionStep(toolArgs.parentChartId as string, toolArgs.actionStepName as string);
+        return { content: [{ type: "text", text: `Action step '${toolArgs.actionStepName as string}' removed from chart '${toolArgs.parentChartId as string}'` }] };
       }
       case "update_desired_outcome": {
-        if (typeof toolArgs.chartId !== 'string') {
-          return { content: [{ type: "text", text: "Error: chartId must be a string" }], isError: true };
-        }
-        if (typeof toolArgs.newDesiredOutcome !== 'string') {
-          return { content: [{ type: "text", text: "Error: newDesiredOutcome must be a string" }], isError: true };
-        }
-        await knowledgeGraphManager.updateDesiredOutcome(toolArgs.chartId, toolArgs.newDesiredOutcome);
-        return { content: [{ type: "text", text: `Desired outcome updated for chart '${toolArgs.chartId}'` }] };
-      }
-      case "update_action_step_title": {
-        if (typeof toolArgs.actionStepName !== 'string') {
-          return { content: [{ type: "text", text: "Error: actionStepName must be a string" }], isError: true };
-        }
-        if (typeof toolArgs.newTitle !== 'string') {
-          return { content: [{ type: "text", text: "Error: newTitle must be a string" }], isError: true };
-        }
-        await knowledgeGraphManager.updateActionStepTitle(toolArgs.actionStepName, toolArgs.newTitle);
-        return { content: [{ type: "text", text: `Action step title updated for '${toolArgs.actionStepName}'` }] };
+        const valResult = validate(toolArgs, {
+          chartId: ValidationSchemas.nonEmptyString(),
+          newDesiredOutcome: ValidationSchemas.nonEmptyString()
+        });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
+        await knowledgeGraphManager.updateDesiredOutcome(toolArgs.chartId as string, toolArgs.newDesiredOutcome as string);
+        return { content: [{ type: "text", text: `Desired outcome updated for chart '${toolArgs.chartId as string}'` }] };
       }
       case "creator_moment_of_truth": {
-        if (typeof toolArgs.chartId !== 'string') {
-          return { content: [{ type: "text", text: "Error: chartId must be a string" }], isError: true };
-        }
+        const valResult = validate(toolArgs, {
+          chartId: ValidationSchemas.nonEmptyString(),
+          step: { type: 'enum', enumValues: ['full_review', 'acknowledge', 'analyze', 'plan', 'feedback'] },
+          userInput: { type: 'string' }
+        });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
         const cmotStep = (toolArgs.step as string) || "full_review";
         const cmotUserInput = toolArgs.userInput as string | undefined;
-        const cmotProgress = await knowledgeGraphManager.getChartProgress(toolArgs.chartId);
+        const cmotProgress = await knowledgeGraphManager.getChartProgress(toolArgs.chartId as string);
         const cmotGraph = await knowledgeGraphManager.readGraph();
-        const cmotDesiredOutcome = cmotGraph.entities.find(e => e.name === `${toolArgs.chartId}_desired_outcome`);
-        const cmotCurrentReality = cmotGraph.entities.find(e => e.name === `${toolArgs.chartId}_current_reality`);
+        const cmotDesiredOutcome = cmotGraph.entities.find(e => e.name === `${toolArgs.chartId as string}_desired_outcome`);
+        const cmotCurrentReality = cmotGraph.entities.find(e => e.name === `${toolArgs.chartId as string}_current_reality`);
 
         const cmotGuidance = {
-          full_review: `## Creator Moment of Truth - Chart Review\n\n**Chart**: ${toolArgs.chartId}\n**Desired Outcome**: ${cmotDesiredOutcome?.observations[0] || 'Unknown'}\n**Current Reality**: ${cmotCurrentReality?.observations.join('; ') || 'Unknown'}\n**Progress**: ${Math.round(cmotProgress.progress * 100)}% (${cmotProgress.completedActions}/${cmotProgress.totalActions} action steps)\n\n---\n\n### The Four-Step Review Process\n\nGuide the user through each step to transform discrepancies into learning:\n\n**Step 1: ACKNOWLEDGE THE TRUTH**\nWhat difference exists between what was expected and what was delivered?\n- Report facts only, no excuses\n- "We expected X, we delivered Y"\n- Ask: "Looking at this chart, what expected progress didn't happen? What did happen instead?"\n\n**Step 2: ANALYZE HOW IT HAPPENED**\nHow did this come to pass?\n- Step-by-step tracking (not blame)\n- What assumptions were made?\n- How was it approached?\n- Ask: "Walk me through what happened. What did you tell yourself? What assumptions turned out to be wrong?"\n\n**Step 3: CREATE A PLAN FOR NEXT TIME**\nGiven what you discovered, how will you change your approach?\n- What patterns need to change?\n- What specific actions will be different?\n- Ask: "Based on what you learned, what will you do differently? What new action steps should we add?"\n\n**Step 4: SET UP A FEEDBACK SYSTEM**\nHow will you track whether you're actually making the changes?\n- Simple self-management system\n- How to notice old patterns returning\n- Ask: "How will you know if you're falling back to old patterns? What will remind you of the new approach?"\n\n---\n\n**After completing the review**: Update current reality with new observations, adjust action steps as needed.\n\n**Remember**: The goal is not perfection but effectiveness. Discrepancies are learning opportunities, not failures.`,
+          full_review: `## Creator Moment of Truth - Chart Review\n\n**Chart**: ${toolArgs.chartId as string}\n**Desired Outcome**: ${cmotDesiredOutcome?.observations[0] || 'Unknown'}\n**Current Reality**: ${cmotCurrentReality?.observations.join('; ') || 'Unknown'}\n**Progress**: ${Math.round(cmotProgress.progress * 100)}% (${cmotProgress.completedActions}/${cmotProgress.totalActions} action steps)\n\n---\n\n### The Four-Step Review Process\n\nGuide the user through each step to transform discrepancies into learning:\n\n**Step 1: ACKNOWLEDGE THE TRUTH**\nWhat difference exists between what was expected and what was delivered?\n- Report facts only, no excuses\n- "We expected X, we delivered Y"\n- Ask: "Looking at this chart, what expected progress didn't happen? What did happen instead?"\n\n**Step 2: ANALYZE HOW IT HAPPENED**\nHow did this come to pass?\n- Step-by-step tracking (not blame)\n- What assumptions were made?\n- How was it approached?\n- Ask: "Walk me through what happened. What did you tell yourself? What assumptions turned out to be wrong?"\n\n**Step 3: CREATE A PLAN FOR NEXT TIME**\nGiven what you discovered, how will you change your approach?\n- What patterns need to change?\n- What specific actions will be different?\n- Ask: "Based on what you learned, what will you do differently? What new action steps should we add?"\n\n**Step 4: SET UP A FEEDBACK SYSTEM**\nHow will you track whether you're actually making the changes?\n- Simple self-management system\n- How to notice old patterns returning\n- Ask: "How will you know if you're falling back to old patterns? What will remind you of the new approach?"\n\n---\n\n**After completing the review**: Update current reality with new observations, adjust action steps as needed.\n\n**Remember**: The goal is not perfection but effectiveness. Discrepancies are learning opportunities, not failures.`,
           acknowledge: `## Step 1: ACKNOWLEDGE THE TRUTH\n\n**Chart Progress**: ${Math.round(cmotProgress.progress * 100)}%\n**Desired Outcome**: ${cmotDesiredOutcome?.observations[0] || 'Unknown'}\n\n**Question**: What difference exists between what was expected and what was delivered?\n\nGuidelines:\n- Simply report the facts\n- No excuses, no blame\n- "We expected X, we delivered Y"\n- Focus on seeing reality clearly\n\n${cmotUserInput ? `\n**User's Observation**: ${cmotUserInput}\n\nNext: Proceed to Step 2 (analyze) to explore how this came to pass.` : 'Please share what you expected vs. what actually happened.'}`,
           analyze: `## Step 2: ANALYZE HOW IT HAPPENED\n\n**Question**: How did this come to pass?\n\nGuidelines:\n- Step-by-step tracking (this is co-exploration, not blame)\n- What assumptions were made?\n- What did you tell yourself?\n- How did you approach it?\n\n${cmotUserInput ? `\n**User's Analysis**: ${cmotUserInput}\n\nNext: Proceed to Step 3 (plan) to create adjustments based on these insights.` : 'Walk through the sequence of events. What assumptions turned out not to be true?'}`,
           plan: `## Step 3: CREATE A PLAN FOR NEXT TIME\n\n**Question**: Given what you discovered, how will you change your approach?\n\nGuidelines:\n- What assumptions turned out not to be true?\n- What patterns need to change?\n- What specific actions will you take differently?\n\n${cmotUserInput ? `\n**User's Plan**: ${cmotUserInput}\n\nNext: Use add_action_step or update_current_reality to record these changes, then proceed to Step 4 (feedback).` : 'What concrete adjustments will you make? Should we add new action steps or update the chart?'}`,
@@ -1966,40 +2152,30 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: "text", text: cmotGuidance[cmotStep as keyof typeof cmotGuidance] || cmotGuidance.full_review }] };
       }
       case "create_narrative_beat": {
-        if (typeof toolArgs.parentChartId !== 'string') {
-          return { content: [{ type: "text", text: "Error: parentChartId must be a string" }], isError: true };
-        }
-        if (typeof toolArgs.title !== 'string') {
-          return { content: [{ type: "text", text: "Error: title must be a string" }], isError: true };
-        }
-        if (typeof toolArgs.act !== 'number') {
-          return { content: [{ type: "text", text: "Error: act must be a number" }], isError: true };
-        }
-        if (typeof toolArgs.type_dramatic !== 'string') {
-          return { content: [{ type: "text", text: "Error: type_dramatic must be a string" }], isError: true };
-        }
-        if (!Array.isArray(toolArgs.universes)) {
-          return { content: [{ type: "text", text: "Error: universes must be an array" }], isError: true };
-        }
-        if (typeof toolArgs.description !== 'string') {
-          return { content: [{ type: "text", text: "Error: description must be a string" }], isError: true };
-        }
-        if (typeof toolArgs.prose !== 'string') {
-          return { content: [{ type: "text", text: "Error: prose must be a string" }], isError: true };
-        }
-        if (!Array.isArray(toolArgs.lessons)) {
-          return { content: [{ type: "text", text: "Error: lessons must be an array" }], isError: true };
-        }
+        const valResult = validate(toolArgs, {
+          parentChartId: ValidationSchemas.nonEmptyString(),
+          title: ValidationSchemas.nonEmptyString(),
+          act: { type: 'number', required: true, minValue: 1 },
+          type_dramatic: ValidationSchemas.nonEmptyString(),
+          universes: { type: 'array', required: true, minLength: 1, items: { type: 'string' } },
+          description: ValidationSchemas.nonEmptyString(),
+          prose: ValidationSchemas.nonEmptyString(),
+          lessons: { type: 'array', required: true, items: { type: 'string' } },
+          assessRelationalAlignment: { type: 'boolean' },
+          initiateFourDirectionsInquiry: { type: 'boolean' },
+          filePath: { type: 'string' }
+        });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
 
         const beatResult = await knowledgeGraphManager.createNarrativeBeat(
-          toolArgs.parentChartId,
-          toolArgs.title,
-          toolArgs.act,
-          toolArgs.type_dramatic,
-          toolArgs.universes,
-          toolArgs.description,
-          toolArgs.prose,
-          toolArgs.lessons,
+          toolArgs.parentChartId as string,
+          toolArgs.title as string,
+          toolArgs.act as number,
+          toolArgs.type_dramatic as string,
+          toolArgs.universes as string[],
+          toolArgs.description as string,
+          toolArgs.prose as string,
+          toolArgs.lessons as string[],
           (toolArgs.assessRelationalAlignment as boolean) || false,
           (toolArgs.initiateFourDirectionsInquiry as boolean) || false,
           toolArgs.filePath as string | undefined
@@ -2007,21 +2183,37 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: "text", text: JSON.stringify(beatResult, null, 2) }] };
       }
       case "telescope_narrative_beat": {
-        if (typeof toolArgs.parentBeatName !== 'string') {
-          return { content: [{ type: "text", text: "Error: parentBeatName must be a string" }], isError: true };
-        }
-        if (typeof toolArgs.newCurrentReality !== 'string') {
-          return { content: [{ type: "text", text: "Error: newCurrentReality must be a string" }], isError: true };
-        }
+        const valResult = validate(toolArgs, {
+          parentBeatName: ValidationSchemas.nonEmptyString(),
+          newCurrentReality: ValidationSchemas.nonEmptyString(),
+          initialSubBeats: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                title: { type: 'string', required: true },
+                type_dramatic: { type: 'string', required: true },
+                description: { type: 'string', required: true },
+                prose: { type: 'string', required: true },
+                lessons: { type: 'array', required: true, items: { type: 'string' } }
+              }
+            }
+          }
+        });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
 
         const telescopeResult = await knowledgeGraphManager.telescopeNarrativeBeat(
-          toolArgs.parentBeatName,
-          toolArgs.newCurrentReality,
+          toolArgs.parentBeatName as string,
+          toolArgs.newCurrentReality as string,
           (Array.isArray(toolArgs.initialSubBeats) ? toolArgs.initialSubBeats : []) as Array<any>
         );
         return { content: [{ type: "text", text: JSON.stringify(telescopeResult, null, 2) }] };
       }
       case "list_narrative_beats": {
+        const valResult = validate(toolArgs, {
+          parentChartId: { type: 'string' }
+        });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
         const parentChartId = toolArgs.parentChartId as string | undefined;
         const beatsResult = await knowledgeGraphManager.listNarrativeBeats(parentChartId);
 
@@ -2049,6 +2241,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: "text", text: beatsText }] };
       }
       case "init_llm_guidance": {
+        const valResult = validate(toolArgs, {
+          format: { type: 'enum', enumValues: ['full', 'quick', 'save_directive'] }
+        });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
         const format = toolArgs.format as string || "full";
 
         if (format === "save_directive") {
@@ -2081,7 +2277,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("COAIA Memory - Creative Oriented AI Assistant Memory Server running on stdio");
+  console.error("COAIA Narrative - Creative Oriented AI Assistant Memory Server - Narrative Beat Extension running on stdio");
 }
 
 main().catch((error) => {

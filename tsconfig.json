@@ -14,6 +14,6 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true
   },
-  "include": ["index.ts"],
+  "include": ["index.ts", "cli.ts", "validation.ts", "generated-llm-guidance.ts"],
   "exclude": ["node_modules", "dist", "src"]
 }
