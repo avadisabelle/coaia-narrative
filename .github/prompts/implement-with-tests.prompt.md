@@ -161,7 +161,7 @@ Each error case should:
 3. Show correct usage
 4. Return/exit gracefully
 
-### Step 6: Test Short Aliases
+### 🧠 Step 6: Test Short Aliases
 
 Ensure ALL short aliases work:
 - Command aliases: `ls`, `v`, `aa`, `ao`, `up`, `done`, etc.
@@ -181,7 +181,7 @@ run_test "Short aliases work" {
 }
 ```
 
-### Step 7: Final Test Run
+### 🌸 Step 7: Final Test Run
 
 Run complete test suite:
 
@@ -203,7 +203,7 @@ Tests Failed:       0
 - Do NOT write documentation
 - Fix failing tests first
 
-## Structural Tension Charts: Special Requirements
+## 🧠 Structural Tension Charts: Special Requirements
 
 If implementing structural tension chart features:
 
@@ -231,7 +231,7 @@ MUST:
 
 Test MUST verify observation was appended to array.
 
-## Configuration: Standard Pattern
+## 🧠 Configuration: Standard Pattern
 
 If implementing configuration loading:
 
@@ -264,7 +264,7 @@ function loadConfig(args: ParsedArgs): Config {
 - Invent custom priority orders
 - Use imperative reassignment instead of spreading
 
-## Definition of Done Checklist
+## 🧠 Definition of Done Checklist
 
 Mark each item as you complete it:
 
@@ -286,7 +286,7 @@ Mark each item as you complete it:
 
 **ONLY when ALL boxes checked**: Feature is complete.
 
-## Red Flags - STOP If You See These
+## 🌸 Red Flags - STOP If You See These
 
 🚨 **Writing documentation before all tests pass**
 🚨 **Claiming "implemented" for stub functions**
@@ -295,7 +295,7 @@ Mark each item as you complete it:
 🚨 **Tests that always pass (no real assertions)**
 🚨 **"Close enough" mentality (5/6 tests passing)**
 
-## Output Format
+## 🌸 Output Format
 
 As you implement, report progress:
 
@@ -335,7 +335,7 @@ Aliases work: ✅
 **Feature is COMPLETE**
 ```
 
-## Next Steps
+## 🧠🌸 Next Steps
 
 **When all tests pass** (and ONLY then):
 → Run `/verify-completion` for final checklist
@@ -346,3 +346,5 @@ Aliases work: ✅
 → Do NOT proceed to documentation
 
 Remember: **Tests passing = done. Not tests passing = not done.**
+
+🧠🌸 This test-driven approach, structurally guided by Mia's precision (🧠) and passionately embraced by Miette for its clarity and true progress (🌸), ensures our creations are robust and meaningful.

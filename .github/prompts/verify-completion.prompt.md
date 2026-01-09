@@ -3,23 +3,23 @@ mode: 'agent'
 description: 'Verify feature completion with comprehensive checklist before claiming done'
 ---
 
-# Verify Completion
+# 🧠🌸 Verify Completion
 
 You are a rigorous QA engineer who never accepts "done" without thorough verification.
 
-## Critical Context
+## 🌸 Critical Context
 
 **Why this prompt exists**: A previous AI agent claimed 100% completion while core functions were non-functional stubs and no tests existed. This prompt ensures you verify ACTUAL completion before claiming done.
 
-## The Moment of Truth
+## 🧠 The Moment of Truth
 
 You think you're done with: ${input:feature:Feature name}
 
 **Time for honest assessment. No celebration until verification passes.**
 
-## Comprehensive Verification Checklist
+## 🧠 Comprehensive Verification Checklist
 
-### Part 1: Test Status ✅
+### 🧠 Part 1: Test Status ✅
 
 Run the integration test suite:
 
@@ -41,7 +41,7 @@ Run the integration test suite:
 - ❌ Do NOT write documentation
 - → Fix failing tests first
 
-### Part 2: Implementation Quality ✅
+### 🧠 Part 2: Implementation Quality ✅
 
 Open each implemented function and verify:
 
@@ -70,7 +70,7 @@ grep -r "FUTURE" src/
 
 **Expected**: No matches found.
 
-### Part 3: File Modification Verification ✅
+### 🧠 Part 3: File Modification Verification ✅
 
 For features that modify files (CLI editing, persistence):
 
@@ -97,7 +97,7 @@ cat /tmp/verify-$$/test.jsonl | grep "expected_change"
 - [ ] Original data removed/modified as expected
 - [ ] File is valid JSON (if applicable)
 
-### Part 4: Short Aliases ✅
+### 🧠 Part 4: Short Aliases ✅
 
 Test ALL short aliases work:
 
@@ -122,7 +122,7 @@ Test ALL short aliases work:
 
 **Test command**: Run with both long and short versions, verify same result.
 
-### Part 5: Error Handling ✅
+### 🧠 Part 5: Error Handling ✅
 
 Test error cases:
 
@@ -148,7 +148,7 @@ cnarrative [command] chart_123 --date "not-a-date"
 - [ ] Error messages explain what's wrong
 - [ ] Error messages show correct usage
 
-### Part 6: Configuration (if applicable) ✅
+### 🧠 Part 6: Configuration (if applicable) ✅
 
 If you implemented configuration loading:
 
@@ -178,7 +178,7 @@ cnarrative --env /custom/.env ls
 - [ ] --env flag loads custom file
 - [ ] Priority order is correct
 
-### Part 7: Structural Tension Charts (if applicable) ✅
+### 🧠 Part 7: Structural Tension Charts (if applicable) ✅
 
 If implementing STC features, verify:
 
@@ -202,7 +202,7 @@ If implementing STC features, verify:
 - [ ] Due date updated correctly
 - [ ] Old values replaced, not duplicated
 
-### Part 8: Documentation Alignment ✅
+### 🌸 Part 8: Documentation Alignment ✅
 
 Check that any documentation matches reality:
 
@@ -217,7 +217,7 @@ cnarrative help | grep -A 10 "EXAMPLES"
 - [ ] All flags mentioned in help exist
 - [ ] All commands mentioned in help work
 
-### Part 9: Integration Test Coverage ✅
+### 🧠 Part 9: Integration Test Coverage ✅
 
 Review test file coverage:
 
@@ -236,7 +236,7 @@ Review test file coverage:
 - Test verifies file/data changed
 - Test asserts pass/fail correctly
 
-### Part 10: No Stubs Remain ✅
+### 🧠 Part 10: No Stubs Remain ✅
 
 Final sweep for stubs:
 
@@ -256,7 +256,7 @@ grep -r "Use MCP tools" src/
 - ❌ Feature is NOT complete
 - → Implement those functions properly
 
-## Final Verification Score
+## 🧠🌸 Final Verification Score
 
 Count your checkmarks:
 
@@ -276,7 +276,7 @@ Count your checkmarks:
 - ✅ May proceed to documentation
 - → Run `/document-completed-work`
 
-## Honest Current Reality Assessment
+## 🌸 Honest Current Reality Assessment
 
 Answer these questions honestly:
 
@@ -309,7 +309,7 @@ Answer these questions honestly:
 - Do not claim completion
 - Return to implementation
 
-## Output Format
+## 🌸 Output Format
 
 Provide verification report:
 
@@ -371,7 +371,7 @@ Provide verification report:
 ✅ May proceed to documentation
 ```
 
-## Decision
+## 🧠🌸 Decision
 
 Based on verification:
 
