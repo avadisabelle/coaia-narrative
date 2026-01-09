@@ -10,6 +10,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import minimist from 'minimist';
+import * as dotenv from 'dotenv';
 
 // ==================== TYPES ====================
 
@@ -60,6 +61,84 @@ interface KnowledgeGraph {
   relations: Relation[];
 }
 
+// ==================== CONFIGURATION ====================
+
+interface Config {
+  memoryPath: string;
+  currentChart: string | null;
+  jsonOutput: boolean;
+  noColor: boolean;
+}
+
+/**
+ * Load configuration from multiple sources with priority:
+ * 1. Command-line flags (highest priority)
+ * 2. Custom env file via --env flag
+ * 3. .env file in current working directory
+ * 4. System environment variables
+ * 5. Defaults (lowest priority)
+ */
+function loadConfig(args: minimist.ParsedArgs): Config {
+  // Start with defaults
+  let config: Config = {
+    memoryPath: path.join(process.cwd(), 'memory.jsonl'),
+    currentChart: null,
+    jsonOutput: false,
+    noColor: false
+  };
+
+  // Load system environment variables first
+  if (process.env.COAIAN_MF) {
+    config.memoryPath = process.env.COAIAN_MF;
+  }
+  if (process.env.COAIAN_CURRENT_CHART) {
+    config.currentChart = process.env.COAIAN_CURRENT_CHART;
+  }
+
+  // Load .env from current working directory
+  const localEnvPath = path.join(process.cwd(), '.env');
+  try {
+    dotenv.config({ path: localEnvPath });
+    // Re-check env vars after loading .env
+    if (process.env.COAIAN_MF) {
+      config.memoryPath = process.env.COAIAN_MF;
+    }
+    if (process.env.COAIAN_CURRENT_CHART) {
+      config.currentChart = process.env.COAIAN_CURRENT_CHART;
+    }
+  } catch (error) {
+    // .env file doesn't exist, that's okay
+  }
+
+  // Load custom env file if --env flag is specified
+  if (args.env) {
+    dotenv.config({ path: args.env, override: true });
+    // Re-check env vars after loading custom env
+    if (process.env.COAIAN_MF) {
+      config.memoryPath = process.env.COAIAN_MF;
+    }
+    if (process.env.COAIAN_CURRENT_CHART) {
+      config.currentChart = process.env.COAIAN_CURRENT_CHART;
+    }
+  }
+
+  // Command-line flags override everything
+  if (args['memory-path'] || args['M']) {
+    config.memoryPath = args['memory-path'] || args['M'];
+  }
+  if (args['current-chart'] || args['C']) {
+    config.currentChart = args['current-chart'] || args['C'];
+  }
+  if (args.json === true) {
+    config.jsonOutput = true;
+  }
+  if (args['no-color'] === true) {
+    config.noColor = true;
+  }
+
+  return config;
+}
+
 // ==================== UTILITIES ====================
 
 async function loadGraph(memoryPath: string): Promise<KnowledgeGraph> {
@@ -78,6 +157,14 @@ async function loadGraph(memoryPath: string): Promise<KnowledgeGraph> {
     }
     throw error;
   }
+}
+
+async function saveGraph(memoryPath: string, graph: KnowledgeGraph): Promise<void> {
+  const lines = [
+    ...graph.entities.map(e => JSON.stringify({ type: 'entity', ...e })),
+    ...graph.relations.map(r => JSON.stringify({ type: 'relation', ...r }))
+  ];
+  await fs.writeFile(memoryPath, lines.join('\n') + '\n', 'utf-8');
 }
 
 function formatDate(dateStr?: string): string {
@@ -222,9 +309,7 @@ async function listCharts(memoryPath: string): Promise<void> {
     console.log('');
   }
   
-  console.log('═'.repeat(79));
-  console.log(`💡 Use 'cnarrative view <chartId>' to see detailed chart information`);
-  console.log(`💡 Use 'cnarrative help' to see all available commands\n`);
+  console.log('═'.repeat(79) + '\n');
 }
 
 async function viewChart(chartId: string, memoryPath: string): Promise<void> {
@@ -423,39 +508,72 @@ COMMANDS:
 
   📊 VIEWING COMMANDS
   ───────────────────────────────────────────────────────────────────────────────
-  list                          List all structural tension charts in hierarchy
-  view <chartId>                View detailed information for a specific chart
+  list, ls                      List all structural tension charts in hierarchy
+  view, v <chartId>             View detailed information for a specific chart
+  current, cur [chartId]        Get/set current chart context
+  
+  ✏️  EDITING COMMANDS
+  ───────────────────────────────────────────────────────────────────────────────
+  update, up <chartId>          Update chart properties (outcome, due date, etc.)
+  add-action, aa <chartId>      Add new action step to a chart
+  add-obs, ao <chartId>         Add observation to current reality
+  complete, done <actionName>   Mark an action step as complete
+  set-date, sd <chartId>        Update chart due date
   
   📈 QUICK STATS
   ───────────────────────────────────────────────────────────────────────────────
-  stats                         Show summary statistics across all charts
-  progress <chartId>            Show progress details for a specific chart
+  stats, st                     Show summary statistics across all charts
+  progress, pg <chartId>        Show progress details for a specific chart
 
   ⚙️  UTILITY
   ───────────────────────────────────────────────────────────────────────────────
-  help                          Show this help message
-  version                       Show version information
+  help, h                       Show this help message
+  version, ver                  Show version information
 
 OPTIONS:
 
-  --memory-path <path>          Path to memory JSONL file (default: ./memory.jsonl)
+  --memory-path <path>          Path to memory JSONL file
   -M <path>                     Short alias for --memory-path
+  --env <path>                  Load environment from custom .env file
+  --current-chart <chartId>     Set current chart context
+  -C <chartId>                  Short alias for --current-chart
   --no-color                    Disable colored output
   --json                        Output in JSON format
 
+ENVIRONMENT VARIABLES:
+
+  COAIAN_MF                     Default memory file path
+  COAIAN_CURRENT_CHART          Default current chart ID
+
+  Priority order (highest to lowest):
+  1. Command-line flags (--memory-path, -M, etc.)
+  2. Custom .env file via --env flag
+  3. .env file in current working directory
+  4. System environment variables
+  5. Default values
+
 EXAMPLES:
 
-  # List all charts with visual hierarchy
+  # List all charts (uses env vars or defaults)
   cnarrative list
+  cnarrative ls
 
-  # View detailed information for a specific chart
-  cnarrative view chart_1234567890
-
-  # View chart using custom memory path
-  cnarrative view chart_123 --memory-path /path/to/memory.jsonl
+  # View specific chart with environment variable
+  export COAIAN_MF=/path/to/memory.jsonl
+  cnarrative view chart_123
   
-  # Same using short alias
+  # Use custom env file
+  cnarrative --env /custom/.env list
+
+  # View chart using custom memory path with short flag
   cnarrative view chart_123 -M /path/to/memory.jsonl
+  
+  # Set current chart context
+  cnarrative current chart_123
+  export COAIAN_CURRENT_CHART=chart_123
+  
+  # Add action to current chart
+  cnarrative add-action chart_123
 
   # Get statistics in JSON format
   cnarrative stats --json
@@ -475,7 +593,13 @@ MORE INFO:
 
   MCP Server:    Use 'coaia-narrative' (MCP protocol) for AI assistant integration
   Documentation: See README.md for complete methodology
-  Author:        Based on Robert Fritz's Structural Tension principles
+  
+CREDITS:
+
+  Author:        Guillaume D.Isabelle
+  Methodology:   Robert Fritz's Structural Tension principles
+  Forked from:   shaneholloman/mcp-knowledge-graph
+  Contributors:  MiaDisabelle's mcp-knowledge-graph work
 
 `);
 }
@@ -604,59 +728,284 @@ async function showProgress(chartId: string, memoryPath: string): Promise<void> 
   console.log('\n' + '═'.repeat(79) + '\n');
 }
 
+// ==================== NEW EDITING COMMANDS ====================
+
+async function getCurrentChart(config: Config): Promise<void> {
+  if (!config.currentChart) {
+    console.log('\n❌ No current chart set.\n');
+    console.log('💡 Set with: cnarrative current <chartId>');
+    console.log('💡 Or set COAIAN_CURRENT_CHART environment variable\n');
+    return;
+  }
+  
+  console.log(`\n📊 Current chart: ${config.currentChart}\n`);
+}
+
+async function setCurrentChart(chartId: string, memoryPath: string): Promise<void> {
+  const graph = await loadGraph(memoryPath);
+  const chart = graph.entities.find(e =>
+    e.entityType === 'structural_tension_chart' && e.metadata?.chartId === chartId
+  );
+  
+  if (!chart) {
+    console.log(`\n❌ Chart '${chartId}' not found.\n`);
+    console.log(`💡 Use 'cnarrative list' to see available charts.\n`);
+    return;
+  }
+  
+  console.log(`\n✅ Current chart set to: ${chartId}\n`);
+  console.log('💡 To persist this setting, add to your .env file:');
+  console.log(`   COAIAN_CURRENT_CHART=${chartId}\n`);
+}
+
+async function updateChart(chartId: string, memoryPath: string): Promise<void> {
+  const graph = await loadGraph(memoryPath);
+  const chart = graph.entities.find(e =>
+    e.entityType === 'structural_tension_chart' && e.metadata?.chartId === chartId
+  );
+  
+  if (!chart) {
+    console.log(`\n❌ Chart '${chartId}' not found.\n`);
+    return;
+  }
+  
+  console.log('\n╔═══════════════════════════════════════════════════════════════════════════════╗');
+  console.log('║                           UPDATE CHART PROPERTIES                             ║');
+  console.log('╚═══════════════════════════════════════════════════════════════════════════════╝\n');
+  
+  console.log(`📊 Chart: ${chartId}\n`);
+  console.log('⚠️  Interactive chart editing is not yet implemented.');
+  console.log('    Use the MCP server tools for programmatic updates.\n');
+  console.log('Available MCP tools:');
+  console.log('  • update_desired_outcome');
+  console.log('  • update_current_reality');
+  console.log('  • add_action_step');
+  console.log('  • update_action_progress\n');
+}
+
+async function addAction(chartId: string, memoryPath: string): Promise<void> {
+  const graph = await loadGraph(memoryPath);
+  const chart = graph.entities.find(e =>
+    e.entityType === 'structural_tension_chart' && e.metadata?.chartId === chartId
+  );
+  
+  if (!chart) {
+    console.log(`\n❌ Chart '${chartId}' not found.\n`);
+    return;
+  }
+  
+  console.log('\n╔═══════════════════════════════════════════════════════════════════════════════╗');
+  console.log('║                            ADD ACTION STEP                                    ║');
+  console.log('╚═══════════════════════════════════════════════════════════════════════════════╝\n');
+  
+  console.log(`📊 Chart: ${chartId}\n`);
+  console.log('⚠️  Interactive action step creation is not yet implemented.');
+  console.log('    Use the MCP server tools for programmatic updates.\n');
+  console.log('MCP tool: add_action_step or manage_action_step\n');
+}
+
+async function addObservation(chartId: string, memoryPath: string): Promise<void> {
+  const graph = await loadGraph(memoryPath);
+  const chart = graph.entities.find(e =>
+    e.entityType === 'structural_tension_chart' && e.metadata?.chartId === chartId
+  );
+  
+  if (!chart) {
+    console.log(`\n❌ Chart '${chartId}' not found.\n`);
+    return;
+  }
+  
+  console.log('\n╔═══════════════════════════════════════════════════════════════════════════════╗');
+  console.log('║                       ADD OBSERVATION TO CURRENT REALITY                      ║');
+  console.log('╚═══════════════════════════════════════════════════════════════════════════════╝\n');
+  
+  console.log(`📊 Chart: ${chartId}\n`);
+  console.log('⚠️  Interactive observation adding is not yet implemented.');
+  console.log('    Use the MCP server tools for programmatic updates.\n');
+  console.log('MCP tool: update_current_reality\n');
+}
+
+async function completeAction(actionName: string, memoryPath: string): Promise<void> {
+  const graph = await loadGraph(memoryPath);
+  const action = graph.entities.find(e =>
+    e.entityType === 'action_step' && e.name === actionName
+  );
+  
+  if (!action) {
+    console.log(`\n❌ Action step '${actionName}' not found.\n`);
+    return;
+  }
+  
+  if (action.metadata?.completionStatus === true) {
+    console.log(`\n✅ Action '${action.observations[0]}' is already marked complete.\n`);
+    return;
+  }
+  
+  // Mark as complete
+  action.metadata = action.metadata || {};
+  action.metadata.completionStatus = true;
+  action.metadata.updatedAt = new Date().toISOString();
+  
+  await saveGraph(memoryPath, graph);
+  
+  console.log(`\n✅ Action step marked complete: ${action.observations[0]}\n`);
+}
+
+async function setDueDate(chartId: string, dateStr: string, memoryPath: string): Promise<void> {
+  const graph = await loadGraph(memoryPath);
+  const chart = graph.entities.find(e =>
+    e.entityType === 'structural_tension_chart' && e.metadata?.chartId === chartId
+  );
+  
+  if (!chart) {
+    console.log(`\n❌ Chart '${chartId}' not found.\n`);
+    return;
+  }
+  
+  // Parse and validate date
+  const newDate = new Date(dateStr);
+  if (isNaN(newDate.getTime())) {
+    console.log(`\n❌ Invalid date format: ${dateStr}\n`);
+    console.log('💡 Use ISO format: YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss\n');
+    return;
+  }
+  
+  chart.metadata = chart.metadata || {};
+  chart.metadata.dueDate = newDate.toISOString();
+  chart.metadata.updatedAt = new Date().toISOString();
+  
+  await saveGraph(memoryPath, graph);
+  
+  console.log(`\n✅ Due date updated for chart ${chartId}`);
+  console.log(`   New date: ${formatDate(chart.metadata.dueDate)}\n`);
+}
+
 // ==================== MAIN ====================
 
 async function main() {
   const args = minimist(process.argv.slice(2));
   const command = args._[0];
-  const memoryPath = args['memory-path'] || args['M'] || path.join(process.cwd(), 'memory.jsonl');
-  const jsonOutput = args.json === true;
+  const config = loadConfig(args);
   
   try {
     switch (command) {
       case 'list':
       case 'ls':
-        await listCharts(memoryPath);
+        await listCharts(config.memoryPath);
         break;
         
       case 'view':
+      case 'v':
       case 'show':
         if (!args._[1]) {
           console.log('\n❌ Error: Chart ID required\n');
           console.log('Usage: cnarrative view <chartId>\n');
           process.exit(1);
         }
-        await viewChart(args._[1], memoryPath);
+        await viewChart(args._[1], config.memoryPath);
+        break;
+      
+      case 'current':
+      case 'cur':
+        if (args._[1]) {
+          await setCurrentChart(args._[1], config.memoryPath);
+        } else {
+          await getCurrentChart(config);
+        }
+        break;
+        
+      case 'update':
+      case 'up':
+        const updateChartId = args._[1] || config.currentChart;
+        if (!updateChartId) {
+          console.log('\n❌ Error: Chart ID required or set current chart\n');
+          console.log('Usage: cnarrative update <chartId>\n');
+          console.log('   or: cnarrative current <chartId> && cnarrative update\n');
+          process.exit(1);
+        }
+        await updateChart(updateChartId, config.memoryPath);
+        break;
+      
+      case 'add-action':
+      case 'aa':
+        const aaChartId = args._[1] || config.currentChart;
+        if (!aaChartId) {
+          console.log('\n❌ Error: Chart ID required or set current chart\n');
+          console.log('Usage: cnarrative add-action <chartId>\n');
+          process.exit(1);
+        }
+        await addAction(aaChartId, config.memoryPath);
+        break;
+      
+      case 'add-observation':
+      case 'add-obs':
+      case 'ao':
+        const aoChartId = args._[1] || config.currentChart;
+        if (!aoChartId) {
+          console.log('\n❌ Error: Chart ID required or set current chart\n');
+          console.log('Usage: cnarrative add-obs <chartId>\n');
+          process.exit(1);
+        }
+        await addObservation(aoChartId, config.memoryPath);
+        break;
+      
+      case 'complete':
+      case 'done':
+        if (!args._[1]) {
+          console.log('\n❌ Error: Action step name required\n');
+          console.log('Usage: cnarrative complete <actionStepName>\n');
+          console.log('Example: cnarrative complete chart_123_action_1\n');
+          process.exit(1);
+        }
+        await completeAction(args._[1], config.memoryPath);
+        break;
+      
+      case 'set-date':
+      case 'sd':
+        const sdChartId = args._[1];
+        const dateStr = args._[2];
+        if (!sdChartId || !dateStr) {
+          console.log('\n❌ Error: Chart ID and date required\n');
+          console.log('Usage: cnarrative set-date <chartId> <date>\n');
+          console.log('Example: cnarrative set-date chart_123 2026-12-31\n');
+          process.exit(1);
+        }
+        await setDueDate(sdChartId, dateStr, config.memoryPath);
         break;
         
       case 'stats':
+      case 'st':
       case 'statistics':
-        await showStats(memoryPath, jsonOutput);
+        await showStats(config.memoryPath, config.jsonOutput);
         break;
         
       case 'progress':
+      case 'pg':
         if (!args._[1]) {
           console.log('\n❌ Error: Chart ID required\n');
           console.log('Usage: cnarrative progress <chartId>\n');
           process.exit(1);
         }
-        await showProgress(args._[1], memoryPath);
+        await showProgress(args._[1], config.memoryPath);
         break;
         
       case 'help':
+      case 'h':
       case '--help':
       case '-h':
         showHelp();
         break;
         
       case 'version':
+      case 'ver':
       case '--version':
       case '-v':
-        console.log('\nCOAIA Narrative CLI v0.5.0');
-        console.log('Structural Tension Chart Visualizer\n');
+        console.log('\nCOAIA Narrative CLI v0.6.0');
+        console.log('Structural Tension Chart Visualizer');
+        console.log('Author: Guillaume D.Isabelle\n');
         break;
         
-      default:
+default:
         if (!command) {
           showHelp();
         } else {
