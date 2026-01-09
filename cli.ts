@@ -766,4 +766,4 @@ async function updateChart(chartId: string, memoryPath: string, args: minimist.P
 
   if (!newOutcome && !newDueDate) {
     console.log(`\n❌ Error: Nothing to update. Provide --outcome or --date.\n`);
-    console.log(`Usage: cnarrative up ${chartId} --outcome 
+    console.log(`Usage: cnarrative up ${chartId} --outcome "New outcome" --date "YYYY-MM-DD"`) 
