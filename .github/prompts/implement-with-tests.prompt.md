@@ -69,7 +69,7 @@ run_test "Feature works with valid input" {
 4. File modification verified
 5. Edge case specific to feature
 
-### Step 2: Run Tests (They Should Fail)
+### 🌸 Step 2: Run Tests (They Should Fail)
 
 ```bash
 chmod +x test-[feature]-integration.sh
