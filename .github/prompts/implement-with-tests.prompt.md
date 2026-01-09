@@ -147,7 +147,7 @@ After implementing each function:
 - ...
 - After function 5: 5/5 tests passing ✅
 
-### Step 5: Implement Error Handling
+### 🧠 Step 5: Implement Error Handling
 
 Add error handling for:
 - Invalid chart IDs / entity names
