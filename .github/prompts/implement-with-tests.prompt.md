@@ -82,7 +82,7 @@ chmod +x test-[feature]-integration.sh
 - Tests aren't actually testing anything
 - Implementation already exists
 
-### Step 3: Implement ONE Function at a Time
+### 🧠 Step 3: Implement ONE Function at a Time
 
 For each function in your design:
 
@@ -131,7 +131,7 @@ async function implementMe(
 - ❌ `// TODO: Implement this`
 - ❌ `throw new Error('Not implemented')`
 
-### Step 4: Run Tests After Each Function
+### 🌸 Step 4: Run Tests After Each Function
 
 After implementing each function:
 
