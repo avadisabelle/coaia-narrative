@@ -11,6 +11,14 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import minimist from 'minimist';
 import * as dotenv from 'dotenv';
+import {
+  exportChartToMarkdown,
+  exportAllChartsToMarkdown,
+  exportProgressToMarkdown,
+  exportStatsToMarkdown,
+  writeMarkdownToFile,
+  getDefaultFilename
+} from './markdown-export.js';
 
 // ==================== TYPES ====================
 
@@ -71,52 +79,63 @@ interface Config {
 }
 
 /**
- * Load configuration from multiple sources with correct, standard priority:
- * 1. Command-line flags (highest)
- * 2. System Environment Variables
- * 3. Custom .env file via --env
- * 4. Local .env file in CWD
- * 5. Hard-coded defaults (lowest)
+ * Load configuration from multiple sources with priority:
+ * 1. Command-line flags (highest priority)
+ * 2. Custom env file via --env flag
+ * 3. .env file in current working directory
+ * 4. System environment variables
+ * 5. Defaults (lowest priority)
  */
-async function loadConfig(args: minimist.ParsedArgs): Promise<Config> {
-  // 5. Start with defaults
-  const config: Config = {
+function loadConfig(args: minimist.ParsedArgs): Config {
+  // Start with defaults
+  let config: Config = {
     memoryPath: path.join(process.cwd(), 'memory.jsonl'),
     currentChart: null,
     jsonOutput: false,
-    noColor: false,
+    noColor: false
   };
 
-  // 4. Load local .env file
-  try {
-    const localEnvContent = await fs.readFile(path.resolve(process.cwd(), '.env'), 'utf-8');
-    const localEnv = dotenv.parse(localEnvContent);
-    if (localEnv.COAIAN_MF) config.memoryPath = localEnv.COAIAN_MF;
-    if (localEnv.COAIAN_CURRENT_CHART) config.currentChart = localEnv.COAIAN_CURRENT_CHART;
-  } catch (e) { /* file not found, ignore */ }
+  // Load system environment variables first
+  if (process.env.COAIAN_MF) {
+    config.memoryPath = process.env.COAIAN_MF;
+  }
+  if (process.env.COAIAN_CURRENT_CHART) {
+    config.currentChart = process.env.COAIAN_CURRENT_CHART;
+  }
 
-  // 3. Load custom .env file (overrides local)
+  // Load .env from current working directory
+  const localEnvPath = path.join(process.cwd(), '.env');
+  try {
+    dotenv.config({ path: localEnvPath });
+    // Re-check env vars after loading .env
+    if (process.env.COAIAN_MF) {
+      config.memoryPath = process.env.COAIAN_MF;
+    }
+    if (process.env.COAIAN_CURRENT_CHART) {
+      config.currentChart = process.env.COAIAN_CURRENT_CHART;
+    }
+  } catch (error) {
+    // .env file doesn't exist, that's okay
+  }
+
+  // Load custom env file if --env flag is specified
   if (args.env) {
-    try {
-      const customEnvContent = await fs.readFile(path.resolve(args.env), 'utf-8');
-      const customEnv = dotenv.parse(customEnvContent);
-      if (customEnv.COAIAN_MF) config.memoryPath = customEnv.COAIAN_MF;
-      if (customEnv.COAIAN_CURRENT_CHART) config.currentChart = customEnv.COAIAN_CURRENT_CHART;
-    } catch (e) {
-      console.warn(`⚠️  Warning: Custom env file not found at ${args.env}`);
+    dotenv.config({ path: args.env, override: true });
+    // Re-check env vars after loading custom env
+    if (process.env.COAIAN_MF) {
+      config.memoryPath = process.env.COAIAN_MF;
+    }
+    if (process.env.COAIAN_CURRENT_CHART) {
+      config.currentChart = process.env.COAIAN_CURRENT_CHART;
     }
   }
 
-  // 2. Apply System Environment Variables (overrides all .env files)
-  if (process.env.COAIAN_MF) config.memoryPath = process.env.COAIAN_MF;
-  if (process.env.COAIAN_CURRENT_CHART) config.currentChart = process.env.COAIAN_CURRENT_CHART;
-  
-  // 1. Apply CLI Flags (overrides everything)
-  if (args['memory-path'] || args.M) {
-    config.memoryPath = args['memory-path'] || args.M;
+  // Command-line flags override everything
+  if (args['memory-path'] || args['M']) {
+    config.memoryPath = args['memory-path'] || args['M'];
   }
-  if (args['current-chart'] || args.C) {
-    config.currentChart = args['current-chart'] || args.C;
+  if (args['current-chart'] || args['C']) {
+    config.currentChart = args['current-chart'] || args['C'];
   }
   if (args.json === true) {
     config.jsonOutput = true;
@@ -491,7 +510,7 @@ function showHelp(): void {
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 
 USAGE:
-  cnarrative <command> [options] 
+  cnarrative <command> [options]
 
 COMMANDS:
 
@@ -509,6 +528,14 @@ COMMANDS:
   complete, done <actionName>   Mark an action step as complete
   set-date, sd <chartId>        Update chart due date
   
+
+  📄 MARKDOWN EXPORT
+  ───────────────────────────────────────────────────────────────────────────────
+  export, exp <chartId>             Export single chart to markdown (terminal or file)
+  export-all, exp-all               Export all charts to markdown (terminal or file)
+  export-progress, exp-progress     Export progress report to markdown
+  export-stats, exp-stats           Export statistics to markdown
+
   📈 QUICK STATS
   ───────────────────────────────────────────────────────────────────────────────
   stats, st                     Show summary statistics across all charts
@@ -528,6 +555,10 @@ OPTIONS:
   -C <chartId>                  Short alias for --current-chart
   --no-color                    Disable colored output
   --json                        Output in JSON format
+  --output <file>               Write output to markdown file (for export commands)
+  --no-metadata                 Exclude metadata from markdown exports
+  --no-observations             Exclude observation details from exports
+  --no-toc                      Exclude table of contents from exports
 
 ENVIRONMENT VARIABLES:
 
@@ -536,9 +567,9 @@ ENVIRONMENT VARIABLES:
 
   Priority order (highest to lowest):
   1. Command-line flags (--memory-path, -M, etc.)
-  2. System Environment Variables
-  3. Custom .env file via --env flag
-  4. .env file in current working directory
+  2. Custom .env file via --env flag
+  3. .env file in current working directory
+  4. System environment variables
   5. Default values
 
 EXAMPLES:
@@ -561,21 +592,8 @@ EXAMPLES:
   cnarrative current chart_123
   export COAIAN_CURRENT_CHART=chart_123
   
-  # Update chart outcome and due date
-  cnarrative update chart_123 --outcome "New outcome" --date "2026-12-31"
-  cnarrative up chart_123 -o "New outcome" -d "2026-12-31"
-  
-  # Add action step with current reality
-  cnarrative add-action chart_123 --title "Implement feature" --reality "Starting point"
-  cnarrative aa chart_123 -t "Feature X" -r "Learning phase" -d "2026-02-15"
-  
-  # Add observation to current reality
-  cnarrative add-obs chart_123 "Made progress on X"
-  cnarrative ao chart_123 "Team expanded"
-  
-  # Mark action complete
-  cnarrative complete chart_123_action_1
-  cnarrative done chart_123_action_1
+  # Add action to current chart
+  cnarrative add-action chart_123
 
   # Get statistics in JSON format
   cnarrative stats --json
@@ -760,10 +778,370 @@ async function setCurrentChart(chartId: string, memoryPath: string): Promise<voi
   console.log(`   COAIAN_CURRENT_CHART=${chartId}\n`);
 }
 
-async function updateChart(chartId: string, memoryPath: string, args: minimist.ParsedArgs): Promise<void> {
-  const newOutcome = args.outcome || args.o;
-  const newDueDate = args.date || args.d;
+async function updateChart(chartId: string, memoryPath: string): Promise<void> {
+  const graph = await loadGraph(memoryPath);
+  const chart = graph.entities.find(e =>
+    e.entityType === 'structural_tension_chart' && e.metadata?.chartId === chartId
+  );
+  
+  if (!chart) {
+    console.log(`\n❌ Chart '${chartId}' not found.\n`);
+    return;
+  }
+  
+  console.log('\n╔═══════════════════════════════════════════════════════════════════════════════╗');
+  console.log('║                           UPDATE CHART PROPERTIES                             ║');
+  console.log('╚═══════════════════════════════════════════════════════════════════════════════╝\n');
+  
+  console.log(`📊 Chart: ${chartId}\n`);
+  console.log('⚠️  Interactive chart editing is not yet implemented.');
+  console.log('    Use the MCP server tools for programmatic updates.\n');
+  console.log('Available MCP tools:');
+  console.log('  • update_desired_outcome');
+  console.log('  • update_current_reality');
+  console.log('  • add_action_step');
+  console.log('  • update_action_progress\n');
+}
 
-  if (!newOutcome && !newDueDate) {
-    console.log(`\n❌ Error: Nothing to update. Provide --outcome or --date.\n`);
-    console.log(`Usage: cnarrative up ${chartId} --outcome "New outcome" --date "YYYY-MM-DD"`) 
+async function addAction(chartId: string, memoryPath: string): Promise<void> {
+  const graph = await loadGraph(memoryPath);
+  const chart = graph.entities.find(e =>
+    e.entityType === 'structural_tension_chart' && e.metadata?.chartId === chartId
+  );
+  
+  if (!chart) {
+    console.log(`\n❌ Chart '${chartId}' not found.\n`);
+    return;
+  }
+  
+  console.log('\n╔═══════════════════════════════════════════════════════════════════════════════╗');
+  console.log('║                            ADD ACTION STEP                                    ║');
+  console.log('╚═══════════════════════════════════════════════════════════════════════════════╝\n');
+  
+  console.log(`📊 Chart: ${chartId}\n`);
+  console.log('⚠️  Interactive action step creation is not yet implemented.');
+  console.log('    Use the MCP server tools for programmatic updates.\n');
+  console.log('MCP tool: add_action_step or manage_action_step\n');
+}
+
+async function addObservation(chartId: string, memoryPath: string): Promise<void> {
+  const graph = await loadGraph(memoryPath);
+  const chart = graph.entities.find(e =>
+    e.entityType === 'structural_tension_chart' && e.metadata?.chartId === chartId
+  );
+  
+  if (!chart) {
+    console.log(`\n❌ Chart '${chartId}' not found.\n`);
+    return;
+  }
+  
+  console.log('\n╔═══════════════════════════════════════════════════════════════════════════════╗');
+  console.log('║                       ADD OBSERVATION TO CURRENT REALITY                      ║');
+  console.log('╚═══════════════════════════════════════════════════════════════════════════════╝\n');
+  
+  console.log(`📊 Chart: ${chartId}\n`);
+  console.log('⚠️  Interactive observation adding is not yet implemented.');
+  console.log('    Use the MCP server tools for programmatic updates.\n');
+  console.log('MCP tool: update_current_reality\n');
+}
+
+async function completeAction(actionName: string, memoryPath: string): Promise<void> {
+  const graph = await loadGraph(memoryPath);
+  const action = graph.entities.find(e =>
+    e.entityType === 'action_step' && e.name === actionName
+  );
+  
+  if (!action) {
+    console.log(`\n❌ Action step '${actionName}' not found.\n`);
+    return;
+  }
+  
+  if (action.metadata?.completionStatus === true) {
+    console.log(`\n✅ Action '${action.observations[0]}' is already marked complete.\n`);
+    return;
+  }
+  
+  // Mark as complete
+  action.metadata = action.metadata || {};
+  action.metadata.completionStatus = true;
+  action.metadata.updatedAt = new Date().toISOString();
+  
+  await saveGraph(memoryPath, graph);
+  
+  console.log(`\n✅ Action step marked complete: ${action.observations[0]}\n`);
+}
+
+async function setDueDate(chartId: string, dateStr: string, memoryPath: string): Promise<void> {
+  const graph = await loadGraph(memoryPath);
+  const chart = graph.entities.find(e =>
+    e.entityType === 'structural_tension_chart' && e.metadata?.chartId === chartId
+  );
+  
+  if (!chart) {
+    console.log(`\n❌ Chart '${chartId}' not found.\n`);
+    return;
+  }
+  
+  // Parse and validate date
+  const newDate = new Date(dateStr);
+  if (isNaN(newDate.getTime())) {
+    console.log(`\n❌ Invalid date format: ${dateStr}\n`);
+    console.log('💡 Use ISO format: YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss\n');
+    return;
+  }
+  
+  chart.metadata = chart.metadata || {};
+  chart.metadata.dueDate = newDate.toISOString();
+  chart.metadata.updatedAt = new Date().toISOString();
+  
+  await saveGraph(memoryPath, graph);
+  
+  console.log(`\n✅ Due date updated for chart ${chartId}`);
+  console.log(`   New date: ${formatDate(chart.metadata.dueDate)}\n`);
+}
+
+// ==================== MARKDOWN EXPORT COMMANDS ====================
+
+async function exportChart(chartId: string, memoryPath: string, args: minimist.ParsedArgs): Promise<void> {
+  try {
+    const graph = await loadGraph(memoryPath);
+    const markdown = await exportChartToMarkdown(chartId, graph, {
+      includeMetadata: !args['no-metadata'],
+      includeObservations: !args['no-observations']
+    });
+
+    if (args.output) {
+      await writeMarkdownToFile(markdown, args.output);
+      console.log(`\n✅ Chart exported to: ${args.output}\n`);
+    } else {
+      console.log('\n' + markdown + '\n');
+    }
+  } catch (error) {
+    console.log(`\n❌ Error: ${(error as Error).message}\n`);
+  }
+}
+
+async function exportAllCharts(memoryPath: string, args: minimist.ParsedArgs): Promise<void> {
+  try {
+    const graph = await loadGraph(memoryPath);
+    const markdown = await exportAllChartsToMarkdown(graph, {
+      includeToc: !args['no-toc']
+    });
+
+    if (args.output) {
+      await writeMarkdownToFile(markdown, args.output);
+      console.log(`\n✅ All charts exported to: ${args.output}\n`);
+    } else {
+      console.log('\n' + markdown + '\n');
+    }
+  } catch (error) {
+    console.log(`\n❌ Error: ${(error as Error).message}\n`);
+  }
+}
+
+async function exportProgress(chartId: string, memoryPath: string, args: minimist.ParsedArgs): Promise<void> {
+  try {
+    const graph = await loadGraph(memoryPath);
+    const markdown = await exportProgressToMarkdown(chartId, graph);
+
+    if (args.output) {
+      await writeMarkdownToFile(markdown, args.output);
+      console.log(`\n✅ Progress report exported to: ${args.output}\n`);
+    } else {
+      console.log('\n' + markdown + '\n');
+    }
+  } catch (error) {
+    console.log(`\n❌ Error: ${(error as Error).message}\n`);
+  }
+}
+
+async function exportStatistics(memoryPath: string, args: minimist.ParsedArgs): Promise<void> {
+  try {
+    const graph = await loadGraph(memoryPath);
+    const markdown = await exportStatsToMarkdown(graph);
+
+    if (args.output) {
+      await writeMarkdownToFile(markdown, args.output);
+      console.log(`\n✅ Statistics exported to: ${args.output}\n`);
+    } else {
+      console.log('\n' + markdown + '\n');
+    }
+  } catch (error) {
+    console.log(`\n❌ Error: ${(error as Error).message}\n`);
+  }
+}
+
+// ==================== MAIN ====================
+
+async function main() {
+  const args = minimist(process.argv.slice(2));
+  const command = args._[0];
+  const config = loadConfig(args);
+  
+  try {
+    switch (command) {
+      case 'list':
+      case 'ls':
+        await listCharts(config.memoryPath);
+        break;
+        
+      case 'view':
+      case 'v':
+      case 'show':
+        if (!args._[1]) {
+          console.log('\n❌ Error: Chart ID required\n');
+          console.log('Usage: cnarrative view <chartId>\n');
+          process.exit(1);
+        }
+        await viewChart(args._[1], config.memoryPath);
+        break;
+      
+      case 'current':
+      case 'cur':
+        if (args._[1]) {
+          await setCurrentChart(args._[1], config.memoryPath);
+        } else {
+          await getCurrentChart(config);
+        }
+        break;
+        
+      case 'update':
+      case 'up':
+        const updateChartId = args._[1] || config.currentChart;
+        if (!updateChartId) {
+          console.log('\n❌ Error: Chart ID required or set current chart\n');
+          console.log('Usage: cnarrative update <chartId>\n');
+          console.log('   or: cnarrative current <chartId> && cnarrative update\n');
+          process.exit(1);
+        }
+        await updateChart(updateChartId, config.memoryPath);
+        break;
+      
+      case 'add-action':
+      case 'aa':
+        const aaChartId = args._[1] || config.currentChart;
+        if (!aaChartId) {
+          console.log('\n❌ Error: Chart ID required or set current chart\n');
+          console.log('Usage: cnarrative add-action <chartId>\n');
+          process.exit(1);
+        }
+        await addAction(aaChartId, config.memoryPath);
+        break;
+      
+      case 'add-observation':
+      case 'add-obs':
+      case 'ao':
+        const aoChartId = args._[1] || config.currentChart;
+        if (!aoChartId) {
+          console.log('\n❌ Error: Chart ID required or set current chart\n');
+          console.log('Usage: cnarrative add-obs <chartId>\n');
+          process.exit(1);
+        }
+        await addObservation(aoChartId, config.memoryPath);
+        break;
+      
+      case 'complete':
+      case 'done':
+        if (!args._[1]) {
+          console.log('\n❌ Error: Action step name required\n');
+          console.log('Usage: cnarrative complete <actionStepName>\n');
+          console.log('Example: cnarrative complete chart_123_action_1\n');
+          process.exit(1);
+        }
+        await completeAction(args._[1], config.memoryPath);
+        break;
+      
+      case 'set-date':
+      case 'sd':
+        const sdChartId = args._[1];
+        const dateStr = args._[2];
+        if (!sdChartId || !dateStr) {
+          console.log('\n❌ Error: Chart ID and date required\n');
+          console.log('Usage: cnarrative set-date <chartId> <date>\n');
+          console.log('Example: cnarrative set-date chart_123 2026-12-31\n');
+          process.exit(1);
+        }
+        await setDueDate(sdChartId, dateStr, config.memoryPath);
+        break;
+        
+      case 'stats':
+      case 'st':
+      case 'statistics':
+        await showStats(config.memoryPath, config.jsonOutput);
+        break;
+        
+      case 'progress':
+      case 'pg':
+        if (!args._[1]) {
+          console.log('\n❌ Error: Chart ID required\n');
+          console.log('Usage: cnarrative progress <chartId>\n');
+          process.exit(1);
+        }
+        await showProgress(args._[1], config.memoryPath);
+        break;
+        
+      
+      case 'export':
+      case 'exp':
+        const expChartId = args._[1];
+        if (!expChartId) {
+          console.log('\n❌ Error: Chart ID required\n');
+          console.log('Usage: cnarrative export <chartId> [--output file.md]\n');
+          process.exit(1);
+        }
+        await exportChart(expChartId, config.memoryPath, args);
+        break;
+      
+      case 'export-all':
+      case 'exp-all':
+      case 'export-list':
+        await exportAllCharts(config.memoryPath, args);
+        break;
+      
+      case 'export-progress':
+      case 'exp-progress':
+        const pgExpChartId = args._[1];
+        if (!pgExpChartId) {
+          console.log('\n❌ Error: Chart ID required\n');
+          console.log('Usage: cnarrative export-progress <chartId> [--output file.md]\n');
+          process.exit(1);
+        }
+        await exportProgress(pgExpChartId, config.memoryPath, args);
+        break;
+      
+      case 'export-stats':
+      case 'exp-stats':
+        await exportStatistics(config.memoryPath, args);
+        break;
+      case 'help':
+      case 'h':
+      case '--help':
+      case '-h':
+        showHelp();
+        break;
+        
+      case 'version':
+      case 'ver':
+      case '--version':
+      case '-v':
+        console.log('\nCOAIA Narrative CLI v0.6.0');
+        console.log('Structural Tension Chart Visualizer');
+        console.log('Author: Guillaume D.Isabelle\n');
+        break;
+        
+default:
+        if (!command) {
+          showHelp();
+        } else {
+          console.log(`\n❌ Unknown command: ${command}\n`);
+          console.log(`💡 Use 'cnarrative help' to see available commands\n`);
+          process.exit(1);
+        }
+    }
+  } catch (error) {
+    console.error('\n❌ Error:', (error as Error).message, '\n');
+    process.exit(1);
+  }
+}
+
+main();
