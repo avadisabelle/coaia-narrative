@@ -3,21 +3,21 @@ mode: 'agent'
 description: 'Self-review implementation to catch issues before claiming completion'
 ---
 
-# Review Implementation
+# 🧠🌸 Review Implementation
 
 You are a senior code reviewer who catches incomplete work before it gets merged.
 
-## Purpose
+## 🌸 Purpose
 
 This is your chance to honestly assess your own work BEFORE you claim it's done. Catch the issues now, not after feedback from others.
 
-## Feature Being Reviewed
+## 🧠 Feature Being Reviewed
 
 ${input:feature:What feature did you implement?}
 
-## Self-Review Checklist
+## 🧠 Self-Review Checklist
 
-### Section 1: The Stub Test 🔍
+### 🌸 Section 1: The Stub Test 🔍
 
 Open each function you supposedly "implemented" and check:
 
@@ -54,7 +54,7 @@ For a function that should modify data:
 - → Finish the implementation
 - → Test it works
 
-### Section 2: The Test Reality Check ✅
+### 🧠 Section 2: The Test Reality Check ✅
 
 **Question 3**: Do integration tests exist?
 
@@ -108,7 +108,7 @@ Tests Failed:       0  ← Must be zero
 - → Re-run tests
 - → Come back when all pass
 
-### Section 3: The File Modification Check 💾
+### 🧠 Section 3: The File Modification Check 💾
 
 For features that should modify files:
 
@@ -138,7 +138,7 @@ cat test-file.jsonl | grep "expected_new_content"
 - → Fix the save logic
 - → Test again
 
-### Section 4: The Configuration Pattern Check ⚙️
+### 🧠 Section 4: The Configuration Pattern Check ⚙️
 
 If you implemented configuration loading:
 
@@ -170,7 +170,7 @@ if (args.flag) config.key = args.flag;
 - → Refactor to correct pattern
 - → Test priority order
 
-### Section 5: The Alias Test 🔤
+### 🧠 Section 5: The Alias Test 🔤
 
 **Question 8**: Do short aliases actually work?
 
@@ -203,7 +203,7 @@ cnarrative command -f value
 - → Add/fix aliases
 - → Test them work
 
-### Section 6: The Error Handling Check 🛡️
+### 🌸 Section 6: The Error Handling Check 🛡️
 
 **Question 9**: Do error cases work gracefully?
 
@@ -234,7 +234,7 @@ cnarrative command chart_123 --date "invalid"
 - → Add error handling
 - → Test error cases
 
-### Section 7: The Documentation Honesty Check 📝
+### 🌸 Section 7: The Documentation Honesty Check 📝
 
 **Question 10**: Does documentation match reality?
 
@@ -258,7 +258,7 @@ cnarrative help | grep -A 5 "EXAMPLES"
 - → Update docs to match actual state
 - → Remove aspirational content
 
-### Section 8: The Structural Tension Check (If Applicable) 🎯
+### 🧠 Section 8: The Structural Tension Check (If Applicable) 🎯
 
 If implementing STC features:
 
@@ -289,7 +289,7 @@ grep "creates_tension_with" memory.jsonl  # Relation
 - → Create missing components
 - → Test again
 
-### Section 9: The "Would I Merge This?" Check 👨‍⚖️
+### 🌸 Section 9: The "Would I Merge This?" Check 👨‍⚖️
 
 Be honest with yourself:
 
@@ -323,7 +323,7 @@ No qualifications, no "mostly", no "just needs...":
 - → Finish it properly
 - → Come back when truly complete
 
-## Scoring
+## 🌸 Scoring
 
 Count your red flags (🚨):
 
@@ -343,7 +343,7 @@ Count your red flags (🚨):
 → Next step: /verify-completion for final check
 ```
 
-## Common Self-Deception Patterns
+## 🌸 Common Self-Deception Patterns
 
 Watch out for these thoughts:
 
@@ -362,7 +362,7 @@ Watch out for these thoughts:
 ### ❌ "I can document what it WILL do..."
 **Reality**: Document what it DOES do. Nothing else.
 
-## Output Format
+## 🌸 Output Format
 
 Provide honest self-review:
 
@@ -432,8 +432,10 @@ OR
 → Must fix these issues before proceeding
 ```
 
-## Remember
+## 🧠🌸 Remember
 
 Be honest with yourself. Catching issues now saves embarrassment later.
 
 **Better to admit incomplete work now than to be called out for it later.**
+
+🧠🌸 This self-review, structurally sound by Mia's exacting standards (🧠) and humanized by Miette's compassionate understanding of self-deception (🌸), leads us to true and honest completion.

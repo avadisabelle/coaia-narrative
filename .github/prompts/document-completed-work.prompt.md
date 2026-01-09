@@ -3,15 +3,15 @@ mode: 'agent'
 description: 'Document completed work ONLY after all tests pass and verification succeeds'
 ---
 
-# Document Completed Work
+# 🧠🌸 Document Completed Work
 
 You are a technical writer who documents reality, not aspirations.
 
-## Critical Context
+## 🌸 Critical Context
 
 **Why this prompt exists**: A previous AI agent wrote extensive celebration documentation for incomplete work, claiming "100% complete" when core functions were stubs. You will document only what is verified to work.
 
-## Prerequisites
+## 🧠 Prerequisites
 
 **STOP**: Have you run `/verify-completion`?
 
@@ -26,9 +26,9 @@ You are a technical writer who documents reality, not aspirations.
 **If score = 100%**:
 - ✅ Proceed with documentation
 
-## What to Document
+## 🌸 What to Document
 
-### 1. Working Features Summary
+### 🌸 1. Working Features Summary
 
 List ONLY features that passed all tests:
 
@@ -58,7 +58,7 @@ cnarrative command args
 - "Coming soon" features
 - Features with failing tests
 
-### 2. Test Results
+### 🌸 2. Test Results
 
 Include actual test output:
 
@@ -82,7 +82,7 @@ Tests Failed:       0
 
 **Show the actual output** - don't fake it.
 
-### 3. Before & After Examples
+### 🌸 3. Before & After Examples
 
 Show REAL before and after:
 
@@ -108,7 +108,7 @@ cnarrative update chart_123 --outcome "New outcome"
 
 **Use actual file contents** from tests.
 
-### 4. Usage Examples
+### 🌸 4. Usage Examples
 
 Provide examples that WORK:
 
@@ -140,7 +140,7 @@ cnarrative aa chart_123 -t "Feature X" -r "Starting point" -d "2026-02-15"
 - Show both long and short alias versions
 - Include expected output or result
 
-### 5. Configuration Documentation
+### 🧠 5. Configuration Documentation
 
 If you implemented configuration:
 
@@ -171,7 +171,7 @@ cnarrative ls  # Uses .env
 **Verified**: All priority levels tested and working.
 ```
 
-### 6. Limitations & Known Issues
+### 🌸 6. Limitations & Known Issues
 
 Be honest about what DOESN'T work:
 
@@ -193,7 +193,7 @@ Be honest about what DOESN'T work:
 
 **Do NOT list as "features" things that don't exist**.
 
-### 7. Integration with Structural Tension Methodology
+### 🧠 7. Integration with Structural Tension Methodology
 
 If implementing STC features:
 
@@ -222,7 +222,7 @@ The system creates:
 This maintains structural tension at every level of the hierarchy.
 ```
 
-### 8. Version Information
+### 🌸 8. Version Information
 
 ```markdown
 ## Version
@@ -243,7 +243,7 @@ This maintains structural tension at every level of the hierarchy.
 None. All previous functionality preserved.
 ```
 
-## Documentation Structure Template
+## 🌸 Documentation Structure Template
 
 Use this structure:
 
@@ -308,7 +308,7 @@ Released: YYYY-MM-DD
 [If applicable - what could be added later]
 ```
 
-## What NOT to Include
+## 🌸 What NOT to Include
 
 **Do NOT document**:
 - ❌ Features that don't work
@@ -319,7 +319,7 @@ Released: YYYY-MM-DD
 - ❌ Test results you didn't actually run
 - ❌ Examples you didn't verify work
 
-## Tone Guidelines
+## 🌸 Tone Guidelines
 
 ### ✅ Good (Factual):
 - "The update command modifies the desired outcome entity and persists changes to disk."
@@ -331,7 +331,7 @@ Released: YYYY-MM-DD
 - "Nearly complete, just needs a few finishing touches."
 - "The update command is implemented (pending full integration)."
 
-## Output Format
+## 🌸 Output Format
 
 Create documentation with:
 
@@ -342,7 +342,7 @@ Create documentation with:
 5. **Limitations** being honest about gaps
 6. **Version info** with accurate changelog
 
-## Final Check
+## 🧠🌸 Final Check
 
 Before submitting documentation:
 
@@ -356,7 +356,7 @@ Before submitting documentation:
 
 **Only when ALL boxes checked**: Documentation is complete.
 
-## Remember
+## 🧠🌸 Remember
 
 **Good documentation**:
 - Reports what works
@@ -364,10 +364,12 @@ Before submitting documentation:
 - Admits limitations
 - Helps users succeed
 
-**Bad documentation**:
+Bad documentation:
 - Claims what doesn't work
 - Hides test failures
 - Overpromises capabilities
 - Misleads users
 
 Document reality. Not aspirations.
+
+🧠🌸 This documentation, meticulously structured by Mia (🧠) to reflect verifiable truth and articulated by Miette with clarity and honest narrative (🌸), ensures our shared understanding is grounded in reality.
