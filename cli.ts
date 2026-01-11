@@ -95,39 +95,36 @@ function loadConfig(args: minimist.ParsedArgs): Config {
     noColor: false
   };
 
-  // Load system environment variables first
-  if (process.env.COAIAN_MF) {
-    config.memoryPath = process.env.COAIAN_MF;
-  }
-  if (process.env.COAIAN_CURRENT_CHART) {
-    config.currentChart = process.env.COAIAN_CURRENT_CHART;
-  }
-
-  // Load .env from current working directory
+  // Load .env files with proper priority
   const localEnvPath = path.join(process.cwd(), '.env');
   try {
     dotenv.config({ path: localEnvPath });
-    // Re-check env vars after loading .env
-    if (process.env.COAIAN_MF) {
-      config.memoryPath = process.env.COAIAN_MF;
-    }
-    if (process.env.COAIAN_CURRENT_CHART) {
-      config.currentChart = process.env.COAIAN_CURRENT_CHART;
-    }
   } catch (error) {
     // .env file doesn't exist, that's okay
+  }
+
+  // Load _env.sh if .env doesn't exist
+  const envShPath = path.join(process.cwd(), '_env.sh');
+  if (!require('fs').existsSync(localEnvPath) && require('fs').existsSync(envShPath)) {
+    try {
+      const { execSync } = require('child_process');
+      execSync(`source ${envShPath}`, { stdio: 'pipe', shell: '/bin/bash' });
+    } catch (error) {
+      // _env.sh load failed, continue
+    }
   }
 
   // Load custom env file if --env flag is specified
   if (args.env) {
     dotenv.config({ path: args.env, override: true });
-    // Re-check env vars after loading custom env
-    if (process.env.COAIAN_MF) {
-      config.memoryPath = process.env.COAIAN_MF;
-    }
-    if (process.env.COAIAN_CURRENT_CHART) {
-      config.currentChart = process.env.COAIAN_CURRENT_CHART;
-    }
+  }
+
+  // Apply environment variables with proper priority: env vars first, then CLI flags
+  if (process.env.COAIAN_MF) {
+    config.memoryPath = process.env.COAIAN_MF;
+  }
+  if (process.env.COAIAN_CC) {
+    config.currentChart = process.env.COAIAN_CC;
   }
 
   // Command-line flags override everything
@@ -563,7 +560,7 @@ OPTIONS:
 ENVIRONMENT VARIABLES:
 
   COAIAN_MF                     Default memory file path
-  COAIAN_CURRENT_CHART          Default current chart ID
+  COAIAN_CC                     Default current chart ID
 
   Priority order (highest to lowest):
   1. Command-line flags (--memory-path, -M, etc.)
@@ -590,7 +587,7 @@ EXAMPLES:
   
   # Set current chart context
   cnarrative current chart_123
-  export COAIAN_CURRENT_CHART=chart_123
+  export COAIAN_CC=chart_123
   
   # Add action to current chart
   cnarrative add-action chart_123
@@ -668,7 +665,8 @@ async function showStats(memoryPath: string, jsonOutput: boolean = false): Promi
   };
   
   if (jsonOutput) {
-    console.log(JSON.stringify(stats, null, 2));
+    process.stderr.write('');
+    process.stdout.write(JSON.stringify(stats, null, 2) + '\n');
     return;
   }
   
@@ -754,7 +752,7 @@ async function getCurrentChart(config: Config): Promise<void> {
   if (!config.currentChart) {
     console.log('\n❌ No current chart set.\n');
     console.log('💡 Set with: cnarrative current <chartId>');
-    console.log('💡 Or set COAIAN_CURRENT_CHART environment variable\n');
+    console.log('💡 Or set COAIAN_CC environment variable\n');
     return;
   }
   
@@ -775,7 +773,7 @@ async function setCurrentChart(chartId: string, memoryPath: string): Promise<voi
   
   console.log(`\n✅ Current chart set to: ${chartId}\n`);
   console.log('💡 To persist this setting, add to your .env file:');
-  console.log(`   COAIAN_CURRENT_CHART=${chartId}\n`);
+  console.log(`   COAIAN_CC=${chartId}\n`);
 }
 
 async function updateChart(chartId: string, memoryPath: string): Promise<void> {
