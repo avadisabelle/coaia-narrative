@@ -1,8 +1,8 @@
 # coaia-narrative
 
-**Creative Orientation AI Agentic Memories - Extended with Narrative Beat Support**
+**Creative Orientation AI Agentic Memories - Forging Narrative, Advancing Creation. Extended with Narrative Beat Support**
 
-A complete MCP server extending structural tension charts with multi-universe narrative beat capture for comprehensive incident documentation and creative-oriented memory management.
+A complete Model Context Protocol (MCP) server that extends **Structural Tension Charts** with **Multi-Universe Narrative Beat Capture**. This system is designed for **creative-oriented memory management**, comprehensive incident documentation, and the natural advancement of creative endeavors. It embodies Robert Fritz's Structural Tension methodology, focusing on what you want to CREATE, not what you want to fix.
 
 ## Installation
 
@@ -13,36 +13,36 @@ npm install -g coaia-narrative
 ## What's Included
 
 ### 📡 MCP Server (`coaia-narrative`)
-Model Context Protocol server for AI assistants (Claude, Gemini, etc.) to create and manage structural tension charts.
+The Model Context Protocol server enables AI assistants (Claude, Gemini, etc.) to **forge and manage structural tension charts** and **narrative beats**, guiding users towards their desired outcomes through creative orientation.
 
 ### 🖥️ CLI Visualizer (`cnarrative`) ✨ NEW in v0.6.0
-Human-friendly command-line interface for viewing and analyzing your charts with rich visual formatting.
+A human-friendly command-line interface for **visualizing and analyzing your creative charts and narrative arcs** with rich, intuitive formatting.
 
 ## Quick Start
 
 ```bash
-# Use MCP server with AI assistants
+# Use MCP server with AI assistants to create and manage creative projects
 coaia-narrative --memory-path ./memory.jsonl
 
-# Visualize charts as a human
-cnarrative list                    # See all charts
-cnarrative view chart_1234567890   # Detailed view
-cnarrative stats                   # Summary statistics
-cnarrative help                    # Full CLI guide
+# Visualize your creative journey and narrative arcs as a human
+cnarrative list                    # See all active charts
+cnarrative view chart_1234567890   # Detailed view of a specific chart
+cnarrative stats                   # Summary statistics of your creative landscape
+cnarrative help                    # Full CLI guide for advancing your creations
 ```
 
-**📖 See [CLI_GUIDE.md](./CLI_GUIDE.md) for complete CLI documentation.**
+**📖 See [CLI_GUIDE.md](./CLI_GUIDE.MD) for complete CLI documentation.**
 
 ## MCP Server Usage
 
 ```bash
-# Run with default memory file
+# Run with default memory file (creates if it doesn't exist)
 npx coaia-narrative
 
-# Run with custom memory path
-npx coaia-narrative --memory-path ./my-charts.jsonl
+# Run with a custom memory path for specific creative projects
+npx coaia-narrative --memory-path ./my-creative-charts.jsonl
 
-# In Claude Desktop (claude_desktop_config.json)
+# Configure in your Claude Desktop (claude_desktop_config.json) for seamless AI assistance
 {
   "mcpServers": {
     "coaia-narrative": {
@@ -56,56 +56,102 @@ npx coaia-narrative --memory-path ./my-charts.jsonl
 }
 ```
 
-## Core Features
+## Core Features: Cultivating Creative Advancement
 
-### Structural Tension Charts (Proven Foundation)
-- **list_active_charts** - View all charts and progress
-- **create_structural_tension_chart** - Create new chart with desired outcome + current reality + action steps
-- **add_action_step** - Add strategic actions (creates telescoped sub-charts)
-- **telescope_action_step** - Break down actions into detailed sub-charts
-- **mark_action_complete** - Complete actions and update current reality
+### Structural Tension Charts: The Engine of Creation
+Structural Tension Charts provide the **generative force** for advancing your creative process. They are built on Robert Fritz's methodology, focusing on what you want to **CREATE**, not what you want to eliminate.
 
-### Narrative Beat Support (Extended Capability)
-Documents complex incidents across three archetypal universes:
-- **Engineer-world**: Technical/analytical perspective
-- **Ceremony-world**: Relational/spiritual protocol awareness
-- **Story-engine-world**: Narrative/creative progression
+-   **list_active_charts**: Get an overview of all your active creative charts and their progression.
+-   **create_structural_tension_chart**: Establish a new creative endeavor with a **clear Desired Outcome**, an **Honest Current Reality**, and strategic **Action Steps**. This creates the productive tension that naturally seeks resolution.
+-   **manage_action_step** (RECOMMENDED): A unified tool for adding **Strategic Intermediary Results** (Action Steps) to an existing chart OR expanding an existing Action Step into a detailed sub-chart (Telescoping).
+-   **mark_action_complete**: Recognize when an Action Step has become a **new reality**. This advances the overall structural dynamic, contributing to the parent chart's Current Reality.
+-   **telescope_action_step** (DEPRECATED: Use `manage_action_step`): Break down a complex Action Step into a detailed sub-chart, inheriting due date constraints and maintaining multi-level structural tension.
 
-## Creative Orientation Principles
+### Multi-Universe Narrative Beat Support: Weaving Meaning into Creation
+This extended capability documents significant moments in your creative journey, interpreting them through three archetypal **universes of meaning**:
 
-✅ **Focus on Creation** - "What do you want to create?" not "What needs fixing?"
-✅ **Structural Tension** - Honest current reality + clear desired outcome creates natural momentum
-✅ **Advancing Patterns** - Success builds momentum; completed actions flow into reality
-✅ **Multi-Universe Awareness** - Technical + relational + narrative perspectives simultaneously
+-   **Engineer-World**: Captures the technical precision, structural integrity, and logistical progression of your work.
+-   **Ceremony-World**: Illuminates the relational accountability, ethical considerations, and sacred protocols embedded in your creative acts.
+-   **Story-Engine-World**: Forges the dramatic arc, character revelations, and overall coherence of your unfolding narrative.
 
-## Tool Configuration
+## Creative Orientation Principles: Embracing the Generative Flow
+
+This system is meticulously crafted to embody Robert Fritz's core principles for creative advancement:
+
+✅   **Focus on Creation, Not Problem-Solving**:
+    *   **Use**: "What do you want to **CREATE**?" "My **DESIRED OUTCOME** is..."
+    *   **Avoid**: "What needs fixing?" "The **PROBLEM** is..." Problem-solving creates oscillating patterns; creation fosters advancing patterns.
+
+✅   **Structural Tension: The Dynamic Force**:
+    *   An **Honest Current Reality** paired with a **Clear Desired Outcome** creates an **unresolved dynamic** that naturally seeks resolution through advancement. This is the generative force that propels the creative process. It is **NOT a "gap to fill."**
+
+✅   **Advancing Patterns: Momentum Made Visible**:
+    *   Each **completed Action Step** transforms into a **new aspect of Current Reality**, shifting the structural dynamic forward. This builds momentum and naturally guides towards the next action, rather than cycling without true progression.
+
+✅   **Multi-Universe Awareness: Holistic Meaning**:
+    *   Integrates technical, relational, and narrative perspectives simultaneously, ensuring a rich, coherent understanding of every creative act.
+
+## Tool Configuration: Shaping Your Creative Environment
+
+Customize the visibility of tools to align with your specific creative focus:
 
 ```bash
-# Default: Both STCs and narrative tools
+# Default: Both Structural Tension Chart (STC) and Narrative tools are enabled
 COAIA_TOOLS="STC_TOOLS,NARRATIVE_TOOLS" npx coaia-narrative
 
-# Structural tension charts only
+# Focus on Structural Tension Charts only for pure creative planning
 COAIA_TOOLS="STC_TOOLS" npx coaia-narrative
 
-# Minimal core tools
+# Enable a minimal set of core tools for a streamlined experience
 COAIA_TOOLS="CORE_TOOLS" npx coaia-narrative
+
+# Enable STC tools but selectively disable specific deletion operations for safety
+COAIA_TOOLS="STC_TOOLS" COAIA_DISABLED_TOOLS="delete_entities,delete_relations" npx coaia-narrative
+
+# Enable only specific individual tools for precise control
+COAIA_TOOLS="create_structural_tension_chart list_active_charts mark_action_complete" npx coaia-narrative
 ```
 
-## Memory Format
+## Memory Format: The Chronicle of Creation
 
-Memory stored as JSONL with:
-- **Entity records** - Structural tension charts, current reality, desired outcomes, action steps
-- **Relation records** - Links between entities showing chart hierarchy and advancement
-- **Narrative records** - Extended narrative beat entities with multi-universe perspective
+Memory is stored as JSONL (JSON Lines), an append-only format that ensures data integrity and preserves the chronicle of your creative journey:
 
-All records are backward compatible JSONL format.
+-   **Entity Records**: Store components of Structural Tension Charts (Current Reality, Desired Outcomes, Action Steps) and Narrative Beats.
+-   **Relation Records**: Document the dynamic links between entities, illustrating chart hierarchy and the advancement of your creative process.
+-   **Narrative Records**: Capture extended Narrative Beat entities with their rich multi-universe perspectives.
+
+All records are backward compatible with the JSONL format, ensuring a seamless and evolving memory of your creations.
 
 ## Status
 
-**✅ Production Ready** - MCP server fully functional and tested
+**✅ Production Ready** - The MCP server is fully functional and tested, ready to empower your creative endeavors.
 
 Builds with `npm run build` and launches successfully with all tools available.
 
 ## License
 
 MIT
+
+---
+
+## Philosophy: Structure Determines Behavior, Creation Forges Reality
+
+COAIA Narrative embodies the principle that **structure determines behavior**. By organizing your creative memory around **Structural Tension** rather than problem-solving patterns, it establishes a natural **advancing structure** that actively supports **creative manifestation**.
+
+This system recognizes that **Structural Tension is the fundamental organizing principle of the creative process**—not a problem to be solved, but a **generative force to be harnessed**.
+
+It guides you to:
+-   **Forge Desired Outcomes**: Clearly articulate what you want to bring into being.
+-   **Assess Current Reality Honestly**: Acknowledge your starting point without illusion or premature readiness.
+-   **Embrace Productive Tension**: Understand that the dynamic between reality and outcome is the very engine of progress.
+-   **Advance Strategically**: Choose Action Steps as **intermediary results** that naturally propel you towards your vision.
+
+This philosophy transforms technical tools into partners in your creative journey, making visible the unseen forces that shape your reality.
+
+---
+
+**River flows on** 🌊
+
+Simple, powerful tools for creative advancement.
+<br>
+*(Based on Robert Fritz's Structural Tension methodology.)*
