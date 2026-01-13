@@ -380,8 +380,8 @@ async function viewChart(chartId: string, memoryPath: string): Promise<void> {
   const total = actionSteps.length;
   const progress = total > 0 ? completed / total : 0;
   
-  console.log(`  The gap between current reality and desired outcome creates natural`);
-  console.log(`  momentum toward resolution. Progress advances the system toward equilibrium.`);
+  //console.log(`  The tension between current reality and desired outcome creates natural`);
+  //console.log(`  momentum toward resolution. Progress advances the system toward equilibrium.`);
   console.log(`\n  ${getProgressBar(progress, 50)}`);
   console.log(`  ${completed} of ${total} action steps completed\n`);
   
@@ -497,7 +497,7 @@ async function viewChart(chartId: string, memoryPath: string): Promise<void> {
   
   console.log('═'.repeat(79));
   console.log(`💡 Use 'cnarrative update ${chartId}' to modify this chart`);
-  console.log(`💡 Use 'cnarrative list' to see all charts\n`);
+  //console.log(`💡 Use 'cnarrative list' to see all charts\n`);
 }
 
 function showHelp(): void {
