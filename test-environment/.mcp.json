@@ -2,7 +2,7 @@
   "mcpServers": {
     "coaia-memory": {
       "command": "node",
-      "args": ["../dist/index.js", "--memory-path", "./test-memory.jsonl"],
+      "args": ["${srcroot}/coaia-narrative/dist/index.js", "--memory-path", "./test-memory.jsonl"],
       "autoapprove": [
         "create_structural_tension_chart",
         "telescope_action_step", 
