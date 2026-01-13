@@ -7,10 +7,11 @@
  * Provides visual, intuitive interface for chart management
  */
 
-import { promises as fs } from 'fs';
+import fs from 'fs';
 import path from 'path';
 import minimist from 'minimist';
 import * as dotenv from 'dotenv';
+import { execSync } from 'child_process';
 import {
   exportChartToMarkdown,
   exportAllChartsToMarkdown,
@@ -105,9 +106,8 @@ function loadConfig(args: minimist.ParsedArgs): Config {
 
   // Load _env.sh if .env doesn't exist
   const envShPath = path.join(process.cwd(), '_env.sh');
-  if (!require('fs').existsSync(localEnvPath) && require('fs').existsSync(envShPath)) {
+  if (!fs.existsSync(localEnvPath) && fs.existsSync(envShPath)) {
     try {
-      const { execSync } = require('child_process');
       execSync(`source ${envShPath}`, { stdio: 'pipe', shell: '/bin/bash' });
     } catch (error) {
       // _env.sh load failed, continue
@@ -148,7 +148,7 @@ function loadConfig(args: minimist.ParsedArgs): Config {
 
 async function loadGraph(memoryPath: string): Promise<KnowledgeGraph> {
   try {
-    const data = await fs.readFile(memoryPath, "utf-8");
+    const data = await fs.promises.readFile(memoryPath, "utf-8");
     const lines = data.split("\n").filter(line => line.trim() !== "");
     return lines.reduce((graph: KnowledgeGraph, line) => {
       const item = JSON.parse(line);
@@ -169,7 +169,7 @@ async function saveGraph(memoryPath: string, graph: KnowledgeGraph): Promise<voi
     ...graph.entities.map(e => JSON.stringify({ type: 'entity', ...e })),
     ...graph.relations.map(r => JSON.stringify({ type: 'relation', ...r }))
   ];
-  await fs.writeFile(memoryPath, lines.join('\n') + '\n', 'utf-8');
+  await fs.promises.writeFile(memoryPath, lines.join('\n') + '\n', 'utf-8');
 }
 
 function formatDate(dateStr?: string): string {
