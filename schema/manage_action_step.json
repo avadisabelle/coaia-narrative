@@ -1,0 +1,32 @@
+{
+  "type": "object",
+  "properties": {
+    "parentReference": {
+      "type": "string",
+      "description": "Chart ID (e.g., 'chart_123') to create new action step, OR action step entity name (e.g., 'chart_123_action_1' or 'chart_123_desired_outcome') to expand existing action step"
+    },
+    "actionDescription": {
+      "type": "string",
+      "description": "Title/description of the action step"
+    },
+    "currentReality": {
+      "type": "string",
+      "description": "REQUIRED for new action creation. Honest assessment of actual current state relative to this action step. Examples: 'Never used Django', 'Completed models, struggling with views'. AVOID: 'Ready to begin'. Optional when expanding existing actions."
+    },
+    "initialActionSteps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Optional list of sub-actions for the action step"
+    },
+    "dueDate": {
+      "type": "string",
+      "description": "Optional due date (ISO string). Auto-distributed if not provided."
+    }
+  },
+  "required": [
+    "parentReference",
+    "actionDescription"
+  ]
+}

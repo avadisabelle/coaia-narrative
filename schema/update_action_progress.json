@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "properties": {
+    "actionStepName": {
+      "type": "string",
+      "description": "Name of the action step to update progress for"
+    },
+    "progressObservation": {
+      "type": "string",
+      "description": "Description of progress made on this action step"
+    },
+    "updateCurrentReality": {
+      "type": "boolean",
+      "description": "Whether to also add this progress to current reality (optional, defaults to false)"
+    }
+  },
+  "required": [
+    "actionStepName",
+    "progressObservation"
+  ]
+}

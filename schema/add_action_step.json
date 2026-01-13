@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "properties": {
+    "parentChartId": {
+      "type": "string",
+      "description": "ID of the parent chart to add the action step to"
+    },
+    "actionStepTitle": {
+      "type": "string",
+      "description": "Title of the action step (becomes desired outcome of telescoped chart)"
+    },
+    "dueDate": {
+      "type": "string",
+      "description": "Optional due date for the action step (ISO string). If not provided, auto-distributed between now and parent due date"
+    },
+    "currentReality": {
+      "type": "string",
+      "description": "Current reality specific to this action step. Required to maintain structural tension - assess the actual current state relative to this action step, not readiness to begin."
+    }
+  },
+  "required": [
+    "parentChartId",
+    "actionStepTitle",
+    "currentReality"
+  ]
+}

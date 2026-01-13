@@ -1,0 +1,13 @@
+type: object
+properties:
+  chartId:
+    type: string
+    description: >-
+      ID of the chart to update (works for master charts like 'chart_123' or
+      action step charts like 'chart_456')
+  newDesiredOutcome:
+    type: string
+    description: New desired outcome text
+required:
+  - chartId
+  - newDesiredOutcome

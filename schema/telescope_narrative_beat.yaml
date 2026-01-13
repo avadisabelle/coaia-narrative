@@ -1,0 +1,35 @@
+type: object
+properties:
+  parentBeatName:
+    type: string
+    description: Name of the parent narrative beat to telescope
+  newCurrentReality:
+    type: string
+    description: Updated current reality for the telescoped beat
+  initialSubBeats:
+    type: array
+    items:
+      type: object
+      properties:
+        title:
+          type: string
+        type_dramatic:
+          type: string
+        description:
+          type: string
+        prose:
+          type: string
+        lessons:
+          type: array
+          items:
+            type: string
+      required:
+        - title
+        - type_dramatic
+        - description
+        - prose
+        - lessons
+    description: Optional initial sub-beats to create
+required:
+  - parentBeatName
+  - newCurrentReality

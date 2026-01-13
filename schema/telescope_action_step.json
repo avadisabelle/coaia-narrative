@@ -1,0 +1,24 @@
+{
+  "type": "object",
+  "properties": {
+    "actionStepName": {
+      "type": "string",
+      "description": "Name of the action step to telescope"
+    },
+    "newCurrentReality": {
+      "type": "string",
+      "description": "REQUIRED: Honest assessment of actual current state relative to this action step. Examples: 'Never used Django before', 'Completed models section, struggling with views'. AVOID: 'Ready to begin', 'Prepared to start'."
+    },
+    "initialActionSteps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Optional list of initial action steps for the telescoped chart"
+    }
+  },
+  "required": [
+    "actionStepName",
+    "newCurrentReality"
+  ]
+}

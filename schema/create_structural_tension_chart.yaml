@@ -1,0 +1,24 @@
+type: object
+properties:
+  desiredOutcome:
+    type: string
+    description: >-
+      What you want to CREATE (not solve/fix). Focus on positive outcomes, not
+      problems to eliminate.
+  currentReality:
+    type: string
+    description: >-
+      Your current situation - factual assessment only. NEVER use 'ready to
+      begin' or similar readiness statements.
+  dueDate:
+    type: string
+    description: When you want to achieve this outcome (ISO date string)
+  actionSteps:
+    type: array
+    items:
+      type: string
+    description: Optional list of action steps needed to achieve the outcome
+required:
+  - desiredOutcome
+  - currentReality
+  - dueDate

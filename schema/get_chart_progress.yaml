@@ -1,0 +1,7 @@
+type: object
+properties:
+  chartId:
+    type: string
+    description: ID of the chart to check progress for
+required:
+  - chartId

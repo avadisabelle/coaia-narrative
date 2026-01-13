@@ -1,0 +1,13 @@
+type: object
+properties:
+  chartId:
+    type: string
+    description: ID of the chart to update current reality for
+  newObservations:
+    type: array
+    items:
+      type: string
+    description: Array of new observations to add to current reality
+required:
+  - chartId
+  - newObservations

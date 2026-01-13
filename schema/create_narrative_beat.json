@@ -1,0 +1,65 @@
+{
+  "type": "object",
+  "properties": {
+    "parentChartId": {
+      "type": "string",
+      "description": "ID of the parent structural tension chart"
+    },
+    "title": {
+      "type": "string",
+      "description": "Title of the narrative beat"
+    },
+    "act": {
+      "type": "number",
+      "description": "Act number in the narrative sequence"
+    },
+    "type_dramatic": {
+      "type": "string",
+      "description": "Dramatic type (e.g. 'Crisis/Antagonist Force', 'Setup', 'Turning Point')"
+    },
+    "universes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Universe perspectives (engineer-world, ceremony-world, story-engine-world)"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of the narrative beat"
+    },
+    "prose": {
+      "type": "string",
+      "description": "Prose narrative of the beat"
+    },
+    "lessons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Key lessons or insights from this beat"
+    },
+    "assessRelationalAlignment": {
+      "type": "boolean",
+      "description": "Whether to call iaip-mcp assess_relational_alignment"
+    },
+    "initiateFourDirectionsInquiry": {
+      "type": "boolean",
+      "description": "Whether to call iaip-mcp get_direction_guidance"
+    },
+    "filePath": {
+      "type": "string",
+      "description": "Path to narrative JSONL file (optional)"
+    }
+  },
+  "required": [
+    "parentChartId",
+    "title",
+    "act",
+    "type_dramatic",
+    "universes",
+    "description",
+    "prose",
+    "lessons"
+  ]
+}

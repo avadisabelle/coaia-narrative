@@ -1,0 +1,13 @@
+type: object
+properties:
+  parentChartId:
+    type: string
+    description: ID of the parent chart containing the action step
+  actionStepName:
+    type: string
+    description: >-
+      Name of the action step to remove (telescoped chart's desired outcome
+      name)
+required:
+  - parentChartId
+  - actionStepName

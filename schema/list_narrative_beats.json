@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "properties": {
+    "parentChartId": {
+      "type": "string",
+      "description": "Optional: Filter by parent chart ID"
+    }
+  }
+}

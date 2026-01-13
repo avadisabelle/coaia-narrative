@@ -1,0 +1,7 @@
+type: object
+properties:
+  actionStepName:
+    type: string
+    description: Name of the completed action step
+required:
+  - actionStepName

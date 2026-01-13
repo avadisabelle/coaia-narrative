@@ -1,0 +1,11 @@
+type: object
+properties:
+  names:
+    type: array
+    items:
+      type: string
+    description: >-
+      An array of exact entity names to retrieve (e.g.
+      'chart_123_desired_outcome')
+required:
+  - names

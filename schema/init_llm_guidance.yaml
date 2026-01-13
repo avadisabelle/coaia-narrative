@@ -1,0 +1,12 @@
+type: object
+properties:
+  format:
+    type: string
+    enum:
+      - full
+      - quick
+      - save_directive
+    default: full
+    description: >-
+      Level of detail: 'full' for complete guidance, 'quick' for essentials
+      only, 'save_directive' for session memory instructions

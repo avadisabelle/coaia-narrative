@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "properties": {
+    "entityNames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "An array of entity names to delete"
+    }
+  },
+  "required": [
+    "entityNames"
+  ]
+}
