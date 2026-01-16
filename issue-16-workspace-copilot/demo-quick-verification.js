@@ -88,8 +88,12 @@ async function demo() {
     });
     
     const addActionText = addActionResult.result.content[0].text;
-    const telescopedMatch = addActionText.match(/chart_\d+/g);
-    const telescopedChartId = telescopedMatch[telescopedMatch.length - 1];
+    // Extract the telescoped chart ID using a specific pattern
+    const telescopedMatch = addActionText.match(/as telescoped chart '(chart_\d+)'/);
+    if (!telescopedMatch) {
+      throw new Error('Could not extract telescoped chart ID from response');
+    }
+    const telescopedChartId = telescopedMatch[1];
     const actionStepName = `${telescopedChartId}_desired_outcome`;
     
     console.log(`✓ Added action step, created telescoped chart: ${telescopedChartId}`);
