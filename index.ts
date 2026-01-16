@@ -505,10 +505,26 @@ class KnowledgeGraphManager {
   async getActionStepDetails(actionStepName: string): Promise<KnowledgeGraph | null> {
     const graph = await this.loadGraph();
     const actionStepEntity = graph.entities.find(e => e.name === actionStepName && (e.entityType === 'action_step' || e.entityType === 'desired_outcome'));
-    if (!actionStepEntity || !actionStepEntity.metadata?.chartId) {
+    if (!actionStepEntity) {
       return null;
     }
-    return this.getChartDetails(actionStepEntity.metadata.chartId);
+    
+    // Find the telescoped chart by following the telescopes_into relation
+    const telescopesRelation = graph.relations.find(
+      r => r.from === actionStepName && r.relationType === 'telescopes_into'
+    );
+    
+    if (!telescopesRelation) {
+      return null;
+    }
+    
+    // The relation points to the desired_outcome entity of the telescoped chart
+    const telescopedOutcomeEntity = graph.entities.find(e => e.name === telescopesRelation.to);
+    if (!telescopedOutcomeEntity || !telescopedOutcomeEntity.metadata?.chartId) {
+      return null;
+    }
+    
+    return this.getChartDetails(telescopedOutcomeEntity.metadata.chartId);
   }
 
   // COAIA-specific methods for structural tension charts and creative processes
