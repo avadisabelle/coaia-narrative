@@ -99,7 +99,7 @@ function loadConfig(args: minimist.ParsedArgs): Config {
   // Load .env files with proper priority
   const localEnvPath = path.join(process.cwd(), '.env');
   try {
-    dotenv.config({ path: localEnvPath });
+    dotenv.config({ path: localEnvPath, debug: false });
   } catch (error) {
     // .env file doesn't exist, that's okay
   }
@@ -116,7 +116,7 @@ function loadConfig(args: minimist.ParsedArgs): Config {
 
   // Load custom env file if --env flag is specified
   if (args.env) {
-    dotenv.config({ path: args.env, override: true });
+    dotenv.config({ path: args.env, override: true, debug: false });
   }
 
   // Apply environment variables with proper priority: env vars first, then CLI flags
@@ -986,12 +986,14 @@ async function main() {
       case 'view':
       case 'v':
       case 'show':
-        if (!args._[1]) {
-          console.log('\n❌ Error: Chart ID required\n');
+        const viewChartId = args._[1] || config.currentChart;
+        if (!viewChartId) {
+          console.log('\n❌ Error: Chart ID required or set current chart\n');
           console.log('Usage: cnarrative view <chartId>\n');
+          console.log('   or: export COAIAN_CC=<chartId> && cnarrative view\n');
           process.exit(1);
         }
-        await viewChart(args._[1], config.memoryPath);
+        await viewChart(viewChartId, config.memoryPath);
         break;
       
       case 'current':
