@@ -12,9 +12,9 @@
     }
 ,
 
-    "test-coaia-narrative": {
+    "kotd-test-coaia-narrative": {
          "command": "npx",
-         "args": ["-y", "${CNCV}", "--memory-path", "/src/memories/test-coaia-narrative.jsonl"]
+         "args": ["-y", "/src/coaia-narrative/dist/index.js", "--memory-path", "/a/src/coaia-narrative/samples/kotd-251001a.jsonl"]
     }
 
   }

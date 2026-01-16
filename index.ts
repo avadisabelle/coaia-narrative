@@ -182,6 +182,8 @@ const TOOL_GROUPS = {
     'mark_action_complete',
     'get_chart_progress',
     'list_active_charts',
+    'get_chart',
+    'get_action_step',
     'update_action_progress',
     'update_current_reality',
     'update_desired_outcome',
@@ -482,6 +484,31 @@ class KnowledgeGraphManager {
     };
 
     return filteredGraph;
+  }
+
+  async getChartDetails(chartId: string): Promise<KnowledgeGraph | null> {
+    const graph = await this.loadGraph();
+    const chartEntities = graph.entities.filter(e => e.metadata?.chartId === chartId);
+    if (chartEntities.length === 0) {
+      return null;
+    }
+    const chartEntityNames = new Set(chartEntities.map(e => e.name));
+    const chartRelations = graph.relations.filter(r =>
+      chartEntityNames.has(r.from) && chartEntityNames.has(r.to)
+    );
+    return {
+      entities: chartEntities,
+      relations: chartRelations,
+    };
+  }
+
+  async getActionStepDetails(actionStepName: string): Promise<KnowledgeGraph | null> {
+    const graph = await this.loadGraph();
+    const actionStepEntity = graph.entities.find(e => e.name === actionStepName && (e.entityType === 'action_step' || e.entityType === 'desired_outcome'));
+    if (!actionStepEntity || !actionStepEntity.metadata?.chartId) {
+      return null;
+    }
+    return this.getChartDetails(actionStepEntity.metadata.chartId);
   }
 
   // COAIA-specific methods for structural tension charts and creative processes
@@ -1658,6 +1685,28 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         }
       },
       {
+        name: "get_chart",
+        description: "Get the full details of a specific structural tension chart, including its desired outcome, current reality, and all associated action steps.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            chartId: { type: "string", description: "ID of the chart to retrieve." }
+          },
+          required: ["chartId"]
+        }
+      },
+      {
+        name: "get_action_step",
+        description: "Get the full details of a specific action step, which is itself a telescoped chart.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            actionStepName: { type: "string", description: "Name of the action step (e.g., 'chart_123_desired_outcome') to retrieve." }
+          },
+          required: ["actionStepName"]
+        }
+      },
+      {
         name: "update_action_progress",
         description: "Update progress on an action step without marking it complete, optionally updating current reality",
         inputSchema: {
@@ -2051,6 +2100,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
         
         return { content: [{ type: "text", text: hierarchyText }] };
+      }
+      case "get_chart": {
+        const valResult = validate(toolArgs, { chartId: ValidationSchemas.nonEmptyString() });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
+        const result = await knowledgeGraphManager.getChartDetails(toolArgs.chartId as string);
+        if (!result) return { content: [{ type: "text", text: `Error: Chart with ID ${toolArgs.chartId} not found` }], isError: true };
+        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      }
+      case "get_action_step": {
+        const valResult = validate(toolArgs, { actionStepName: ValidationSchemas.nonEmptyString() });
+        if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
+        const result = await knowledgeGraphManager.getActionStepDetails(toolArgs.actionStepName as string);
+        if (!result) return { content: [{ type: "text", text: `Error: Action step with name ${toolArgs.actionStepName} not found` }], isError: true };
+        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
       }
       case "update_action_progress": {
         const valResult = validate(toolArgs, {
