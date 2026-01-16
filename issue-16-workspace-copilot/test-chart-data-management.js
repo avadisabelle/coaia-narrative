@@ -19,7 +19,7 @@ const serverPath = join(__dirname, '..', 'dist', 'index.js');
 const testMemoryPath = './test-chart-data-mgmt.jsonl';
 
 console.log('🧪 Testing Basic Chart Data Management (Issue #16)\n');
-console.log('=' . repeat(60));
+console.log('='.repeat(60));
 
 let testsPassed = 0;
 let testsFailed = 0;
