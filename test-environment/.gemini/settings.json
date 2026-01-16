@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+	  "github_avadisabelle": {
+      "command": "npx",
+      "args": [
+	"-y",
+	"@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN_AVADISABELLE}"       
+      }
+    }
+,
+
+    "kotd-test-coaia-narrative": {
+         "command": "node",
+         "args": ["/a/src/coaia-narrative/dist/index.js", "--memory-path", "/a/src/coaia-narrative/samples/kotd-251001a.jsonl"]
+    }
+
+  }
+}

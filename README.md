@@ -74,6 +74,25 @@ This extended capability documents significant moments in your creative journey,
 -   **Ceremony-World**: Illuminates the relational accountability, ethical considerations, and sacred protocols embedded in your creative acts.
 -   **Story-Engine-World**: Forges the dramatic arc, character revelations, and overall coherence of your unfolding narrative.
 
+### Telescoping Architecture: Action Steps are Charts
+
+**Key Insight**: In COAIA Narrative, an "action step" is NOT a simple todo item—it's a **complete, self-contained structural tension chart** nested within a parent chart.
+
+When you add an action step like "Master TypeScript", the system creates a new telescoped chart with:
+- Its own unique `chartId` (e.g., `chart_456`)
+- A complete **desired_outcome** entity containing "Master TypeScript"
+- A complete **current_reality** entity with honest assessment
+- Potentially its own sub-action-steps (unlimited telescoping depth)
+- Metadata linking it to the parent chart
+
+**Key Methods**:
+- `getChartDetails(chartId)`: Returns all entities and relations for a specific chart
+- `getActionStepDetails(actionStepName)`: Extracts the chartId from an action step entity and returns its full sub-chart
+
+This architecture enables deep hierarchical organization while maintaining complete structural tension at every level. Each action step is itself a creative endeavor with its own desired outcome and current reality, not just a task on a list.
+
+**📖 See [issue-16-workspace-copilot/CHART_DATA_MANAGEMENT.md](./issue-16-workspace-copilot/CHART_DATA_MANAGEMENT.md) for complete implementation details.**
+
 ## Creative Orientation Principles: Embracing the Generative Flow
 
 This system is meticulously crafted to embody Robert Fritz's core principles for creative advancement:
