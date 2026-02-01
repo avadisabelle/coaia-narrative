@@ -1,0 +1,243 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/avadisabelle/coaia-narrative/schema/jsonl.schema.json",
+  "title": "COAIA Narrative JSONL Data Format",
+  "description": "Schema for structural tension chart data stored in JSONL (JSON Lines) format. Each line is either an Entity or Relation record.",
+
+  "oneOf": [
+    { "$ref": "#/definitions/EntityLine" },
+    { "$ref": "#/definitions/RelationLine" }
+  ],
+
+  "definitions": {
+    "EntityLine": {
+      "type": "object",
+      "required": ["type", "name", "entityType", "observations"],
+      "properties": {
+        "type": {
+          "const": "entity",
+          "description": "Discriminator for entity records"
+        },
+        "name": {
+          "type": "string",
+          "description": "Unique identifier for this entity",
+          "examples": [
+            "chart_1234567890123_chart",
+            "chart_1234567890123_desired_outcome",
+            "chart_1234567890123_current_reality",
+            "chart_1234567890123_action_1"
+          ]
+        },
+        "entityType": {
+          "type": "string",
+          "description": "Category of entity",
+          "enum": [
+            "structural_tension_chart",
+            "desired_outcome",
+            "current_reality",
+            "action_step",
+            "narrative_beat"
+          ],
+          "examples": [
+            "structural_tension_chart",
+            "desired_outcome",
+            "current_reality"
+          ]
+        },
+        "observations": {
+          "type": "array",
+          "description": "List of textual observations about this entity",
+          "items": {
+            "type": "string"
+          },
+          "examples": [
+            ["Chart created on 2026-01-26T04:29:57.348Z"],
+            ["Build chart system"],
+            ["Need chart infrastructure"]
+          ]
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Additional metadata about the entity",
+          "properties": {
+            "chartId": {
+              "type": "string",
+              "description": "ID of the parent chart this entity belongs to",
+              "pattern": "^chart_[0-9]{13}$",
+              "examples": ["chart_1234567890123"]
+            },
+            "dueDate": {
+              "type": "string",
+              "description": "ISO date string for when this is due",
+              "format": "date",
+              "examples": ["2026-02-01"]
+            },
+            "level": {
+              "type": "integer",
+              "description": "Nesting level (0 for master charts, 1+ for telescoped)",
+              "minimum": 0,
+              "examples": [0, 1, 2]
+            },
+            "phase": {
+              "type": "string",
+              "description": "Phase of structural tension resolution",
+              "enum": ["germination", "assimilation", "completion"]
+            },
+            "completionStatus": {
+              "type": "boolean",
+              "description": "Whether this action step is complete"
+            },
+            "parentChart": {
+              "type": "string",
+              "description": "Parent chart ID for telescoped charts",
+              "examples": ["chart_1234567890123"]
+            },
+            "parentActionStep": {
+              "type": "string",
+              "description": "Parent action step name for telescoped charts",
+              "examples": ["chart_1234567890123_action_1"]
+            },
+            "createdAt": {
+              "type": "string",
+              "description": "ISO timestamp of creation",
+              "format": "date-time",
+              "examples": ["2026-01-26T04:29:57.348Z"]
+            },
+            "updatedAt": {
+              "type": "string",
+              "description": "ISO timestamp of last update",
+              "format": "date-time",
+              "examples": ["2026-01-26T04:29:57.348Z"]
+            }
+          }
+        }
+      }
+    },
+
+    "RelationLine": {
+      "type": "object",
+      "required": ["type", "from", "to", "relationType"],
+      "properties": {
+        "type": {
+          "const": "relation",
+          "description": "Discriminator for relation records"
+        },
+        "from": {
+          "type": "string",
+          "description": "Source entity name",
+          "examples": [
+            "chart_1234567890123_chart",
+            "chart_1234567890123_current_reality"
+          ]
+        },
+        "to": {
+          "type": "string",
+          "description": "Target entity name",
+          "examples": [
+            "chart_1234567890123_desired_outcome",
+            "chart_1234567890123_current_reality"
+          ]
+        },
+        "relationType": {
+          "type": "string",
+          "description": "Type of relationship between entities",
+          "enum": [
+            "contains",
+            "creates_tension_with",
+            "parent_of",
+            "telescoped_from",
+            "depends_on",
+            "blocks"
+          ],
+          "examples": [
+            "contains",
+            "creates_tension_with"
+          ]
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Additional metadata about the relation",
+          "properties": {
+            "createdAt": {
+              "type": "string",
+              "description": "ISO timestamp of creation",
+              "format": "date-time",
+              "examples": ["2026-01-26T04:29:57.348Z"]
+            },
+            "strength": {
+              "type": "number",
+              "description": "Strength of the relationship (0-1)",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "context": {
+              "type": "string",
+              "description": "Contextual information about this relation"
+            },
+            "description": {
+              "type": "string",
+              "description": "Human-readable description of this relation"
+            }
+          }
+        }
+      }
+    }
+  },
+
+  "examples": [
+    {
+      "type": "entity",
+      "name": "chart_1769401797348_chart",
+      "entityType": "structural_tension_chart",
+      "observations": ["Chart created on 2026-01-26T04:29:57.348Z"],
+      "metadata": {
+        "chartId": "chart_1769401797348",
+        "dueDate": "2026-02-01",
+        "level": 0,
+        "createdAt": "2026-01-26T04:29:57.348Z",
+        "updatedAt": "2026-01-26T04:29:57.348Z"
+      }
+    },
+    {
+      "type": "entity",
+      "name": "chart_1769401797348_desired_outcome",
+      "entityType": "desired_outcome",
+      "observations": ["Build chart system"],
+      "metadata": {
+        "chartId": "chart_1769401797348",
+        "dueDate": "2026-02-01",
+        "createdAt": "2026-01-26T04:29:57.348Z",
+        "updatedAt": "2026-01-26T04:29:57.348Z"
+      }
+    },
+    {
+      "type": "entity",
+      "name": "chart_1769401797348_current_reality",
+      "entityType": "current_reality",
+      "observations": ["Need chart infrastructure"],
+      "metadata": {
+        "chartId": "chart_1769401797348",
+        "createdAt": "2026-01-26T04:29:57.348Z",
+        "updatedAt": "2026-01-26T04:29:57.348Z"
+      }
+    },
+    {
+      "type": "relation",
+      "from": "chart_1769401797348_chart",
+      "to": "chart_1769401797348_desired_outcome",
+      "relationType": "contains",
+      "metadata": {
+        "createdAt": "2026-01-26T04:29:57.348Z"
+      }
+    },
+    {
+      "type": "relation",
+      "from": "chart_1769401797348_current_reality",
+      "to": "chart_1769401797348_desired_outcome",
+      "relationType": "creates_tension_with",
+      "metadata": {
+        "createdAt": "2026-01-26T04:29:57.348Z"
+      }
+    }
+  ]
+}
