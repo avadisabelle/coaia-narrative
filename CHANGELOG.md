@@ -287,3 +287,55 @@ This RC demonstrates complete structural tension chart functionality validated t
 - JSONL data persistence
 
 *This version served as the foundation for COAIA Memory development.*
+## [2.3.0] - 2026-02-13
+
+### Schema Reorganization - Major Enhancement
+
+#### Added
+- **Hierarchical schema organization** with clear categorization
+  - `schema/data-model/` - Core data structures (Entity, Relation, KnowledgeGraph, Storage Format)
+  - `schema/tools/stc/` - Structural Tension Chart tools (12 tools)
+  - `schema/tools/narrative/` - Narrative Beat tools (3 tools)
+  - `schema/tools/knowledge-graph/` - Traditional KG tools (9 tools)
+  - `schema/tools/system/` - System tools (1 tool)
+  - `schema/examples/` - Usage examples and patterns
+
+- **Consolidated data model schemas**
+  - `schema/data-model-complete.json` - All data schemas in single JSON file
+  - `schema/data-model-complete.yaml` - All data schemas in single YAML file
+
+- **Central schema registry**
+  - `schema/index.json` - Maps all tools, schemas, and categories
+  - `schema/index.yaml` - YAML version of registry
+
+- **Comprehensive documentation** (8 README files, 66k+ chars)
+  - `schema/README.md` - Main navigation guide
+  - `schema/data-model/README.md` - Complete data model documentation
+  - `schema/tools/README.md` - Tools overview
+  - `schema/tools/stc/README.md` - STC tools detailed guide
+  - `schema/tools/narrative/README.md` - Narrative tools guide
+  - `schema/tools/knowledge-graph/README.md` - KG tools guide with fork attribution
+  - `schema/tools/system/README.md` - System tools guide
+  - `schema/examples/README.md` - Examples documentation
+
+- **Dual format support**
+  - All schemas available in both JSON and YAML formats
+  - Automatic conversion utility (`schema/convert-to-yaml.js`)
+
+#### Changed
+- Reorganized all tool schemas from flat structure to categorized directories
+- Moved 24 tool schemas (48 files including YAML) to appropriate subdirectories
+- Updated main README.md with Schema Documentation section
+- Updated CLAUDE.md with Schema Documentation section
+
+#### Fixed
+- Schema organization now clearly shows what data and tools COAIA offers
+- External applications can easily discover and implement COAIA schemas
+- Clear attribution to Shane Holloman's mcp-knowledge-graph fork in KG tools README
+
+#### For External Developers
+- **Quick start**: Use `schema/data-model-complete.json` for all data schemas
+- **Discovery**: Check `schema/index.json` for complete tool/schema registry
+- **Navigation**: Start with `schema/README.md` for organized access
+- **Format choice**: All schemas in both JSON and YAML
+

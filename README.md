@@ -141,6 +141,28 @@ Memory is stored as JSONL (JSON Lines), an append-only format that ensures data 
 
 All records are backward compatible with the JSONL format, ensuring a seamless and evolving memory of your creations.
 
+## Schema Documentation: Understanding the Structure
+
+Comprehensive schema documentation is available in the [`schema/`](./schema/) directory:
+
+### 📊 Data Models
+- **[schema/data-model-complete.json](./schema/data-model-complete.json)** - ✨ Single consolidated file with all data schemas (JSON)
+- **[schema/data-model-complete.yaml](./schema/data-model-complete.yaml)** - ✨ Same as above in YAML format
+- **[schema/data-model/](./schema/data-model/)** - Individual schemas (Entity, Relation, KnowledgeGraph, Storage Format)
+
+### 🛠️ MCP Tool Schemas
+- **[schema/tools/stc/](./schema/tools/stc/)** - Structural Tension Chart tools (11 tools)
+- **[schema/tools/narrative/](./schema/tools/narrative/)** - Narrative Beat tools (3 tools)
+- **[schema/tools/knowledge-graph/](./schema/tools/knowledge-graph/)** - Traditional KG tools (9 tools)
+- **[schema/tools/system/](./schema/tools/system/)** - System tools (1 tool)
+
+### 📖 Additional Resources
+- **[schema/index.json](./schema/index.json)** - Central registry mapping all schemas and tools
+- **[schema/examples/](./schema/examples/)** - Example payloads and usage patterns
+- **[schema/README.md](./schema/README.md)** - Complete schema documentation guide
+
+All schemas are available in both **JSON** and **YAML** formats for maximum compatibility with external applications.
+
 ## Status
 
 **✅ Production Ready** - The MCP server is fully functional and tested, ready to empower your creative endeavors.

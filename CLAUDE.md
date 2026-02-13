@@ -241,6 +241,23 @@ npm run build
 node test-coaia.js
 ```
 
+## Schema Documentation
+
+Comprehensive schema documentation for external applications and integrations:
+
+### 📊 Quick Access
+- **[schema/data-model-complete.json](./schema/data-model-complete.json)** - All data schemas in one file (JSON)
+- **[schema/data-model-complete.yaml](./schema/data-model-complete.yaml)** - All data schemas in one file (YAML)
+- **[schema/index.json](./schema/index.json)** - Central registry mapping all schemas and tools
+
+### 📚 Detailed Documentation
+- **[schema/README.md](./schema/README.md)** - Complete schema overview and navigation
+- **[schema/data-model/](./schema/data-model/)** - Entity, Relation, KnowledgeGraph, Storage Format
+- **[schema/tools/](./schema/tools/)** - All MCP tool schemas organized by category
+- **[schema/examples/](./schema/examples/)** - Example payloads and usage patterns
+
+All schemas are provided in both JSON and YAML formats for maximum compatibility.
+
 ## Release Status
 
 **Current Version**: v2.2.3
