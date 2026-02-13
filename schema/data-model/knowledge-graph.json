@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/avadisabelle/coaia-narrative/schema/data-model/knowledge-graph.json",
+  "title": "COAIA Knowledge Graph",
+  "description": "Complete knowledge graph structure containing entities and relations. This is the in-memory representation of the graph.",
+  "type": "object",
+  "required": ["entities", "relations"],
+  "properties": {
+    "entities": {
+      "type": "array",
+      "description": "Array of all entities in the knowledge graph",
+      "items": {
+        "$ref": "entity.json"
+      }
+    },
+    "relations": {
+      "type": "array",
+      "description": "Array of all relations connecting entities in the graph",
+      "items": {
+        "$ref": "relation.json"
+      }
+    }
+  },
+  "examples": [
+    {
+      "entities": [
+        {
+          "name": "chart_123",
+          "entityType": "structural_tension_chart",
+          "observations": ["Python learning journey"],
+          "metadata": {
+            "dueDate": "2026-03-15T00:00:00Z",
+            "chartId": "chart_123",
+            "level": 0,
+            "createdAt": "2026-02-13T07:00:00Z"
+          }
+        },
+        {
+          "name": "chart_123_desired_outcome",
+          "entityType": "desired_outcome",
+          "observations": ["Build and deploy a Python web application"],
+          "metadata": {
+            "chartId": "chart_123"
+          }
+        },
+        {
+          "name": "chart_123_current_reality",
+          "entityType": "current_reality",
+          "observations": [
+            "Know basic Python syntax",
+            "Never worked with web frameworks"
+          ],
+          "metadata": {
+            "chartId": "chart_123"
+          }
+        },
+        {
+          "name": "chart_123_action_1",
+          "entityType": "action_step",
+          "observations": ["Complete Django tutorial"],
+          "metadata": {
+            "chartId": "chart_123",
+            "dueDate": "2026-02-20T00:00:00Z",
+            "completionStatus": false
+          }
+        }
+      ],
+      "relations": [
+        {
+          "from": "chart_123_current_reality",
+          "to": "chart_123_desired_outcome",
+          "relationType": "creates_tension_with"
+        },
+        {
+          "from": "chart_123_action_1",
+          "to": "chart_123_desired_outcome",
+          "relationType": "advances_toward"
+        }
+      ]
+    }
+  ]
+}

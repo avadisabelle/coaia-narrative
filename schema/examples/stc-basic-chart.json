@@ -1,0 +1,113 @@
+{
+  "description": "Example of a basic structural tension chart for learning Python web development",
+  "chart_creation_payload": {
+    "desiredOutcome": "Build and deploy a Python web application",
+    "currentReality": "Know basic Python syntax but never used web frameworks",
+    "dueDate": "2026-03-15T00:00:00Z",
+    "actionSteps": [
+      "Complete Django official tutorial",
+      "Build a CRUD practice application",
+      "Deploy to production environment"
+    ]
+  },
+  "resulting_entities": [
+    {
+      "name": "chart_1739401797348",
+      "entityType": "structural_tension_chart",
+      "observations": ["Chart created for Python web development learning"],
+      "metadata": {
+        "chartId": "chart_1739401797348",
+        "dueDate": "2026-03-15T00:00:00Z",
+        "level": 0,
+        "createdAt": "2026-02-13T07:00:00Z"
+      }
+    },
+    {
+      "name": "chart_1739401797348_desired_outcome",
+      "entityType": "desired_outcome",
+      "observations": ["Build and deploy a Python web application"],
+      "metadata": {
+        "chartId": "chart_1739401797348"
+      }
+    },
+    {
+      "name": "chart_1739401797348_current_reality",
+      "entityType": "current_reality",
+      "observations": ["Know basic Python syntax but never used web frameworks"],
+      "metadata": {
+        "chartId": "chart_1739401797348"
+      }
+    },
+    {
+      "name": "chart_1739401797348_action_1",
+      "entityType": "action_step",
+      "observations": ["Complete Django official tutorial"],
+      "metadata": {
+        "chartId": "chart_1739401797348",
+        "dueDate": "2026-02-20T00:00:00Z",
+        "completionStatus": false
+      }
+    },
+    {
+      "name": "chart_1739401797348_action_2",
+      "entityType": "action_step",
+      "observations": ["Build a CRUD practice application"],
+      "metadata": {
+        "chartId": "chart_1739401797348",
+        "dueDate": "2026-02-27T00:00:00Z",
+        "completionStatus": false
+      }
+    },
+    {
+      "name": "chart_1739401797348_action_3",
+      "entityType": "action_step",
+      "observations": ["Deploy to production environment"],
+      "metadata": {
+        "chartId": "chart_1739401797348",
+        "dueDate": "2026-03-08T00:00:00Z",
+        "completionStatus": false
+      }
+    }
+  ],
+  "resulting_relations": [
+    {
+      "from": "chart_1739401797348",
+      "to": "chart_1739401797348_desired_outcome",
+      "relationType": "contains"
+    },
+    {
+      "from": "chart_1739401797348",
+      "to": "chart_1739401797348_current_reality",
+      "relationType": "contains"
+    },
+    {
+      "from": "chart_1739401797348_current_reality",
+      "to": "chart_1739401797348_desired_outcome",
+      "relationType": "creates_tension_with",
+      "metadata": {
+        "description": "The gap between current Python knowledge and desired web app creates productive structural tension"
+      }
+    },
+    {
+      "from": "chart_1739401797348_action_1",
+      "to": "chart_1739401797348_desired_outcome",
+      "relationType": "advances_toward"
+    },
+    {
+      "from": "chart_1739401797348_action_2",
+      "to": "chart_1739401797348_desired_outcome",
+      "relationType": "advances_toward"
+    },
+    {
+      "from": "chart_1739401797348_action_3",
+      "to": "chart_1739401797348_desired_outcome",
+      "relationType": "advances_toward"
+    }
+  ],
+  "notes": [
+    "Due dates are automatically distributed evenly across the chart timeline",
+    "Initial progress is 0% (0 of 3 actions complete)",
+    "Structural tension exists between current reality and desired outcome",
+    "Completing actions will flow observations into current reality, creating advancement"
+  ]
+}

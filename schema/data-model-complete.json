@@ -1,0 +1,331 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/avadisabelle/coaia-narrative/schema/data-model-complete.json",
+  "title": "COAIA Complete Data Model",
+  "description": "Consolidated schema containing all data models used in the COAIA Narrative system. This single file provides a complete reference for the Entity structure, Relation structure, KnowledgeGraph container, and JSONL storage format.",
+  "version": "2.3.0",
+  "definitions": {
+    "Entity": {
+      "type": "object",
+      "required": ["name", "entityType", "observations"],
+      "description": "Core entity structure representing nodes in the knowledge graph with typed observations and rich metadata",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Unique identifier for the entity. For structural tension components, follows naming convention: 'chart_{id}_{component}' (e.g., 'chart_123_desired_outcome', 'chart_123_action_1')"
+        },
+        "entityType": {
+          "type": "string",
+          "description": "Type of entity defining its role in the system",
+          "enum": [
+            "structural_tension_chart",
+            "desired_outcome",
+            "current_reality",
+            "action_step",
+            "narrative_beat",
+            "person",
+            "concept",
+            "event",
+            "location",
+            "organization",
+            "artifact",
+            "custom"
+          ]
+        },
+        "observations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of observations/facts about this entity. For current_reality, observations accumulate over time as actions complete. For desired_outcome, typically contains a single clear statement."
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Optional metadata providing additional context and structure",
+          "properties": {
+            "dueDate": {
+              "type": "string",
+              "format": "date-time",
+              "description": "ISO 8601 timestamp for when an action_step or chart should be completed"
+            },
+            "chartId": {
+              "type": "string",
+              "description": "Reference to parent chart ID (e.g., 'chart_123')"
+            },
+            "phase": {
+              "type": "string",
+              "enum": ["germination", "assimilation", "completion"],
+              "description": "Creative phase of the chart or action (based on Robert Fritz's creative process)"
+            },
+            "completionStatus": {
+              "type": "boolean",
+              "description": "Whether an action_step has been completed"
+            },
+            "parentChart": {
+              "type": "string",
+              "description": "For telescoped charts, the ID of the parent chart"
+            },
+            "parentActionStep": {
+              "type": "string",
+              "description": "For telescoped charts, the entity name of the parent action step"
+            },
+            "level": {
+              "type": "integer",
+              "description": "Nesting level in chart hierarchy (0 = root chart, 1 = first telescoping, etc.)",
+              "minimum": 0
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "ISO 8601 timestamp of entity creation"
+            },
+            "updatedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "ISO 8601 timestamp of last update"
+            },
+            "act": {
+              "type": "integer",
+              "description": "For narrative_beat entities: Act number in three-act structure (1, 2, or 3)",
+              "minimum": 1,
+              "maximum": 3
+            },
+            "type_dramatic": {
+              "type": "string",
+              "description": "For narrative_beat entities: Dramatic type (e.g., 'inciting_incident', 'midpoint', 'climax')"
+            },
+            "universes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "For narrative_beat entities: Array of universe/timeline identifiers this beat belongs to"
+            },
+            "timestamp": {
+              "type": "string",
+              "description": "For narrative_beat entities: In-universe timestamp or date reference"
+            },
+            "relationalAlignment": {
+              "type": "object",
+              "description": "Assessment of alignment with relational protocol principles",
+              "properties": {
+                "assessed": {
+                  "type": "boolean",
+                  "description": "Whether relational alignment has been assessed"
+                },
+                "score": {
+                  "type": ["number", "null"],
+                  "description": "Alignment score (0-100) or null if not assessed",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "principles": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Array of aligned relational principles"
+                }
+              },
+              "required": ["assessed", "score", "principles"]
+            },
+            "fourDirections": {
+              "type": "object",
+              "description": "Four Directions wisdom framework assessment",
+              "properties": {
+                "north_vision": {
+                  "type": ["string", "null"],
+                  "description": "North direction: Vision, clarity, big picture perspective"
+                },
+                "east_intention": {
+                  "type": ["string", "null"],
+                  "description": "East direction: Intention, new beginnings, illumination"
+                },
+                "south_emotion": {
+                  "type": ["string", "null"],
+                  "description": "South direction: Emotion, passion, relationships, heart wisdom"
+                },
+                "west_introspection": {
+                  "type": ["string", "null"],
+                  "description": "West direction: Introspection, reflection, lessons learned"
+                }
+              },
+              "required": ["north_vision", "east_intention", "south_emotion", "west_introspection"]
+            },
+            "narrative": {
+              "type": "object",
+              "description": "Narrative context and storytelling elements",
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "description": "Brief narrative description"
+                },
+                "prose": {
+                  "type": "string",
+                  "description": "Full prose narrative or story text"
+                },
+                "lessons": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Lessons learned or insights derived from this narrative"
+                }
+              },
+              "required": ["description", "prose", "lessons"]
+            }
+          }
+        }
+      }
+    },
+    "Relation": {
+      "type": "object",
+      "required": ["from", "to", "relationType"],
+      "description": "Relation structure connecting entities in the COAIA knowledge graph. Relations define typed connections with optional metadata for context and strength.",
+      "properties": {
+        "from": {
+          "type": "string",
+          "description": "Source entity name (must match an existing entity's name field)"
+        },
+        "to": {
+          "type": "string",
+          "description": "Target entity name (must match an existing entity's name field)"
+        },
+        "relationType": {
+          "type": "string",
+          "description": "Type of relationship between entities",
+          "enum": [
+            "creates_tension_with",
+            "advances_toward",
+            "telescopes_into",
+            "flows_into",
+            "part_of",
+            "related_to",
+            "depends_on",
+            "influences",
+            "precedes",
+            "follows",
+            "contains",
+            "member_of",
+            "owns",
+            "created_by",
+            "mentions",
+            "references",
+            "custom"
+          ]
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Optional metadata providing additional context about the relation",
+          "properties": {
+            "createdAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "ISO 8601 timestamp of relation creation"
+            },
+            "strength": {
+              "type": "number",
+              "description": "Strength or weight of the relation (0-1 scale)",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "context": {
+              "type": "string",
+              "description": "Contextual information about when/where/why this relation exists"
+            },
+            "description": {
+              "type": "string",
+              "description": "Human-readable description of the relation"
+            }
+          }
+        }
+      }
+    },
+    "KnowledgeGraph": {
+      "type": "object",
+      "required": ["entities", "relations"],
+      "description": "Complete knowledge graph structure containing entities and relations. This is the in-memory representation of the graph.",
+      "properties": {
+        "entities": {
+          "type": "array",
+          "description": "Array of all entities in the knowledge graph",
+          "items": {
+            "$ref": "#/definitions/Entity"
+          }
+        },
+        "relations": {
+          "type": "array",
+          "description": "Array of all relations connecting entities in the graph",
+          "items": {
+            "$ref": "#/definitions/Relation"
+          }
+        }
+      }
+    },
+    "EntityStorageLine": {
+      "type": "object",
+      "required": ["type", "name", "entityType", "observations"],
+      "description": "Entity record as stored in JSONL format (single line)",
+      "properties": {
+        "type": {
+          "const": "entity",
+          "description": "Discriminator indicating this line contains an entity record"
+        },
+        "name": {
+          "type": "string",
+          "description": "Unique identifier for this entity"
+        },
+        "entityType": {
+          "type": "string",
+          "description": "Type of entity"
+        },
+        "observations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of observations/facts"
+        },
+        "metadata": {
+          "$ref": "#/definitions/Entity/properties/metadata"
+        }
+      }
+    },
+    "RelationStorageLine": {
+      "type": "object",
+      "required": ["type", "from", "to", "relationType"],
+      "description": "Relation record as stored in JSONL format (single line)",
+      "properties": {
+        "type": {
+          "const": "relation",
+          "description": "Discriminator indicating this line contains a relation record"
+        },
+        "from": {
+          "type": "string",
+          "description": "Source entity name"
+        },
+        "to": {
+          "type": "string",
+          "description": "Target entity name"
+        },
+        "relationType": {
+          "type": "string",
+          "description": "Type of relationship"
+        },
+        "metadata": {
+          "$ref": "#/definitions/Relation/properties/metadata"
+        }
+      }
+    }
+  },
+  "description_extended": {
+    "purpose": "This schema defines the complete data model for the COAIA (Creative-Oriented AI Assistant) Narrative system, which implements structural tension charts based on Robert Fritz's creative methodology.",
+    "storage": "Data is stored in JSONL (JSON Lines) format where each line is either an EntityStorageLine or RelationStorageLine with a 'type' discriminator field.",
+    "in_memory": "Data is loaded into a KnowledgeGraph structure containing arrays of Entity and Relation objects.",
+    "key_concepts": {
+      "structural_tension": "The productive tension between current reality and desired outcome that drives creative advancement",
+      "telescoping": "Breaking down action steps into detailed sub-charts while maintaining structural integrity",
+      "advancing_patterns": "Completed actions flow into current reality, changing the structural dynamic and creating momentum"
+    }
+  }
+}

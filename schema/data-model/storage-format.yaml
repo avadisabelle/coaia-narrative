@@ -1,0 +1,104 @@
+$schema: http://json-schema.org/draft-07/schema#
+$id: https://github.com/avadisabelle/coaia-narrative/schema/data-model/storage-format.json
+title: COAIA JSONL Storage Format
+description: >-
+  Schema for structural tension chart data stored in JSONL (JSON Lines) format. Each line is either
+  an Entity or Relation record with a type discriminator.
+oneOf:
+  - $ref: '#/definitions/EntityLine'
+  - $ref: '#/definitions/RelationLine'
+definitions:
+  EntityLine:
+    type: object
+    required:
+      - type
+      - name
+      - entityType
+      - observations
+    properties:
+      type:
+        const: entity
+        description: Discriminator indicating this line contains an entity record
+      name:
+        type: string
+        description: >-
+          Unique identifier for this entity. For structural tension components, follows naming
+          convention: 'chart_{id}_{component}'
+      entityType:
+        type: string
+        description: Type of entity defining its role in the system
+        enum:
+          - structural_tension_chart
+          - desired_outcome
+          - current_reality
+          - action_step
+          - narrative_beat
+          - person
+          - concept
+          - event
+          - location
+          - organization
+          - artifact
+          - custom
+      observations:
+        type: array
+        items:
+          type: string
+        description: Array of observations/facts about this entity
+      metadata:
+        type: object
+        description: Optional metadata (see entity.json schema for full specification)
+  RelationLine:
+    type: object
+    required:
+      - type
+      - from
+      - to
+      - relationType
+    properties:
+      type:
+        const: relation
+        description: Discriminator indicating this line contains a relation record
+      from:
+        type: string
+        description: Source entity name (must match an existing entity's name field)
+      to:
+        type: string
+        description: Target entity name (must match an existing entity's name field)
+      relationType:
+        type: string
+        description: Type of relationship between entities
+        enum:
+          - creates_tension_with
+          - advances_toward
+          - telescopes_into
+          - flows_into
+          - part_of
+          - related_to
+          - depends_on
+          - influences
+          - precedes
+          - follows
+          - contains
+          - member_of
+          - owns
+          - created_by
+          - mentions
+          - references
+          - custom
+      metadata:
+        type: object
+        description: Optional metadata (see relation.json schema for full specification)
+examples:
+  - >-
+    {"type":"entity","name":"chart_123","entityType":"structural_tension_chart","observations":["Python
+    learning
+    journey"],"metadata":{"chartId":"chart_123","dueDate":"2026-03-15T00:00:00Z","level":0}}
+  - >-
+    {"type":"entity","name":"chart_123_desired_outcome","entityType":"desired_outcome","observations":["Build
+    and deploy a Python web application"],"metadata":{"chartId":"chart_123"}}
+  - >-
+    {"type":"entity","name":"chart_123_current_reality","entityType":"current_reality","observations":["Know
+    basic Python syntax","Never worked with web frameworks"],"metadata":{"chartId":"chart_123"}}
+  - >-
+    {"type":"relation","from":"chart_123_current_reality","to":"chart_123_desired_outcome","relationType":"creates_tension_with"}

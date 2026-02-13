@@ -1,0 +1,264 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/avadisabelle/coaia-narrative/schema/index.json",
+  "title": "COAIA Schema Registry",
+  "description": "Central registry mapping all schemas, tools, and data models in the COAIA Narrative system",
+  "version": "2.3.0",
+  "registry": {
+    "data_models": {
+      "entity": {
+        "json": "data-model/entity.json",
+        "yaml": "data-model/entity.yaml",
+        "description": "Core Entity structure with all metadata fields"
+      },
+      "relation": {
+        "json": "data-model/relation.json",
+        "yaml": "data-model/relation.yaml",
+        "description": "Relation structure connecting entities"
+      },
+      "knowledge_graph": {
+        "json": "data-model/knowledge-graph.json",
+        "yaml": "data-model/knowledge-graph.yaml",
+        "description": "In-memory graph container (entities + relations)"
+      },
+      "storage_format": {
+        "json": "data-model/storage-format.json",
+        "yaml": "data-model/storage-format.yaml",
+        "description": "JSONL persistence format specification"
+      },
+      "complete": {
+        "json": "data-model-complete.json",
+        "yaml": "data-model-complete.yaml",
+        "description": "All data models in a single consolidated file"
+      }
+    },
+    "tool_groups": {
+      "STC_TOOLS": {
+        "description": "Structural Tension Chart tools (11 tools)",
+        "tools": [
+          "create_structural_tension_chart",
+          "telescope_action_step",
+          "add_action_step",
+          "remove_action_step",
+          "mark_action_complete",
+          "get_chart_progress",
+          "list_active_charts",
+          "update_action_progress",
+          "update_current_reality",
+          "update_desired_outcome",
+          "manage_action_step",
+          "creator_moment_of_truth"
+        ]
+      },
+      "NARRATIVE_TOOLS": {
+        "description": "Narrative Beat tools (3 tools)",
+        "tools": [
+          "create_narrative_beat",
+          "telescope_narrative_beat",
+          "list_narrative_beats"
+        ]
+      },
+      "KG_TOOLS": {
+        "description": "Traditional Knowledge Graph tools (9 tools)",
+        "tools": [
+          "create_entities",
+          "create_relations",
+          "add_observations",
+          "delete_entities",
+          "delete_observations",
+          "delete_relations",
+          "search_nodes",
+          "open_nodes",
+          "read_graph"
+        ]
+      },
+      "CORE_TOOLS": {
+        "description": "Essential subset (4 tools)",
+        "tools": [
+          "list_active_charts",
+          "create_structural_tension_chart",
+          "add_action_step",
+          "mark_action_complete"
+        ]
+      }
+    },
+    "tools": {
+      "create_structural_tension_chart": {
+        "category": "stc",
+        "json": "tools/stc/create_structural_tension_chart.json",
+        "yaml": "tools/stc/create_structural_tension_chart.yaml",
+        "description": "Create new structural tension chart with desired outcome and current reality"
+      },
+      "add_action_step": {
+        "category": "stc",
+        "json": "tools/stc/add_action_step.json",
+        "yaml": "tools/stc/add_action_step.yaml",
+        "description": "Add new action steps to existing charts (deprecated - use manage_action_step)",
+        "deprecated": true,
+        "replacement": "manage_action_step"
+      },
+      "manage_action_step": {
+        "category": "stc",
+        "json": "tools/stc/manage_action_step.json",
+        "yaml": "tools/stc/manage_action_step.yaml",
+        "description": "Unified interface for adding OR expanding action steps",
+        "recommended": true
+      },
+      "telescope_action_step": {
+        "category": "stc",
+        "json": "tools/stc/telescope_action_step.json",
+        "yaml": "tools/stc/telescope_action_step.yaml",
+        "description": "Break down action steps into sub-charts (deprecated - use manage_action_step)",
+        "deprecated": true,
+        "replacement": "manage_action_step"
+      },
+      "mark_action_complete": {
+        "category": "stc",
+        "json": "tools/stc/mark_action_complete.json",
+        "yaml": "tools/stc/mark_action_complete.yaml",
+        "description": "Complete action steps - observations flow into current reality"
+      },
+      "list_active_charts": {
+        "category": "stc",
+        "json": "tools/stc/list_active_charts.json",
+        "yaml": "tools/stc/list_active_charts.yaml",
+        "description": "View all charts with progress metrics",
+        "recommended": true
+      },
+      "get_chart_progress": {
+        "category": "stc",
+        "json": "tools/stc/get_chart_progress.json",
+        "yaml": "tools/stc/get_chart_progress.yaml",
+        "description": "Detailed progress for specific chart"
+      },
+      "update_action_progress": {
+        "category": "stc",
+        "json": "tools/stc/update_action_progress.json",
+        "yaml": "tools/stc/update_action_progress.yaml",
+        "description": "Track progress on actions without completing"
+      },
+      "update_current_reality": {
+        "category": "stc",
+        "json": "tools/stc/update_current_reality.json",
+        "yaml": "tools/stc/update_current_reality.yaml",
+        "description": "Add observations directly to current reality"
+      },
+      "update_desired_outcome": {
+        "category": "stc",
+        "json": "tools/stc/update_desired_outcome.json",
+        "yaml": "tools/stc/update_desired_outcome.yaml",
+        "description": "Change the desired outcome of a chart"
+      },
+      "creator_moment_of_truth": {
+        "category": "stc",
+        "json": "tools/stc/creator_moment_of_truth.json",
+        "yaml": "tools/stc/creator_moment_of_truth.yaml",
+        "description": "Deep assessment prompts for creative reflection"
+      },
+      "remove_action_step": {
+        "category": "stc",
+        "json": "tools/stc/remove_action_step.json",
+        "yaml": "tools/stc/remove_action_step.yaml",
+        "description": "Remove action steps (use with caution)"
+      },
+      "create_narrative_beat": {
+        "category": "narrative",
+        "json": "tools/narrative/create_narrative_beat.json",
+        "yaml": "tools/narrative/create_narrative_beat.yaml",
+        "description": "Capture story moments across multiple universes"
+      },
+      "telescope_narrative_beat": {
+        "category": "narrative",
+        "json": "tools/narrative/telescope_narrative_beat.json",
+        "yaml": "tools/narrative/telescope_narrative_beat.yaml",
+        "description": "Expand narrative beats into sub-stories"
+      },
+      "list_narrative_beats": {
+        "category": "narrative",
+        "json": "tools/narrative/list_narrative_beats.json",
+        "yaml": "tools/narrative/list_narrative_beats.yaml",
+        "description": "View all narrative beats with filtering"
+      },
+      "create_entities": {
+        "category": "knowledge-graph",
+        "json": "tools/knowledge-graph/create_entities.json",
+        "yaml": "tools/knowledge-graph/create_entities.yaml",
+        "description": "Create custom entities (people, concepts, events)"
+      },
+      "create_relations": {
+        "category": "knowledge-graph",
+        "json": "tools/knowledge-graph/create_relations.json",
+        "yaml": "tools/knowledge-graph/create_relations.yaml",
+        "description": "Create typed connections between entities"
+      },
+      "add_observations": {
+        "category": "knowledge-graph",
+        "json": "tools/knowledge-graph/add_observations.json",
+        "yaml": "tools/knowledge-graph/add_observations.yaml",
+        "description": "Append observations to entities"
+      },
+      "delete_entities": {
+        "category": "knowledge-graph",
+        "json": "tools/knowledge-graph/delete_entities.json",
+        "yaml": "tools/knowledge-graph/delete_entities.yaml",
+        "description": "Delete entities (cascades to relations)"
+      },
+      "delete_observations": {
+        "category": "knowledge-graph",
+        "json": "tools/knowledge-graph/delete_observations.json",
+        "yaml": "tools/knowledge-graph/delete_observations.yaml",
+        "description": "Remove specific observations from entities"
+      },
+      "delete_relations": {
+        "category": "knowledge-graph",
+        "json": "tools/knowledge-graph/delete_relations.json",
+        "yaml": "tools/knowledge-graph/delete_relations.yaml",
+        "description": "Delete specific relations"
+      },
+      "search_nodes": {
+        "category": "knowledge-graph",
+        "json": "tools/knowledge-graph/search_nodes.json",
+        "yaml": "tools/knowledge-graph/search_nodes.yaml",
+        "description": "Full-text search across entities and observations"
+      },
+      "open_nodes": {
+        "category": "knowledge-graph",
+        "json": "tools/knowledge-graph/open_nodes.json",
+        "yaml": "tools/knowledge-graph/open_nodes.yaml",
+        "description": "Retrieve specific entities by exact name"
+      },
+      "read_graph": {
+        "category": "knowledge-graph",
+        "json": "tools/knowledge-graph/read_graph.json",
+        "yaml": "tools/knowledge-graph/read_graph.yaml",
+        "description": "Export entire knowledge graph"
+      },
+      "init_llm_guidance": {
+        "category": "system",
+        "json": "tools/system/init_llm_guidance.json",
+        "yaml": "tools/system/init_llm_guidance.yaml",
+        "description": "Initialize LLM with creative orientation guidance"
+      }
+    }
+  },
+  "metadata": {
+    "total_tools": 24,
+    "tool_categories": {
+      "stc": 12,
+      "narrative": 3,
+      "knowledge-graph": 9,
+      "system": 1
+    },
+    "deprecated_tools": [
+      "add_action_step",
+      "telescope_action_step"
+    ],
+    "recommended_tools": [
+      "list_active_charts",
+      "manage_action_step"
+    ],
+    "format": "Both JSON and YAML available for all schemas",
+    "methodology": "Robert Fritz Structural Tension",
+    "foundation": "mcp-knowledge-graph by Shane Holloman"
+  }
+}
