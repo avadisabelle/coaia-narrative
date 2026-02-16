@@ -57,7 +57,7 @@ coaia-narrative --memory-path ./charts.jsonl
 - update_action_progress
 - update_current_reality
 - update_desired_outcome (works for both master charts AND action steps)
-- creator_moment_of_truth
+- perform_mmot_evaluation
 
 ### Knowledge Graph (9 tools)
 - create_entities

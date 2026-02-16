@@ -73,7 +73,7 @@ const TOOL_GROUPS = {
     'update_current_reality',
     'update_desired_outcome',
     'update_action_step_title',
-    'creator_moment_of_truth'
+    'perform_mmot_evaluation'
   ],
   // ...
 }
