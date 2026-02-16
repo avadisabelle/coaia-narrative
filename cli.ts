@@ -35,6 +35,16 @@ interface Entity {
     level?: number;
     createdAt?: string;
     updatedAt?: string;
+    elementsOfPerformance?: Array<{
+      description: string;
+      type: 'DESIGN' | 'EXECUTION';
+    }>;
+    mmotEvaluations?: Array<{
+      phase: 'acknowledge' | 'analyze' | 'update' | 'recommit';
+      assessment: string;
+      direction?: 'South' | 'East' | 'West' | 'North';
+      timestamp: string;
+    }>;
     // Narrative beat specific metadata
     act?: number;
     type_dramatic?: string;
@@ -373,6 +383,39 @@ async function viewChart(chartId: string, memoryPath: string): Promise<void> {
     console.log('  (Not assessed)');
   }
   
+  // Elements of Performance
+  const eop = chart.metadata?.elementsOfPerformance;
+  if (eop && eop.length > 0) {
+    console.log('\n' + '─'.repeat(79));
+    console.log('\n🏗️ ELEMENTS OF PERFORMANCE:');
+    console.log('─'.repeat(79));
+    const designEls = eop.filter(e => e.type === 'DESIGN');
+    const execEls = eop.filter(e => e.type === 'EXECUTION');
+    if (designEls.length > 0) {
+      designEls.forEach(el => console.log(`  🏗️  DESIGN: ${el.description}`));
+    }
+    if (execEls.length > 0) {
+      execEls.forEach(el => console.log(`  ⚡ EXECUTION: ${el.description}`));
+    }
+  }
+
+  // MMOT Evaluations
+  const mmotEvals = chart.metadata?.mmotEvaluations;
+  if (mmotEvals && mmotEvals.length > 0) {
+    console.log('\n' + '─'.repeat(79));
+    console.log('\n🔍 MMOT EVALUATIONS:');
+    console.log('─'.repeat(79));
+    mmotEvals.forEach((ev, idx) => {
+      const dir = ev.direction ? ` [${ev.direction}]` : '';
+      const ts = new Date(ev.timestamp).toLocaleString();
+      console.log(`  ${idx + 1}. ${ev.phase.toUpperCase()}${dir} — ${ts}`);
+      wordWrap(ev.assessment, 72).forEach(line => {
+        console.log(`     ${line}`);
+      });
+      console.log('');
+    });
+  }
+
   console.log('\n' + '─'.repeat(79));
   console.log('\n⚡ STRUCTURAL TENSION:');
   console.log('─'.repeat(79));
@@ -533,6 +576,10 @@ COMMANDS:
   export-progress, exp-progress     Export progress report to markdown
   export-stats, exp-stats           Export statistics to markdown
 
+  🔍 MMOT EVALUATION
+  ───────────────────────────────────────────────────────────────────────────────
+  mmot <chartId>                Show MMOT evaluation history for a chart
+
   📈 QUICK STATS
   ───────────────────────────────────────────────────────────────────────────────
   stats, st                     Show summary statistics across all charts
@@ -603,7 +650,7 @@ PHILOSOPHY:
 
   🌟 Desired Outcome = What you want to CREATE
   🔍 Current Reality = Honest assessment of where you are NOW
-  ⚡ Structural Tension = The gap that creates natural momentum
+  ⚡ Structural Tension = Unresolved dynamic that naturally seeks resolution
   📋 Action Steps = Strategic intermediary results
 
 MORE INFO:
@@ -898,6 +945,90 @@ async function setDueDate(chartId: string, dateStr: string, memoryPath: string):
   console.log(`   New date: ${formatDate(chart.metadata.dueDate)}\n`);
 }
 
+// ==================== MMOT EVALUATION COMMAND ====================
+
+async function showMmotHistory(chartId: string, memoryPath: string): Promise<void> {
+  const graph = await loadGraph(memoryPath);
+  const chart = graph.entities.find(e =>
+    e.entityType === 'structural_tension_chart' && e.metadata?.chartId === chartId
+  );
+
+  if (!chart) {
+    console.log(`\n❌ Chart '${chartId}' not found.\n`);
+    return;
+  }
+
+  const outcome = graph.entities.find(e =>
+    e.name === `${chartId}_desired_outcome`
+  );
+  const eop = chart.metadata?.elementsOfPerformance || [];
+  const mmotEvals = chart.metadata?.mmotEvaluations || [];
+
+  // Also find MMOT narrative beats
+  const mmotBeats = graph.entities.filter(e =>
+    e.entityType === 'narrative_beat' &&
+    e.metadata?.chartId === chartId &&
+    e.metadata?.type_dramatic === 'mmot_evaluation'
+  );
+
+  console.log('\n╔═══════════════════════════════════════════════════════════════════════════════╗');
+  console.log('║                        🔍 MMOT EVALUATION HISTORY                             ║');
+  console.log('╚═══════════════════════════════════════════════════════════════════════════════╝\n');
+
+  console.log(`📊 Chart: ${chartId}`);
+  console.log(`🌟 Goal: ${outcome?.observations[0] || 'Unknown'}\n`);
+
+  // Elements of Performance
+  if (eop.length > 0) {
+    console.log('─'.repeat(79));
+    console.log('\n🏗️ ELEMENTS OF PERFORMANCE:\n');
+    eop.forEach(el => {
+      const icon = el.type === 'DESIGN' ? '🏗️' : '⚡';
+      console.log(`  ${icon} ${el.type}: ${el.description}`);
+    });
+    console.log('');
+  } else {
+    console.log('  ℹ️  No Elements of Performance defined for this chart.\n');
+  }
+
+  // Evaluation history
+  if (mmotEvals.length > 0) {
+    console.log('─'.repeat(79));
+    console.log(`\n📋 EVALUATIONS (${mmotEvals.length} total):\n`);
+    mmotEvals.forEach((ev, idx) => {
+      const dir = ev.direction ? ` [${ev.direction}]` : '';
+      const ts = new Date(ev.timestamp).toLocaleString();
+      console.log(`  ${idx + 1}. ${ev.phase.toUpperCase()}${dir}`);
+      console.log(`     🕒 ${ts}`);
+      wordWrap(ev.assessment, 68).forEach(line => {
+        console.log(`     ${line}`);
+      });
+      console.log('');
+    });
+  } else {
+    console.log('  ℹ️  No MMOT evaluations recorded yet.\n');
+    console.log('  💡 Use perform_mmot_evaluation via MCP to run an evaluation.\n');
+  }
+
+  // Narrative beats
+  if (mmotBeats.length > 0) {
+    console.log('─'.repeat(79));
+    console.log(`\n📡 MMOT NARRATIVE BEATS (${mmotBeats.length}):\n`);
+    mmotBeats.forEach((beat, idx) => {
+      const dirs = beat.metadata?.fourDirections;
+      const activeDir = dirs
+        ? Object.entries(dirs).find(([_, v]) => v !== null)?.[0]?.replace('_', ' ')
+        : null;
+      console.log(`  ${idx + 1}. ${beat.name}`);
+      if (activeDir) console.log(`     🧭 Direction: ${activeDir}`);
+      beat.observations.forEach(obs => console.log(`     • ${obs}`));
+      console.log('');
+    });
+  }
+
+  console.log('═'.repeat(79) + '\n');
+}
+
 // ==================== MARKDOWN EXPORT COMMANDS ====================
 
 async function exportChart(chartId: string, memoryPath: string, args: minimist.ParsedArgs): Promise<void> {
@@ -1064,6 +1195,17 @@ async function main() {
         await setDueDate(sdChartId, dateStr, config.memoryPath);
         break;
         
+      case 'mmot':
+      case 'evaluate':
+        const mmotChartId = args._[1] || config.currentChart;
+        if (!mmotChartId) {
+          console.log('\n❌ Error: Chart ID required or set current chart\n');
+          console.log('Usage: cnarrative mmot <chartId>\n');
+          process.exit(1);
+        }
+        await showMmotHistory(mmotChartId, config.memoryPath);
+        break;
+
       case 'stats':
       case 'st':
       case 'statistics':
