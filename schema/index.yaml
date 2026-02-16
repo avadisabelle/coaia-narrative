@@ -40,7 +40,7 @@ registry:
         - update_current_reality
         - update_desired_outcome
         - manage_action_step
-        - creator_moment_of_truth
+        - perform_mmot_evaluation
     NARRATIVE_TOOLS:
       description: Narrative Beat tools (3 tools)
       tools:
@@ -123,11 +123,11 @@ registry:
       json: tools/stc/update_desired_outcome.json
       yaml: tools/stc/update_desired_outcome.yaml
       description: Change the desired outcome of a chart
-    creator_moment_of_truth:
+    perform_mmot_evaluation:
       category: stc
-      json: tools/stc/creator_moment_of_truth.json
-      yaml: tools/stc/creator_moment_of_truth.yaml
-      description: Deep assessment prompts for creative reflection
+      json: tools/stc/perform_mmot_evaluation.json
+      yaml: tools/stc/perform_mmot_evaluation.yaml
+      description: Autonomous MMOT self-evaluation loop with Elements of Performance and directional perspectives
     remove_action_step:
       category: stc
       json: tools/stc/remove_action_step.json
