@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "medecin-wheel-mcp": {
+      "command": "node",
+      "args": [
+        "${srcroot}/mcp-medicine-wheel/dist/index.js"
+      ],
+      "env": {}
+    },
+    "charts_feat-21-MMOT--480202e9-9bbd-492c-96bc-ab7fd9f9c54b--2602161348": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "${CNCV}",
+        "--memory-path",
+        "/src/coaia-narrative/feat-21-MMOT--480202e9-9bbd-492c-96bc-ab7fd9f9c54b--2602161348/.coaia/charts_feat-21-MMOT--480202e9-9bbd-492c-96bc-ab7fd9f9c54b--2602161348.coaia-narrative.jsonl"
+      ]
+    }
+  }
+}
