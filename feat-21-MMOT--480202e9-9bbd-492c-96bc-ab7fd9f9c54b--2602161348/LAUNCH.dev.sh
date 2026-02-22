@@ -1,0 +1,1 @@
+claude --mcp-config /src/.mcp.mw.json /a/src/coaia-narrative/feat-21-MMOT--480202e9-9bbd-492c-96bc-ab7fd9f9c54b--2602161348/mcp-config-charts_feat-21-MMOT--480202e9-9bbd-492c-96bc-ab7fd9f9c54b--2602161348.dev.json --add-dir /src/llms/ /src/coaia-visualizer/ --resume 480202e9-9bbd-492c-96bc-ab7fd9f9c54b

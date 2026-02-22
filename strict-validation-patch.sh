@@ -157,7 +157,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         await knowledgeGraphManager.updateActionStepTitle(toolArgs.actionStepName, toolArgs.newTitle);
         return { content: [{ type: "text", text: "Action step title updated" }] };
       }
-      case "creator_moment_of_truth": {
+      case "perform_mmot_evaluation": {
         if (typeof toolArgs.chartId !== 'string') throw new Error("chartId must be string");
         const step = (toolArgs.step as string) || "full_review";
         const input = toolArgs.userInput as string | undefined;

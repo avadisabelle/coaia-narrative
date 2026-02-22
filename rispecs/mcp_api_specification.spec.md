@@ -562,7 +562,7 @@ All MCP tools follow this definition pattern:
 
 ### Utility Tools
 
-#### 20. creator_moment_of_truth
+#### 20. perform_mmot_evaluation
 
 **Purpose**: Guided reflection on chart discrepancies through four-step process.
 

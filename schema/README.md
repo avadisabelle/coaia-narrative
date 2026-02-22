@@ -90,7 +90,7 @@ See `data-model/storage-format.json` for full specification.
 
 **Advanced:**
 - `get_chart_progress` - Detailed progress metrics
-- `creator_moment_of_truth` - Deep assessment prompts
+- `perform_mmot_evaluation` - Autonomous MMOT self-evaluation with Elements of Performance
 - `remove_action_step` - Remove actions (use carefully)
 
 See [tools/stc/README.md](tools/stc/README.md) for details.

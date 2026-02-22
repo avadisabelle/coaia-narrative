@@ -75,11 +75,12 @@ Structural tension charts organize creative work around **what you want to creat
 
 ### Advanced Tools
 
-**[creator_moment_of_truth.json](creator_moment_of_truth.json)** / **[.yaml](creator_moment_of_truth.yaml)**
-- Deep assessment prompts for creative reflection
-- Evaluates structural integrity
-- Identifies advancing vs oscillating patterns
-- **Use for:** Creative coaching, chart quality assessment
+**[perform_mmot_evaluation.json](perform_mmot_evaluation.json)** / **[.yaml](perform_mmot_evaluation.yaml)**
+- Autonomous MMOT self-evaluation loop with Elements of Performance
+- Four phases: acknowledge → analyze → update → recommit
+- Supports directional perspectives (South/East/West/North) for collective inquiry
+- Stores evaluations in chart metadata and emits narrative beats
+- **Use for:** Agent self-correction, chart quality assessment, ceremony evaluation
 
 **[remove_action_step.json](remove_action_step.json)** / **[.yaml](remove_action_step.yaml)**
 - Remove action steps from charts
@@ -109,7 +110,7 @@ COAIA_TOOLS="STC_TOOLS,init_llm_guidance" npx coaia-memory
 8. update_action_progress
 9. update_current_reality
 10. update_desired_outcome
-11. creator_moment_of_truth
+11. perform_mmot_evaluation
 12. manage_action_step ✨
 
 ## 🚀 Common Workflows

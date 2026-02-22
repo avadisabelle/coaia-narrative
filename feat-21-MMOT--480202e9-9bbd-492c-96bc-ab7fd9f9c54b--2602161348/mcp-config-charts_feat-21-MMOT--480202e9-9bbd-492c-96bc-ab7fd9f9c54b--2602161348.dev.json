@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "charts_feat-21-MMOT--480202e9-9bbd-492c-96bc-ab7fd9f9c54b--2602161348": {
+      "command": "node",
+      "args": ["/a/src/coaia-narrative/dist/index.js", "--memory-path", "/src/coaia-narrative/feat-21-MMOT--480202e9-9bbd-492c-96bc-ab7fd9f9c54b--2602161348/.coaia/charts_feat-21-MMOT--480202e9-9bbd-492c-96bc-ab7fd9f9c54b--2602161348.coaia-narrative.jsonl"]
+    }
+  }
+}

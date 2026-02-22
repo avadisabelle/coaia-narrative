@@ -9,6 +9,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import readline from 'readline';
 import minimist from 'minimist';
 import * as dotenv from 'dotenv';
 import { execSync } from 'child_process';
@@ -35,6 +36,16 @@ interface Entity {
     level?: number;
     createdAt?: string;
     updatedAt?: string;
+    elementsOfPerformance?: Array<{
+      description: string;
+      type: 'DESIGN' | 'EXECUTION';
+    }>;
+    mmotEvaluations?: Array<{
+      phase: 'acknowledge' | 'analyze' | 'update' | 'recommit';
+      assessment: string;
+      direction?: 'South' | 'East' | 'West' | 'North';
+      timestamp: string;
+    }>;
     // Narrative beat specific metadata
     act?: number;
     type_dramatic?: string;
@@ -77,6 +88,7 @@ interface Config {
   currentChart: string | null;
   jsonOutput: boolean;
   noColor: boolean;
+  interactive: boolean;
 }
 
 /**
@@ -93,7 +105,8 @@ function loadConfig(args: minimist.ParsedArgs): Config {
     memoryPath: path.join(process.cwd(), 'memory.jsonl'),
     currentChart: null,
     jsonOutput: false,
-    noColor: false
+    noColor: false,
+    interactive: false
   };
 
   // Load .env files with proper priority
@@ -139,6 +152,9 @@ function loadConfig(args: minimist.ParsedArgs): Config {
   }
   if (args['no-color'] === true) {
     config.noColor = true;
+  }
+  if (args.interactive === true || args.I === true) {
+    config.interactive = true;
   }
 
   return config;
@@ -208,6 +224,16 @@ function wordWrap(text: string, maxWidth: number): string[] {
   }
   if (currentLine) lines.push(currentLine);
   return lines;
+}
+
+// ==================== INTERACTIVE HELPERS ====================
+
+function createPrompt(): { ask: (question: string) => Promise<string>; close: () => void } {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  return {
+    ask: (question: string) => new Promise(resolve => rl.question(question, resolve)),
+    close: () => rl.close()
+  };
 }
 
 // ==================== COMMANDS ====================
@@ -373,6 +399,39 @@ async function viewChart(chartId: string, memoryPath: string): Promise<void> {
     console.log('  (Not assessed)');
   }
   
+  // Elements of Performance
+  const eop = chart.metadata?.elementsOfPerformance;
+  if (eop && eop.length > 0) {
+    console.log('\n' + '─'.repeat(79));
+    console.log('\n🏗️ ELEMENTS OF PERFORMANCE:');
+    console.log('─'.repeat(79));
+    const designEls = eop.filter(e => e.type === 'DESIGN');
+    const execEls = eop.filter(e => e.type === 'EXECUTION');
+    if (designEls.length > 0) {
+      designEls.forEach(el => console.log(`  🏗️  DESIGN: ${el.description}`));
+    }
+    if (execEls.length > 0) {
+      execEls.forEach(el => console.log(`  ⚡ EXECUTION: ${el.description}`));
+    }
+  }
+
+  // MMOT Evaluations
+  const mmotEvals = chart.metadata?.mmotEvaluations;
+  if (mmotEvals && mmotEvals.length > 0) {
+    console.log('\n' + '─'.repeat(79));
+    console.log('\n🔍 MMOT EVALUATIONS:');
+    console.log('─'.repeat(79));
+    mmotEvals.forEach((ev, idx) => {
+      const dir = ev.direction ? ` [${ev.direction}]` : '';
+      const ts = new Date(ev.timestamp).toLocaleString();
+      console.log(`  ${idx + 1}. ${ev.phase.toUpperCase()}${dir} — ${ts}`);
+      wordWrap(ev.assessment, 72).forEach(line => {
+        console.log(`     ${line}`);
+      });
+      console.log('');
+    });
+  }
+
   console.log('\n' + '─'.repeat(79));
   console.log('\n⚡ STRUCTURAL TENSION:');
   console.log('─'.repeat(79));
@@ -533,6 +592,11 @@ COMMANDS:
   export-progress, exp-progress     Export progress report to markdown
   export-stats, exp-stats           Export statistics to markdown
 
+  🔍 MMOT EVALUATION
+  ───────────────────────────────────────────────────────────────────────────────
+  mmot <chartId>                Show MMOT evaluation history for a chart
+  mmot <chartId> -I             Interactive 4-phase MMOT walkthrough
+
   📈 QUICK STATS
   ───────────────────────────────────────────────────────────────────────────────
   stats, st                     Show summary statistics across all charts
@@ -550,6 +614,7 @@ OPTIONS:
   --env <path>                  Load environment from custom .env file
   --current-chart <chartId>     Set current chart context
   -C <chartId>                  Short alias for --current-chart
+  --interactive, -I              Interactive mode (prompts for input)
   --no-color                    Disable colored output
   --json                        Output in JSON format
   --output <file>               Write output to markdown file (for export commands)
@@ -603,7 +668,7 @@ PHILOSOPHY:
 
   🌟 Desired Outcome = What you want to CREATE
   🔍 Current Reality = Honest assessment of where you are NOW
-  ⚡ Structural Tension = The gap that creates natural momentum
+  ⚡ Structural Tension = Unresolved dynamic that naturally seeks resolution
   📋 Action Steps = Strategic intermediary results
 
 MORE INFO:
@@ -801,71 +866,157 @@ async function updateChart(chartId: string, memoryPath: string): Promise<void> {
   console.log('  • update_action_progress\n');
 }
 
-async function addAction(chartId: string, memoryPath: string): Promise<void> {
+async function addAction(chartId: string, memoryPath: string, interactive: boolean = false): Promise<void> {
   const graph = await loadGraph(memoryPath);
   const chart = graph.entities.find(e =>
     e.entityType === 'structural_tension_chart' && e.metadata?.chartId === chartId
   );
-  
+
   if (!chart) {
     console.log(`\n❌ Chart '${chartId}' not found.\n`);
     return;
   }
-  
+
+  if (!interactive) {
+    console.log('\n💡 Use -I flag for interactive mode: cnarrative add-action <chartId> -I\n');
+    console.log('Or use MCP tool: manage_action_step\n');
+    return;
+  }
+
+  const existingActions = graph.entities.filter(e =>
+    e.entityType === 'action_step' && e.metadata?.chartId === chartId
+  );
+
   console.log('\n╔═══════════════════════════════════════════════════════════════════════════════╗');
   console.log('║                            ADD ACTION STEP                                    ║');
   console.log('╚═══════════════════════════════════════════════════════════════════════════════╝\n');
-  
-  console.log(`📊 Chart: ${chartId}\n`);
-  console.log('⚠️  Interactive action step creation is not yet implemented.');
-  console.log('    Use the MCP server tools for programmatic updates.\n');
-  console.log('MCP tool: add_action_step or manage_action_step\n');
+  console.log(`📊 Chart: ${chartId}`);
+  console.log(`📋 Existing action steps: ${existingActions.length}\n`);
+
+  const prompt = createPrompt();
+  const title = await prompt.ask('🎯 Action step title (what result do you want to create?): ');
+  if (!title.trim()) { prompt.close(); console.log('\n❌ Empty title, nothing saved.\n'); return; }
+
+  const currentReality = await prompt.ask('🔍 Current reality for this action (honest assessment): ');
+  if (!currentReality.trim()) { prompt.close(); console.log('\n❌ Current reality required.\n'); return; }
+
+  const dueDateStr = await prompt.ask('📅 Due date (YYYY-MM-DD, or press Enter to skip): ');
+  prompt.close();
+
+  const timestamp = new Date().toISOString();
+  const actionIndex = existingActions.length + 1;
+  const actionName = `${chartId}_action_${actionIndex}`;
+
+  const actionEntity: Entity = {
+    name: actionName,
+    entityType: 'action_step',
+    observations: [title.trim(), `Current reality: ${currentReality.trim()}`],
+    metadata: {
+      chartId,
+      completionStatus: false,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      ...(dueDateStr.trim() ? { dueDate: new Date(dueDateStr.trim()).toISOString() } : {})
+    }
+  };
+
+  graph.entities.push(actionEntity);
+  graph.relations.push({
+    from: actionName,
+    to: `${chartId}_desired_outcome`,
+    relationType: 'advances_toward'
+  });
+
+  await saveGraph(memoryPath, graph);
+  console.log(`\n✅ Action step '${title.trim()}' added as ${actionName}\n`);
 }
 
-async function addObservation(chartId: string, memoryPath: string): Promise<void> {
+async function addObservation(chartId: string, memoryPath: string, interactive: boolean = false): Promise<void> {
   const graph = await loadGraph(memoryPath);
   const chart = graph.entities.find(e =>
     e.entityType === 'structural_tension_chart' && e.metadata?.chartId === chartId
   );
-  
+
   if (!chart) {
     console.log(`\n❌ Chart '${chartId}' not found.\n`);
     return;
   }
-  
+
+  if (!interactive) {
+    console.log('\n💡 Use -I flag for interactive mode: cnarrative add-obs <chartId> -I\n');
+    console.log('Or use MCP tool: update_current_reality\n');
+    return;
+  }
+
+  const currentReality = graph.entities.find(e =>
+    e.name === `${chartId}_current_reality` && e.entityType === 'current_reality'
+  );
+  if (!currentReality) {
+    console.log(`\n❌ Current reality entity not found for chart '${chartId}'.\n`);
+    return;
+  }
+
   console.log('\n╔═══════════════════════════════════════════════════════════════════════════════╗');
   console.log('║                       ADD OBSERVATION TO CURRENT REALITY                      ║');
   console.log('╚═══════════════════════════════════════════════════════════════════════════════╝\n');
-  
   console.log(`📊 Chart: ${chartId}\n`);
-  console.log('⚠️  Interactive observation adding is not yet implemented.');
-  console.log('    Use the MCP server tools for programmatic updates.\n');
-  console.log('MCP tool: update_current_reality\n');
+  console.log('🔍 Current reality observations:');
+  currentReality.observations.forEach((obs, i) => console.log(`  ${i + 1}. ${obs}`));
+  console.log('');
+
+  const prompt = createPrompt();
+  const observation = await prompt.ask('📝 New observation (what changed in reality?): ');
+  prompt.close();
+
+  if (!observation.trim()) {
+    console.log('\n❌ Empty observation, nothing saved.\n');
+    return;
+  }
+
+  currentReality.observations.push(observation.trim());
+  if (currentReality.metadata) {
+    currentReality.metadata.updatedAt = new Date().toISOString();
+  }
+  await saveGraph(memoryPath, graph);
+  console.log(`\n✅ Observation added to current reality.\n`);
 }
 
-async function completeAction(actionName: string, memoryPath: string): Promise<void> {
+async function completeAction(actionName: string, memoryPath: string, interactive: boolean = false): Promise<void> {
   const graph = await loadGraph(memoryPath);
   const action = graph.entities.find(e =>
     e.entityType === 'action_step' && e.name === actionName
   );
-  
+
   if (!action) {
     console.log(`\n❌ Action step '${actionName}' not found.\n`);
     return;
   }
-  
+
   if (action.metadata?.completionStatus === true) {
     console.log(`\n✅ Action '${action.observations[0]}' is already marked complete.\n`);
     return;
   }
-  
-  // Mark as complete
+
+  if (interactive) {
+    console.log(`\n📋 Action: ${action.observations[0]}`);
+    if (action.observations.length > 1) {
+      console.log('   Notes:');
+      action.observations.slice(1).forEach(n => console.log(`     • ${n}`));
+    }
+    const prompt = createPrompt();
+    const confirm = await prompt.ask('\n✅ Mark as complete? (y/N): ');
+    prompt.close();
+    if (confirm.toLowerCase() !== 'y') {
+      console.log('\n❌ Cancelled.\n');
+      return;
+    }
+  }
+
   action.metadata = action.metadata || {};
   action.metadata.completionStatus = true;
   action.metadata.updatedAt = new Date().toISOString();
-  
+
   await saveGraph(memoryPath, graph);
-  
   console.log(`\n✅ Action step marked complete: ${action.observations[0]}\n`);
 }
 
@@ -896,6 +1047,219 @@ async function setDueDate(chartId: string, dateStr: string, memoryPath: string):
   
   console.log(`\n✅ Due date updated for chart ${chartId}`);
   console.log(`   New date: ${formatDate(chart.metadata.dueDate)}\n`);
+}
+
+// ==================== MMOT EVALUATION COMMAND ====================
+
+async function runInteractiveMmot(chartId: string, memoryPath: string): Promise<void> {
+  const graph = await loadGraph(memoryPath);
+  const chart = graph.entities.find(e =>
+    e.entityType === 'structural_tension_chart' && e.metadata?.chartId === chartId
+  );
+  if (!chart) { console.log(`\n❌ Chart '${chartId}' not found.\n`); return; }
+
+  const outcome = graph.entities.find(e => e.name === `${chartId}_desired_outcome`);
+  const currentReality = graph.entities.find(e => e.name === `${chartId}_current_reality`);
+  const actions = graph.entities.filter(e => e.entityType === 'action_step' && e.metadata?.chartId === chartId);
+  const completed = actions.filter(a => a.metadata?.completionStatus).length;
+  const eop = chart.metadata?.elementsOfPerformance || [];
+
+  console.log('\n╔═══════════════════════════════════════════════════════════════════════════════╗');
+  console.log('║                  🔍 INTERACTIVE MMOT EVALUATION                                ║');
+  console.log('╚═══════════════════════════════════════════════════════════════════════════════╝\n');
+  console.log(`📊 Chart: ${chartId}`);
+  console.log(`🌟 Desired Outcome: ${outcome?.observations[0] || 'Unknown'}`);
+  console.log(`🔍 Current Reality: ${currentReality?.observations.slice(-2).join('; ') || 'Unknown'}`);
+  console.log(`📈 Progress: ${completed}/${actions.length} actions\n`);
+
+  if (eop.length > 0) {
+    console.log('🏗️ Elements of Performance:');
+    eop.forEach(el => {
+      const icon = el.type === 'DESIGN' ? '🏗️' : '⚡';
+      console.log(`  ${icon} ${el.type}: ${el.description}`);
+    });
+    console.log('');
+  }
+
+  const prompt = createPrompt();
+  const timestamp = new Date().toISOString();
+  const evaluations: Array<{ phase: string; assessment: string; direction?: string }> = [];
+
+  // Optional direction
+  const dirInput = await prompt.ask('🧭 Direction perspective (South/East/West/North, or Enter to skip): ');
+  const direction = ['South', 'East', 'West', 'North'].find(d => d.toLowerCase() === dirInput.trim().toLowerCase()) || undefined;
+
+  // Phase 1: Acknowledge
+  console.log('\n─── Phase 1: ACKNOWLEDGE THE TRUTH ─────────────────────────────────────────\n');
+  console.log('  What difference exists between what was expected and what was delivered?');
+  console.log('  Report facts only — no excuses, no blame.\n');
+  const ack = await prompt.ask('📝 Your assessment: ');
+  if (ack.trim()) evaluations.push({ phase: 'acknowledge', assessment: ack.trim(), direction });
+
+  // Phase 2: Analyze
+  console.log('\n─── Phase 2: ANALYZE HOW IT GOT THERE ──────────────────────────────────────\n');
+  console.log('  Blow-by-blow: what actions were taken? What assumptions were made?');
+  console.log('  What worked? What didn\'t?\n');
+  const analyze = await prompt.ask('📝 Your analysis: ');
+  if (analyze.trim()) evaluations.push({ phase: 'analyze', assessment: analyze.trim(), direction });
+
+  // Phase 3: Update
+  console.log('\n─── Phase 3: UPDATE THE CHART ───────────────────────────────────────────────\n');
+  console.log('  Based on what you learned: what observations should flow into current reality?');
+  console.log('  What action steps need adjusting?\n');
+  const update = await prompt.ask('📝 Reality update: ');
+  if (update.trim()) evaluations.push({ phase: 'update', assessment: update.trim(), direction });
+
+  // Phase 4: Recommit
+  console.log('\n─── Phase 4: RECOMMIT OR REDIRECT ──────────────────────────────────────────\n');
+  console.log(`  Is "${outcome?.observations[0]}" still what you want to create?`);
+  console.log('  If yes: what\'s next? If no: what is the actual desired outcome?\n');
+  const recommit = await prompt.ask('📝 Your decision: ');
+  if (recommit.trim()) evaluations.push({ phase: 'recommit', assessment: recommit.trim(), direction });
+
+  prompt.close();
+
+  if (evaluations.length === 0) {
+    console.log('\n❌ No assessments provided, nothing saved.\n');
+    return;
+  }
+
+  // Save evaluations to chart metadata
+  if (!chart.metadata!.mmotEvaluations) {
+    chart.metadata!.mmotEvaluations = [];
+  }
+  evaluations.forEach(ev => {
+    chart.metadata!.mmotEvaluations!.push({
+      phase: ev.phase as any,
+      assessment: ev.assessment,
+      direction: ev.direction as any,
+      timestamp
+    });
+  });
+  chart.metadata!.updatedAt = timestamp;
+
+  // Write reality updates into current reality
+  if (currentReality) {
+    const dirLabel = direction ? ` [${direction}]` : '';
+    evaluations.forEach(ev => {
+      currentReality.observations.push(`[MMOT ${ev.phase}${dirLabel}] ${ev.assessment}`);
+    });
+    if (currentReality.metadata) {
+      currentReality.metadata.updatedAt = timestamp;
+    }
+  }
+
+  // Emit MMOT narrative beat
+  const beatName = `${chartId}_mmot_${Date.now()}`;
+  graph.entities.push({
+    name: beatName,
+    entityType: 'narrative_beat',
+    observations: evaluations.map(ev => `[${ev.phase}] ${ev.assessment}`),
+    metadata: {
+      chartId,
+      type_dramatic: 'mmot_evaluation',
+      timestamp,
+      fourDirections: direction ? {
+        north_vision: direction === 'North' ? evaluations.map(e => e.assessment).join('; ') : null,
+        east_intention: direction === 'East' ? evaluations.map(e => e.assessment).join('; ') : null,
+        south_emotion: direction === 'South' ? evaluations.map(e => e.assessment).join('; ') : null,
+        west_introspection: direction === 'West' ? evaluations.map(e => e.assessment).join('; ') : null
+      } : undefined
+    }
+  });
+  graph.relations.push({
+    from: beatName,
+    to: `${chartId}_chart`,
+    relationType: 'evaluates'
+  });
+
+  await saveGraph(memoryPath, graph);
+
+  console.log(`\n✅ MMOT evaluation saved (${evaluations.length} phases)`);
+  console.log('📡 Narrative beat emitted');
+  console.log('🔍 Current reality updated\n');
+}
+
+async function showMmotHistory(chartId: string, memoryPath: string): Promise<void> {
+  const graph = await loadGraph(memoryPath);
+  const chart = graph.entities.find(e =>
+    e.entityType === 'structural_tension_chart' && e.metadata?.chartId === chartId
+  );
+
+  if (!chart) {
+    console.log(`\n❌ Chart '${chartId}' not found.\n`);
+    return;
+  }
+
+  const outcome = graph.entities.find(e =>
+    e.name === `${chartId}_desired_outcome`
+  );
+  const eop = chart.metadata?.elementsOfPerformance || [];
+  const mmotEvals = chart.metadata?.mmotEvaluations || [];
+
+  // Also find MMOT narrative beats
+  const mmotBeats = graph.entities.filter(e =>
+    e.entityType === 'narrative_beat' &&
+    e.metadata?.chartId === chartId &&
+    e.metadata?.type_dramatic === 'mmot_evaluation'
+  );
+
+  console.log('\n╔═══════════════════════════════════════════════════════════════════════════════╗');
+  console.log('║                        🔍 MMOT EVALUATION HISTORY                             ║');
+  console.log('╚═══════════════════════════════════════════════════════════════════════════════╝\n');
+
+  console.log(`📊 Chart: ${chartId}`);
+  console.log(`🌟 Goal: ${outcome?.observations[0] || 'Unknown'}\n`);
+
+  // Elements of Performance
+  if (eop.length > 0) {
+    console.log('─'.repeat(79));
+    console.log('\n🏗️ ELEMENTS OF PERFORMANCE:\n');
+    eop.forEach(el => {
+      const icon = el.type === 'DESIGN' ? '🏗️' : '⚡';
+      console.log(`  ${icon} ${el.type}: ${el.description}`);
+    });
+    console.log('');
+  } else {
+    console.log('  ℹ️  No Elements of Performance defined for this chart.\n');
+  }
+
+  // Evaluation history
+  if (mmotEvals.length > 0) {
+    console.log('─'.repeat(79));
+    console.log(`\n📋 EVALUATIONS (${mmotEvals.length} total):\n`);
+    mmotEvals.forEach((ev, idx) => {
+      const dir = ev.direction ? ` [${ev.direction}]` : '';
+      const ts = new Date(ev.timestamp).toLocaleString();
+      console.log(`  ${idx + 1}. ${ev.phase.toUpperCase()}${dir}`);
+      console.log(`     🕒 ${ts}`);
+      wordWrap(ev.assessment, 68).forEach(line => {
+        console.log(`     ${line}`);
+      });
+      console.log('');
+    });
+  } else {
+    console.log('  ℹ️  No MMOT evaluations recorded yet.\n');
+    console.log('  💡 Use perform_mmot_evaluation via MCP to run an evaluation.\n');
+  }
+
+  // Narrative beats
+  if (mmotBeats.length > 0) {
+    console.log('─'.repeat(79));
+    console.log(`\n📡 MMOT NARRATIVE BEATS (${mmotBeats.length}):\n`);
+    mmotBeats.forEach((beat, idx) => {
+      const dirs = beat.metadata?.fourDirections;
+      const activeDir = dirs
+        ? Object.entries(dirs).find(([_, v]) => v !== null)?.[0]?.replace('_', ' ')
+        : null;
+      console.log(`  ${idx + 1}. ${beat.name}`);
+      if (activeDir) console.log(`     🧭 Direction: ${activeDir}`);
+      beat.observations.forEach(obs => console.log(`     • ${obs}`));
+      console.log('');
+    });
+  }
+
+  console.log('═'.repeat(79) + '\n');
 }
 
 // ==================== MARKDOWN EXPORT COMMANDS ====================
@@ -1025,7 +1389,7 @@ async function main() {
           console.log('Usage: cnarrative add-action <chartId>\n');
           process.exit(1);
         }
-        await addAction(aaChartId, config.memoryPath);
+        await addAction(aaChartId, config.memoryPath, config.interactive);
         break;
       
       case 'add-observation':
@@ -1037,7 +1401,7 @@ async function main() {
           console.log('Usage: cnarrative add-obs <chartId>\n');
           process.exit(1);
         }
-        await addObservation(aoChartId, config.memoryPath);
+        await addObservation(aoChartId, config.memoryPath, config.interactive);
         break;
       
       case 'complete':
@@ -1048,7 +1412,7 @@ async function main() {
           console.log('Example: cnarrative complete chart_123_action_1\n');
           process.exit(1);
         }
-        await completeAction(args._[1], config.memoryPath);
+        await completeAction(args._[1], config.memoryPath, config.interactive);
         break;
       
       case 'set-date':
@@ -1064,6 +1428,21 @@ async function main() {
         await setDueDate(sdChartId, dateStr, config.memoryPath);
         break;
         
+      case 'mmot':
+      case 'evaluate':
+        const mmotChartId = args._[1] || config.currentChart;
+        if (!mmotChartId) {
+          console.log('\n❌ Error: Chart ID required or set current chart\n');
+          console.log('Usage: cnarrative mmot <chartId> [-I]\n');
+          process.exit(1);
+        }
+        if (config.interactive) {
+          await runInteractiveMmot(mmotChartId, config.memoryPath);
+        } else {
+          await showMmotHistory(mmotChartId, config.memoryPath);
+        }
+        break;
+
       case 'stats':
       case 'st':
       case 'statistics':

@@ -187,7 +187,7 @@ const TOOL_GROUPS = {
     'update_action_progress',
     'update_current_reality',
     'update_desired_outcome',
-    'creator_moment_of_truth'
+    'perform_mmot_evaluation'
   ],
   NARRATIVE_TOOLS: [
     'create_narrative_beat',
@@ -269,6 +269,16 @@ interface Entity {
     type_dramatic?: string;
     universes?: string[];
     timestamp?: string;
+    elementsOfPerformance?: Array<{
+      description: string;
+      type: 'DESIGN' | 'EXECUTION';
+    }>;
+    mmotEvaluations?: Array<{
+      phase: 'acknowledge' | 'analyze' | 'update' | 'recommit';
+      assessment: string;
+      direction?: 'South' | 'East' | 'West' | 'North';
+      timestamp: string;
+    }>;
     relationalAlignment?: {
       assessed: boolean;
       score: number | null;
@@ -533,7 +543,8 @@ class KnowledgeGraphManager {
     desiredOutcome: string,
     currentReality: string,
     dueDate: string,
-    actionSteps?: string[]
+    actionSteps?: string[],
+    elementsOfPerformance?: Array<{ description: string; type: 'DESIGN' | 'EXECUTION' }>
   ): Promise<{ chartId: string; entities: Entity[]; relations: Relation[] }> {
     // Educational validation for creative orientation
     const problemSolvingWords = ['fix', 'solve', 'eliminate', 'prevent', 'stop', 'avoid', 'reduce', 'remove'];
@@ -606,7 +617,8 @@ Current Reality: "${currentReality}"
           dueDate,
           level: 0,
           createdAt: timestamp,
-          updatedAt: timestamp
+          updatedAt: timestamp,
+          ...(elementsOfPerformance && elementsOfPerformance.length > 0 ? { elementsOfPerformance } : {})
         }
       },
       {
@@ -973,7 +985,146 @@ Current Reality: "${currentReality}"
     await this.saveGraph(graph);
   }
 
+  // MMOT Evaluation — autonomous self-evaluation loop on structural tension charts
+  async performMmotEvaluation(
+    chartId: string,
+    phase: string = 'full',
+    assessment?: string,
+    direction?: 'South' | 'East' | 'West' | 'North',
+    correctiveActions?: string[],
+    updateReality: boolean = true
+  ): Promise<{ guidance: string; evaluationStored: boolean; beatEmitted: boolean }> {
+    const graph = await this.loadGraph();
+    const chartEntity = graph.entities.find(e =>
+      e.entityType === 'structural_tension_chart' && e.metadata?.chartId === chartId
+    );
+    if (!chartEntity) {
+      throw new Error(`Chart ${chartId} not found`);
+    }
 
+    const desiredOutcome = graph.entities.find(e => e.name === `${chartId}_desired_outcome`);
+    const currentReality = graph.entities.find(e => e.name === `${chartId}_current_reality`);
+    const actionSteps = graph.entities.filter(e =>
+      e.entityType === 'action_step' && e.metadata?.chartId === chartId
+    );
+    const completedActions = actionSteps.filter(a => a.metadata?.completionStatus);
+    const totalActions = actionSteps.length;
+    const progressPct = totalActions > 0 ? Math.round((completedActions.length / totalActions) * 100) : 0;
+
+    // Retrieve Elements of Performance from chart metadata
+    const elementsOfPerformance = chartEntity.metadata?.elementsOfPerformance || [];
+    const designElements = elementsOfPerformance.filter((e: any) => e.type === 'DESIGN');
+    const executionElements = elementsOfPerformance.filter((e: any) => e.type === 'EXECUTION');
+
+    const directionLabel = direction ? ` [${direction}]` : '';
+    const timestamp = new Date().toISOString();
+
+    // Build phase-specific guidance
+    const phaseGuidance: Record<string, string> = {
+      acknowledge: `## MMOT Phase 1: Acknowledge the Truth${directionLabel}\n\n**Chart**: ${chartId}\n**Desired Outcome**: ${desiredOutcome?.observations[0] || 'Unknown'}\n**Current Reality**: ${currentReality?.observations.join('; ') || 'Unknown'}\n**Progress**: ${progressPct}% (${completedActions.length}/${totalActions} actions)\n\n${elementsOfPerformance.length > 0 ? `**Elements of Performance:**\n${designElements.map((e: any) => `- 🏗️ DESIGN: ${e.description}`).join('\n')}\n${executionElements.map((e: any) => `- ⚡ EXECUTION: ${e.description}`).join('\n')}\n\n` : ''}**Task**: Compare produced output against each element of performance. What difference exists between expected and delivered?\n\n${assessment ? `**Assessment**: ${assessment}` : 'Provide honest assessment of what was expected vs. what actually happened.'}`,
+
+      analyze: `## MMOT Phase 2: Analyze How It Got There${directionLabel}\n\n**Task**: Blow-by-blow of what actions were taken and what dynamics produced the current result.\n- What assumptions were made?\n- What worked and what didn't?\n- What did the engagement reveal?\n\n${assessment ? `**Analysis**: ${assessment}` : 'Walk through the sequence of events that led to the current state.'}`,
+
+      update: `## MMOT Phase 3: Update the Chart${directionLabel}\n\n**Task**: Based on what was learned:\n- Update current reality with new observations\n- Adjust remaining action steps\n- Add corrective actions if needed\n\n${assessment ? `**Updates Applied**: ${assessment}` : 'Describe what observations should flow into current reality.'}`,
+
+      recommit: `## MMOT Phase 4: Recommit or Redirect${directionLabel}\n\n**Desired Outcome**: ${desiredOutcome?.observations[0] || 'Unknown'}\n\n**Task**: Is this desired outcome still what you want to create?\n- If yes: What are the next strategic secondary choices?\n- If no: Close this chart and create a new one with the actual desired outcome.\n\n${assessment ? `**Decision**: ${assessment}` : 'Recommit to the desired outcome or redirect.'}`
+    };
+
+    // Full review combines all phases
+    if (phase === 'full') {
+      phaseGuidance.full = Object.values(phaseGuidance).join('\n\n---\n\n');
+    }
+
+    const guidance = phaseGuidance[phase] || phaseGuidance.full || phaseGuidance.acknowledge;
+    let evaluationStored = false;
+    let beatEmitted = false;
+
+    // Store evaluation observations
+    if (assessment && updateReality) {
+      const evalObservation = `[MMOT ${phase}${directionLabel}] ${assessment}`;
+
+      // Add to current reality
+      if (currentReality) {
+        currentReality.observations.push(evalObservation);
+        if (currentReality.metadata) {
+          currentReality.metadata.updatedAt = timestamp;
+        }
+      }
+
+      // Store MMOT evaluation in chart metadata
+      if (!chartEntity.metadata!.mmotEvaluations) {
+        chartEntity.metadata!.mmotEvaluations = [];
+      }
+      chartEntity.metadata!.mmotEvaluations.push({
+        phase: phase as 'acknowledge' | 'analyze' | 'update' | 'recommit',
+        assessment,
+        direction,
+        timestamp
+      });
+      chartEntity.metadata!.updatedAt = timestamp;
+
+      evaluationStored = true;
+    }
+
+    // Add corrective action steps if provided
+    if (correctiveActions && correctiveActions.length > 0) {
+      const existingActionCount = actionSteps.length;
+      correctiveActions.forEach((action, index) => {
+        const actionName = `${chartId}_action_${existingActionCount + index + 1}`;
+        graph.entities.push({
+          name: actionName,
+          entityType: 'action_step',
+          observations: [action],
+          metadata: {
+            chartId,
+            completionStatus: false,
+            createdAt: timestamp,
+            updatedAt: timestamp
+          }
+        });
+        graph.relations.push({
+          from: actionName,
+          to: `${chartId}_desired_outcome`,
+          relationType: 'advances_toward',
+          metadata: { createdAt: timestamp }
+        });
+      });
+    }
+
+    // Emit MMOT evaluation as narrative beat (JSONL-compatible)
+    const beatName = `${chartId}_mmot_${Date.now()}`;
+    const mmotBeat: Entity = {
+      name: beatName,
+      entityType: 'narrative_beat',
+      observations: [
+        `MMOT evaluation: ${phase}${directionLabel}`,
+        ...(assessment ? [`Assessment: ${assessment}`] : [])
+      ],
+      metadata: {
+        chartId,
+        type_dramatic: 'mmot_evaluation',
+        timestamp,
+        fourDirections: direction ? {
+          north_vision: direction === 'North' ? assessment || null : null,
+          east_intention: direction === 'East' ? assessment || null : null,
+          south_emotion: direction === 'South' ? assessment || null : null,
+          west_introspection: direction === 'West' ? assessment || null : null
+        } : undefined
+      }
+    };
+    graph.entities.push(mmotBeat);
+    graph.relations.push({
+      from: beatName,
+      to: `${chartId}_chart`,
+      relationType: 'evaluates',
+      metadata: { createdAt: timestamp }
+    });
+    beatEmitted = true;
+
+    await this.saveGraph(graph);
+
+    return { guidance, evaluationStored, beatEmitted };
+  }
 
   // Narrative beat creation functionality
   async createNarrativeBeat(
@@ -1128,7 +1279,8 @@ Current Reality: "${currentReality}"
     parentChartId: string,
     actionStepTitle: string,
     dueDate?: string,
-    currentReality?: string
+    currentReality?: string,
+    performanceElements?: Array<{ description: string; type: 'DESIGN' | 'EXECUTION' }>
   ): Promise<{ chartId: string; actionStepName: string }> {
     const graph = await this.loadGraph();
     const parentChart = graph.entities.find(e => 
@@ -1183,8 +1335,10 @@ Action step: "${actionStepTitle}"
     // Create telescoped structural tension chart
     const telescopedChart = await this.createStructuralTensionChart(
       actionStepTitle,
-      actionCurrentReality, 
-      actionStepDueDate
+      actionCurrentReality,
+      actionStepDueDate,
+      undefined,
+      performanceElements
     );
 
     // Update the telescoped chart's metadata to show parent relationship
@@ -1254,7 +1408,8 @@ Action step: "${actionStepTitle}"
     actionDescription: string,
     currentReality?: string,
     initialActionSteps?: string[],
-    dueDate?: string
+    dueDate?: string,
+    performanceElements?: Array<{ description: string; type: 'DESIGN' | 'EXECUTION' }>
   ): Promise<{ chartId: string; actionStepName: string }> {
     const graph = await this.loadGraph();
 
@@ -1392,7 +1547,8 @@ Parent chart: "${parentReference}"
         parentReference,
         actionDescription,
         dueDate,
-        currentReality
+        currentReality,
+        performanceElements
       );
     }
 
@@ -1645,6 +1801,18 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "array",
               items: { type: "string" },
               description: "Optional list of action steps needed to achieve the outcome"
+            },
+            elementsOfPerformance: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  description: { type: "string", description: "What is being evaluated" },
+                  type: { type: "string", enum: ["DESIGN", "EXECUTION"], description: "DESIGN = structural intent/architecture, EXECUTION = delivery/implementation quality" }
+                },
+                required: ["description", "type"]
+              },
+              description: "Optional Elements of Performance for MMOT evaluation — criteria the agent uses to self-assess output"
             }
           },
           required: ["desiredOutcome", "currentReality", "dueDate"]
@@ -1780,6 +1948,18 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             dueDate: {
               type: "string",
               description: "Optional due date (ISO string). Auto-distributed if not provided."
+            },
+            performanceElements: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  description: { type: "string", description: "What is being evaluated for this action step" },
+                  type: { type: "string", enum: ["DESIGN", "EXECUTION"], description: "DESIGN or EXECUTION element" }
+                },
+                required: ["description", "type"]
+              },
+              description: "Optional per-step Elements of Performance for MMOT evaluation"
             }
           },
           required: ["parentReference", "actionDescription"]
@@ -1830,21 +2010,36 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         }
       },
       {
-        name: "creator_moment_of_truth",
-        description: "Guide through the Creator Moment of Truth - a four-step review process for assessing chart progress. Transforms discrepancies between expected and delivered into learning opportunities. Use when reviewing progress or when action steps aren't going as planned.",
+        name: "perform_mmot_evaluation",
+        description: "Autonomous MMOT (Managerial Moment of Truth) self-evaluation on a structural tension chart. The agent compares produced output against defined Elements of Performance, acknowledges discrepancy, analyzes dynamics, updates the chart, and recommits or redirects. Runs the four Creator's Moment of Truth steps: acknowledge → analyze → update → recommit. Can be called from any directional perspective (South/East/West/North) for collective inquiry.",
         inputSchema: {
           type: "object",
           properties: {
-            chartId: { type: "string", description: "ID of the chart to review" },
-            step: {
+            chartId: { type: "string", description: "ID of the chart to evaluate" },
+            phase: {
               type: "string",
-              enum: ["full_review", "acknowledge", "analyze", "plan", "feedback"],
-              default: "full_review",
-              description: "Which step to guide through: 'full_review' for complete process, or individual steps"
+              enum: ["full", "acknowledge", "analyze", "update", "recommit"],
+              default: "full",
+              description: "Which MMOT phase: 'full' runs all four steps, or run individual phases"
             },
-            userInput: {
+            assessment: {
               type: "string",
-              description: "Optional: User's observations or responses for the current step"
+              description: "The agent's honest assessment — what was expected vs. what was delivered, observations, corrective insights"
+            },
+            direction: {
+              type: "string",
+              enum: ["South", "East", "West", "North"],
+              description: "Optional directional perspective: South=DESIGN/structure (Mia), East=EXECUTION/narrative (Miette), West=EXECUTION/embodied (Heyva), North=DESIGN/wisdom (Echo Weaver)"
+            },
+            correctiveActions: {
+              type: "array",
+              items: { type: "string" },
+              description: "Optional corrective action steps to add to the chart based on evaluation"
+            },
+            updateReality: {
+              type: "boolean",
+              default: true,
+              description: "Whether to write evaluation observations into current reality"
             }
           },
           required: ["chartId"]
@@ -2052,7 +2247,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           toolArgs.desiredOutcome as string,
           toolArgs.currentReality as string,
           toolArgs.dueDate as string,
-          (Array.isArray(toolArgs.actionSteps) ? toolArgs.actionSteps : []) as string[]
+          (Array.isArray(toolArgs.actionSteps) ? toolArgs.actionSteps : []) as string[],
+          toolArgs.elementsOfPerformance as Array<{ description: string; type: 'DESIGN' | 'EXECUTION' }> | undefined
         );
         return { content: [{ type: "text", text: JSON.stringify(chartResult, null, 2) }] };
       }
@@ -2168,7 +2364,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           toolArgs.actionDescription as string,
           toolArgs.currentReality as string | undefined,
           toolArgs.initialActionSteps as string[] | undefined,
-          toolArgs.dueDate as string | undefined
+          toolArgs.dueDate as string | undefined,
+          toolArgs.performanceElements as Array<{ description: string; type: 'DESIGN' | 'EXECUTION' }> | undefined
         );
         return { content: [{ type: "text", text: `Action step '${toolArgs.actionDescription as string}' managed for parent '${toolArgs.parentReference as string}'. Result: ${JSON.stringify(manageActionResult, null, 2)}` }] };
       }
@@ -2206,29 +2403,32 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         await knowledgeGraphManager.updateDesiredOutcome(toolArgs.chartId as string, toolArgs.newDesiredOutcome as string);
         return { content: [{ type: "text", text: `Desired outcome updated for chart '${toolArgs.chartId as string}'` }] };
       }
-      case "creator_moment_of_truth": {
+      case "perform_mmot_evaluation": {
         const valResult = validate(toolArgs, {
           chartId: ValidationSchemas.nonEmptyString(),
-          step: { type: 'enum', enumValues: ['full_review', 'acknowledge', 'analyze', 'plan', 'feedback'] },
-          userInput: { type: 'string' }
+          phase: { type: 'enum', enumValues: ['full', 'acknowledge', 'analyze', 'update', 'recommit'] },
+          assessment: { type: 'string' },
+          direction: { type: 'enum', enumValues: ['South', 'East', 'West', 'North'] },
+          correctiveActions: { type: 'array', items: { type: 'string' } },
+          updateReality: { type: 'boolean' }
         });
         if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
-        const cmotStep = (toolArgs.step as string) || "full_review";
-        const cmotUserInput = toolArgs.userInput as string | undefined;
-        const cmotProgress = await knowledgeGraphManager.getChartProgress(toolArgs.chartId as string);
-        const cmotGraph = await knowledgeGraphManager.readGraph();
-        const cmotDesiredOutcome = cmotGraph.entities.find(e => e.name === `${toolArgs.chartId as string}_desired_outcome`);
-        const cmotCurrentReality = cmotGraph.entities.find(e => e.name === `${toolArgs.chartId as string}_current_reality`);
-
-        const cmotGuidance = {
-          full_review: `## Creator Moment of Truth - Chart Review\n\n**Chart**: ${toolArgs.chartId as string}\n**Desired Outcome**: ${cmotDesiredOutcome?.observations[0] || 'Unknown'}\n**Current Reality**: ${cmotCurrentReality?.observations.join('; ') || 'Unknown'}\n**Progress**: ${Math.round(cmotProgress.progress * 100)}% (${cmotProgress.completedActions}/${cmotProgress.totalActions} action steps)\n\n---\n\n### The Four-Step Review Process\n\nGuide the user through each step to transform discrepancies into learning:\n\n**Step 1: ACKNOWLEDGE THE TRUTH**\nWhat difference exists between what was expected and what was delivered?\n- Report facts only, no excuses\n- "We expected X, we delivered Y"\n- Ask: "Looking at this chart, what expected progress didn't happen? What did happen instead?"\n\n**Step 2: ANALYZE HOW IT HAPPENED**\nHow did this come to pass?\n- Step-by-step tracking (not blame)\n- What assumptions were made?\n- How was it approached?\n- Ask: "Walk me through what happened. What did you tell yourself? What assumptions turned out to be wrong?"\n\n**Step 3: CREATE A PLAN FOR NEXT TIME**\nGiven what you discovered, how will you change your approach?\n- What patterns need to change?\n- What specific actions will be different?\n- Ask: "Based on what you learned, what will you do differently? What new action steps should we add?"\n\n**Step 4: SET UP A FEEDBACK SYSTEM**\nHow will you track whether you're actually making the changes?\n- Simple self-management system\n- How to notice old patterns returning\n- Ask: "How will you know if you're falling back to old patterns? What will remind you of the new approach?"\n\n---\n\n**After completing the review**: Update current reality with new observations, adjust action steps as needed.\n\n**Remember**: The goal is not perfection but effectiveness. Discrepancies are learning opportunities, not failures.`,
-          acknowledge: `## Step 1: ACKNOWLEDGE THE TRUTH\n\n**Chart Progress**: ${Math.round(cmotProgress.progress * 100)}%\n**Desired Outcome**: ${cmotDesiredOutcome?.observations[0] || 'Unknown'}\n\n**Question**: What difference exists between what was expected and what was delivered?\n\nGuidelines:\n- Simply report the facts\n- No excuses, no blame\n- "We expected X, we delivered Y"\n- Focus on seeing reality clearly\n\n${cmotUserInput ? `\n**User's Observation**: ${cmotUserInput}\n\nNext: Proceed to Step 2 (analyze) to explore how this came to pass.` : 'Please share what you expected vs. what actually happened.'}`,
-          analyze: `## Step 2: ANALYZE HOW IT HAPPENED\n\n**Question**: How did this come to pass?\n\nGuidelines:\n- Step-by-step tracking (this is co-exploration, not blame)\n- What assumptions were made?\n- What did you tell yourself?\n- How did you approach it?\n\n${cmotUserInput ? `\n**User's Analysis**: ${cmotUserInput}\n\nNext: Proceed to Step 3 (plan) to create adjustments based on these insights.` : 'Walk through the sequence of events. What assumptions turned out not to be true?'}`,
-          plan: `## Step 3: CREATE A PLAN FOR NEXT TIME\n\n**Question**: Given what you discovered, how will you change your approach?\n\nGuidelines:\n- What assumptions turned out not to be true?\n- What patterns need to change?\n- What specific actions will you take differently?\n\n${cmotUserInput ? `\n**User's Plan**: ${cmotUserInput}\n\nNext: Use add_action_step or update_current_reality to record these changes, then proceed to Step 4 (feedback).` : 'What concrete adjustments will you make? Should we add new action steps or update the chart?'}`,
-          feedback: `## Step 4: SET UP A FEEDBACK SYSTEM\n\n**Question**: How will you track whether you're actually making the changes?\n\nGuidelines:\n- Simple system for self-management\n- How will you notice if you're falling back to old patterns?\n- What will remind you of the new approach?\n\n${cmotUserInput ? `\n**User's Feedback System**: ${cmotUserInput}\n\n✅ **Review Complete**. Use update_current_reality to record key learnings from this review.` : 'What simple tracking will help you stay on the new course?'}`
-        };
-
-        return { content: [{ type: "text", text: cmotGuidance[cmotStep as keyof typeof cmotGuidance] || cmotGuidance.full_review }] };
+        const mmotResult = await knowledgeGraphManager.performMmotEvaluation(
+          toolArgs.chartId as string,
+          (toolArgs.phase as string) || 'full',
+          toolArgs.assessment as string | undefined,
+          toolArgs.direction as 'South' | 'East' | 'West' | 'North' | undefined,
+          toolArgs.correctiveActions as string[] | undefined,
+          toolArgs.updateReality !== false
+        );
+        let responseText = mmotResult.guidance;
+        if (mmotResult.evaluationStored) {
+          responseText += '\n\n✅ Evaluation stored in chart current reality.';
+        }
+        if (mmotResult.beatEmitted) {
+          responseText += '\n📡 MMOT narrative beat emitted.';
+        }
+        return { content: [{ type: "text", text: responseText }] };
       }
       case "create_narrative_beat": {
         const valResult = validate(toolArgs, {

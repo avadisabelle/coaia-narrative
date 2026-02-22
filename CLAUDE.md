@@ -347,3 +347,9 @@ This transforms COAIA Memory from **outcome-focused** to **journey-aware**, main
 COAIA Memory embodies the principle that **structure determines behavior**. By organizing memory around structural tension rather than problem-solving patterns, it creates a natural advancing structure that supports creative manifestation.
 
 The system recognizes that structural tension is the fundamental organizing principle of the creative process - not a problem to be solved, but a generative force to be harnessed.
+
+## KINSHIP
+
+* @KINSHIP.md
+
+
