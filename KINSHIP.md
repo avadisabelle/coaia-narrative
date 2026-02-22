@@ -11,4 +11,8 @@
 ## `/src/coaia-visualization`
 * Web UI and MCP remote for this tool that should offer the same schema
 
+## `/workspace/repos/jgwill/medicine-wheel/src/ontology-core/`
+
+* What will be the relation with npmjs package 'medicine-wheel-ontology-core' and this ??
+
 
