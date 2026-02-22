@@ -178,6 +178,31 @@ This tension generates natural progression toward outcomes when properly structu
 
 ---
 
+### Component 7: MMOT Self-Evaluation Loop
+**Purpose**: Enable agents to witness their own performance and self-correct using the Managerial Moment of Truth framework
+
+**Spec File**: `mmot_evaluation_loop.spec.md`
+
+**What It Enables Users to Create**:
+- Self-witnessing agents that acknowledge their own discrepancies
+- Transparent self-correction processes visible in narrative beats
+- Collective inquiry through dimensional (directional) perspectives
+
+**Natural Progression**:
+1. Chart created with Elements of Performance
+2. Agent performs work and calls `perform_mmot_evaluation`
+3. Agent acknowledges discrepancy between expected and delivered
+4. Agent analyzes dynamics and updates current reality
+5. Agent adds corrective actions and recommits to outcome
+6. Narrative beats chronicle the self-correction journey
+
+**Key Structural Dynamics**:
+- Structural Recursion: The tool witnesses its own birth and growth
+- Dimensional Inquiry: South/East/West/North perspectives for holistic evaluation
+- Journey-Aware Memory: Documentation of the *process* of correction
+
+---
+
 ## 🔧 HOW COMPONENTS INTERCONNECT
 
 ### Data Flow Architecture
@@ -391,6 +416,7 @@ For complete implementation details, see:
 4. **advancing_pattern_tracking.spec.md** - Progress tracking and completion flows
 5. **mcp_tool_interface.spec.md** - Tool definitions and filtering
 6. **educational_guidance.spec.md** - Error messages and learning system
+7. **mmot_evaluation_loop.spec.md** - Agent self-evaluation and self-correction
 
 ---
 

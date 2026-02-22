@@ -47,6 +47,12 @@ This directory contains comprehensive RISE (Reverse-engineer, Intent-extract, Sp
    - Learning through doing vs manuals
    - Principle teaching integration
 
+7. **[mmot_evaluation_loop.spec.md](./mmot_evaluation_loop.spec.md)**
+   - Autonomous agent self-evaluation and self-correction
+   - Four-phase Managerial Moment of Truth (MMOT) process
+   - Elements of Performance (DESIGN & EXECUTION criteria)
+   - Directional perspectives and narrative beat emission
+
 ---
 
 ## 🎯 Core Creative Intent

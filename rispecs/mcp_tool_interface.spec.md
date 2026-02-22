@@ -63,6 +63,7 @@ Claude (calling add_action_step):
 - Primary tools: create_structural_tension_chart, add_action_step, telescope_action_step
 - Progress tools: mark_action_complete, list_active_charts, update_action_progress
 - Reality tools: update_current_reality, update_desired_outcome
+- Evaluation tools: perform_mmot_evaluation
 - Use when: LLM is primarily supporting creative projects and learning goals
 
 **KG_TOOLS**: Traditional knowledge graph tools
@@ -183,6 +184,26 @@ Inputs:
   - newObservations (required): Facts about current state
   
 Use Case: External conditions change, update structural position
+```
+
+**perform_mmot_evaluation**
+```
+Purpose: Autonomous MMOT self-evaluation on a structural tension chart
+Inputs:
+  - chartId (required): Chart to evaluate
+  - phase (optional): 'full', 'acknowledge', 'analyze', 'update', 'recommit'
+  - assessment (optional): Agent's honest assessment
+  - direction (optional): 'South', 'East', 'West', 'North' (directional perspective)
+  - correctiveActions (optional): New action steps to add
+  - updateReality (optional): Whether to write to current reality
+  
+Processing:
+  - Compares output against Elements of Performance
+  - Records evaluation in chart metadata
+  - Updates current reality with assessments
+  - Emits 'mmot_evaluation' narrative beat
+  
+Use Case: Agent self-correction, collective inquiry through directional perspectives
 ```
 
 #### Traditional KG Tools

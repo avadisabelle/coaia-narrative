@@ -69,6 +69,18 @@ All MCP tools follow this definition pattern:
       "type": "array",
       "items": { "type": "string" },
       "description": "List of strategic intermediate results (optional)"
+    },
+    "elementsOfPerformance": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": { "type": "string" },
+          "type": { "type": "string", "enum": ["DESIGN", "EXECUTION"] }
+        },
+        "required": ["description", "type"]
+      },
+      "description": "Optional criteria for autonomous self-evaluation (optional)"
     }
   },
   "required": ["desiredOutcome", "currentReality", "dueDate"]
@@ -131,90 +143,71 @@ All MCP tools follow this definition pattern:
 
 ---
 
-#### 3. add_action_step
+#### 3. add_action_step (⚠️ DEPRECATED)
 
-**Purpose**: Add strategic intermediate result to existing chart.
+**Purpose**: Add strategic intermediate result to existing chart. Use `manage_action_step` instead.
+
+... [rest of add_action_step] ...
+
+#### 4. telescope_action_step (⚠️ DEPRECATED)
+
+**Purpose**: Break down action step into detailed sub-chart. Use `manage_action_step` instead.
+
+... [rest of telescope_action_step] ...
+
+#### 4b. manage_action_step (✨ RECOMMENDED)
+
+**Purpose**: Unified tool for adding strategic intermediate results OR expanding existing actions into detailed sub-charts (telescoping).
 
 **Input Schema**:
 ```json
 {
   "type": "object",
   "properties": {
-    "parentChartId": {
+    "parentReference": {
       "type": "string",
-      "description": "ID of parent structural tension chart"
+      "description": "ID of parent chart OR name of action step to telescope"
     },
-    "actionStepTitle": {
+    "actionDescription": {
       "type": "string",
-      "minLength": 1,
-      "maxLength": 200,
-      "description": "Name of strategic intermediate result"
+      "description": "Title of the action step"
     },
     "currentReality": {
       "type": "string",
-      "minLength": 1,
-      "maxLength": 500,
-      "description": "Current reality for this action step context"
-    },
-    "dueDate": {
-      "type": "string",
-      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}",
-      "description": "Due date for this action (optional)"
-    }
-  },
-  "required": ["parentChartId", "actionStepTitle", "currentReality"]
-}
-```
-
-**Response**:
-```json
-{
-  "chartId": "chart_1765629421446_action_1",
-  "parentChart": "chart_1765629421446",
-  "actionStepTitle": "Learn recording/editing",
-  "currentReality": "Have microphone, no DAW experience",
-  "desiredOutcome": "Proficient with recording workflow",
-  "createdAt": "2025-12-13T20:00:00Z"
-}
-```
-
----
-
-#### 4. telescope_action_step
-
-**Purpose**: Break down action step into detailed sub-chart.
-
-**Input Schema**:
-```json
-{
-  "type": "object",
-  "properties": {
-    "actionStepName": {
-      "type": "string",
-      "description": "Name/ID of action step to telescope"
-    },
-    "newCurrentReality": {
-      "type": "string",
-      "minLength": 1,
-      "description": "Updated current reality for sub-chart"
+      "description": "Honest assessment of current state for this action context"
     },
     "initialActionSteps": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "Sub-steps within this action"
+      "description": "Initial sub-steps if telescoping"
+    },
+    "dueDate": {
+      "type": "string",
+      "description": "Optional ISO 8601 date"
+    },
+    "performanceElements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": { "type": "string" },
+          "type": { "type": "string", "enum": ["DESIGN", "EXECUTION"] }
+        },
+        "required": ["description", "type"]
+      },
+      "description": "Criteria for autonomous self-evaluation"
     }
   },
-  "required": ["actionStepName", "newCurrentReality"]
+  "required": ["parentReference", "actionDescription"]
 }
 ```
 
 **Response**:
 ```json
 {
-  "chartId": "chart_1765629421446_action_1_sub",
-  "parentAction": "Learn recording/editing",
-  "currentReality": "No DAW experience",
-  "actionSteps": ["Choose DAW", "Complete tutorials", "Record test podcast"]
+  "chartId": "chart_456",
+  "actionStepName": "chart_123_action_1",
+  "message": "Action step managed successfully"
 }
 ```
 
@@ -564,7 +557,7 @@ All MCP tools follow this definition pattern:
 
 #### 20. perform_mmot_evaluation
 
-**Purpose**: Guided reflection on chart discrepancies through four-step process.
+**Purpose**: Autonomous MMOT (Managerial Moment of Truth) self-evaluation on a structural tension chart.
 
 **Input Schema**:
 ```json
@@ -572,19 +565,45 @@ All MCP tools follow this definition pattern:
   "type": "object",
   "properties": {
     "chartId": {
-      "type": "string"
-    },
-    "step": {
       "type": "string",
-      "enum": ["full_review", "acknowledge", "analyze", "plan", "feedback"],
-      "description": "Review step"
+      "description": "ID of the chart to evaluate"
     },
-    "userInput": {
+    "phase": {
       "type": "string",
-      "description": "User's response for specific step"
+      "enum": ["full", "acknowledge", "analyze", "update", "recommit"],
+      "default": "full",
+      "description": "Which MMOT phase to run"
+    },
+    "assessment": {
+      "type": "string",
+      "description": "The agent's honest assessment — expected vs. delivered"
+    },
+    "direction": {
+      "type": "string",
+      "enum": ["South", "East", "West", "North"],
+      "description": "Optional directional perspective for collective inquiry"
+    },
+    "correctiveActions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional corrective action steps to add to the chart"
+    },
+    "updateReality": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether to write evaluation observations into current reality"
     }
   },
   "required": ["chartId"]
+}
+```
+
+**Response**:
+```json
+{
+  "guidance": "## MMOT Phase 1: Acknowledge the Truth...\n\n**Assessment**: [assessment content]",
+  "evaluationStored": true,
+  "beatEmitted": true
 }
 ```
 

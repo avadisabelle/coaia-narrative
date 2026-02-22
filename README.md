@@ -74,6 +74,14 @@ This extended capability documents significant moments in your creative journey,
 -   **Ceremony-World**: Illuminates the relational accountability, ethical considerations, and sacred protocols embedded in your creative acts.
 -   **Story-Engine-World**: Forges the dramatic arc, character revelations, and overall coherence of your unfolding narrative.
 
+### Managerial Moment of Truth (MMOT): The Self-Witnessing Loop ✨ NEW
+The system now implements an autonomous self-evaluation loop based on the **Managerial Moment of Truth** framework. This enables agents to witness their own performance, acknowledge discrepancies, and self-correct without human intervention.
+
+-   **perform_mmot_evaluation**: An autonomous tool that guides the agent through the four Creator's MMOT steps: **Acknowledge the Truth**, **Analyze How It Got There**, **Update the Chart**, and **Recommit or Redirect**.
+-   **Elements of Performance**: Charts and Action Steps can now carry specific criteria (**DESIGN** or **EXECUTION** types) against which the agent evaluates its own output.
+-   **Directional Perspectives**: Integrates the Medicine Wheel perspectives (South/East/West/North) for collective inquiry into structural and narrative integrity.
+-   **Visible Self-Correction**: Every MMOT evaluation emits a specialized Narrative Beat, making the agent's self-correction process observable in the live visualizer.
+
 ### Telescoping Architecture: Action Steps are Charts
 
 **Key Insight**: In COAIA Narrative, an "action step" is NOT a simple todo item—it's a **complete, self-contained structural tension chart** nested within a parent chart.
