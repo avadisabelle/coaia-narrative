@@ -9,53 +9,7 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
-
-// Re-use types from CLI
-interface Entity {
-  name: string;
-  entityType: string;
-  observations: string[];
-  metadata?: {
-    dueDate?: string;
-    chartId?: string;
-    completionStatus?: boolean;
-    parentChart?: string;
-    level?: number;
-    createdAt?: string;
-    updatedAt?: string;
-    act?: number;
-    type_dramatic?: string;
-    universes?: string[];
-    timestamp?: string;
-    narrative?: {
-      description?: string;
-      prose?: string;
-      lessons?: string[];
-    };
-    relationalAlignment?: {
-      assessed?: boolean;
-      score?: number | null;
-      principles?: string[];
-    };
-    fourDirections?: {
-      north_vision?: string | null;
-      east_intention?: string | null;
-      south_emotion?: string | null;
-      west_introspection?: string | null;
-    };
-  };
-}
-
-interface Relation {
-  from: string;
-  to: string;
-  relationType: string;
-}
-
-interface KnowledgeGraph {
-  entities: Entity[];
-  relations: Relation[];
-}
+import type { Entity, Relation, KnowledgeGraph } from './src/types.js';
 
 interface MarkdownOptions {
   includeMetadata?: boolean;
