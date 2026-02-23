@@ -139,7 +139,7 @@ CREATIVE ORIENTATION PRINCIPLES:
 PHILOSOPHY:
    COAIA Narrative recognizes that structure determines behavior. By organizing
    memory around structural tension rather than problem-solving patterns, it
-   naturally forms a structure that advances and helps build, not just the life you want, but the technologies to supports it's manifestation (hopefully!).
+   naturally forms a structure that advances and helps build, not just the life you want, but the technologies to support its manifestation (hopefully!).
 
 CREDITS:
    • Author: J.Guillaume D.-Isabelle <jgi@jgwill.com>
