@@ -86,10 +86,10 @@ The system now implements an autonomous self-evaluation loop based on the **Mana
 
 **Key Insight**: In COAIA Narrative, an "action step" is NOT a simple todo item—it's a **complete, self-contained structural tension chart** nested within a parent chart.
 
-When you add an action step like "Master TypeScript", the system creates a new telescoped chart with:
+When you add an action step like "Mastery TypeScript" (which is what we desire as outcome when we observe that we dont have the skills / competence in TypeScript), the system creates a new telescoped chart with:
 - Its own unique `chartId` (e.g., `chart_456`)
-- A complete **desired_outcome** entity containing "Master TypeScript"
-- A complete **current_reality** entity with honest assessment
+- A complete **desired_outcome** entity containing "Mastery TypeScript"
+- A complete **current_reality** entity with honest assessment (observations of facts on where we are in relation to having a full mastery)
 - Potentially its own sub-action-steps (unlimited telescoping depth)
 - Metadata linking it to the parent chart
 
