@@ -802,7 +802,7 @@ Current Reality: "${currentReality}"
     await this.saveGraph(graph);
   }
 
-  async getChartProgress(chartId: string): Promise<{
+  async getChartProgress(chartId: string, preloadedGraph?: KnowledgeGraph): Promise<{
     chartId: string;
     progress: number;
     completedActions: number;
@@ -810,7 +810,7 @@ Current Reality: "${currentReality}"
     nextAction?: string;
     dueDate?: string;
   }> {
-    const graph = await this.loadGraph();
+    const graph = preloadedGraph ?? await this.loadGraph();
     const actionSteps = graph.entities.filter(e => 
       e.entityType === 'action_step' && 
       e.metadata?.chartId === chartId
@@ -869,7 +869,7 @@ Current Reality: "${currentReality}"
     const chartSummaries = await Promise.all(
       charts.map(async (chart) => {
         const chartId = chart.metadata?.chartId || chart.name.replace('_chart', '');
-        const progress = await this.getChartProgress(chartId);
+        const progress = await this.getChartProgress(chartId, graph);
         
         // Get desired outcome
         const desiredOutcome = graph.entities.find(e => 
@@ -1091,37 +1091,40 @@ Current Reality: "${currentReality}"
       });
     }
 
-    // Emit MMOT evaluation as narrative beat (JSONL-compatible)
-    const beatName = `${chartId}_mmot_${Date.now()}`;
-    const mmotBeat: Entity = {
-      name: beatName,
-      entityType: 'narrative_beat',
-      observations: [
-        `MMOT evaluation: ${phase}${directionLabel}`,
-        ...(assessment ? [`Assessment: ${assessment}`] : [])
-      ],
-      metadata: {
-        chartId,
-        type_dramatic: 'mmot_evaluation',
-        timestamp,
-        fourDirections: direction ? {
-          north_vision: direction === 'North' ? assessment || null : null,
-          east_intention: direction === 'East' ? assessment || null : null,
-          south_emotion: direction === 'South' ? assessment || null : null,
-          west_introspection: direction === 'West' ? assessment || null : null
-        } : undefined
-      }
-    };
-    graph.entities.push(mmotBeat);
-    graph.relations.push({
-      from: beatName,
-      to: `${chartId}_chart`,
-      relationType: 'evaluates',
-      metadata: { createdAt: timestamp }
-    });
-    beatEmitted = true;
+    // Only emit beat and save when there is something meaningful to persist
+    const shouldSave = evaluationStored || (correctiveActions && correctiveActions.length > 0);
+    if (shouldSave) {
+      const beatName = `${chartId}_mmot_${Date.now()}`;
+      const mmotBeat: Entity = {
+        name: beatName,
+        entityType: 'narrative_beat',
+        observations: [
+          `MMOT evaluation: ${phase}${directionLabel}`,
+          ...(assessment ? [`Assessment: ${assessment}`] : [])
+        ],
+        metadata: {
+          chartId,
+          type_dramatic: 'mmot_evaluation',
+          timestamp,
+          fourDirections: direction ? {
+            north_vision: direction === 'North' ? assessment || null : null,
+            east_intention: direction === 'East' ? assessment || null : null,
+            south_emotion: direction === 'South' ? assessment || null : null,
+            west_introspection: direction === 'West' ? assessment || null : null
+          } : undefined
+        }
+      };
+      graph.entities.push(mmotBeat);
+      graph.relations.push({
+        from: beatName,
+        to: `${chartId}_chart`,
+        relationType: 'evaluates',
+        metadata: { createdAt: timestamp }
+      });
+      beatEmitted = true;
 
-    await this.saveGraph(graph);
+      await this.saveGraph(graph);
+    }
 
     return { guidance, evaluationStored, beatEmitted };
   }
@@ -1341,35 +1344,34 @@ Action step: "${actionStepTitle}"
       performanceElements
     );
 
-    // Update the telescoped chart's metadata to show parent relationship
+    // Load once, apply all mutations, save once — no races
     const updatedGraph = await this.loadGraph();
+    const timestamp = new Date().toISOString();
+
     const telescopedChartEntity = updatedGraph.entities.find(e => e.name === `${telescopedChart.chartId}_chart`);
     if (telescopedChartEntity && telescopedChartEntity.metadata) {
       telescopedChartEntity.metadata.parentChart = parentChartId;
       telescopedChartEntity.metadata.level = (parentChart.metadata?.level || 0) + 1;
-      telescopedChartEntity.metadata.updatedAt = new Date().toISOString();
+      telescopedChartEntity.metadata.updatedAt = timestamp;
     }
 
-    // Create relationship: telescoped chart advances toward parent's desired outcome
-    const parentDesiredOutcome = updatedGraph.entities.find(e => 
+    const parentDesiredOutcome = updatedGraph.entities.find(e =>
       e.name === `${parentChartId}_desired_outcome` && e.entityType === 'desired_outcome'
     );
-
     if (parentDesiredOutcome) {
-      const timestamp = new Date().toISOString();
-      await this.createRelations([{
+      updatedGraph.relations.push({
         from: `${telescopedChart.chartId}_desired_outcome`,
         to: parentDesiredOutcome.name,
         relationType: 'advances_toward',
         metadata: { createdAt: timestamp }
-      }]);
+      });
     }
 
     await this.saveGraph(updatedGraph);
 
-    return { 
-      chartId: telescopedChart.chartId, 
-      actionStepName: `${telescopedChart.chartId}_desired_outcome` 
+    return {
+      chartId: telescopedChart.chartId,
+      actionStepName: `${telescopedChart.chartId}_desired_outcome`
     };
   }
 
