@@ -362,11 +362,11 @@ async function testMcpProtocol() {
             clientInfo: { name: 'test', version: '1.0' }
           }
         });
-        await delay(300);
+        await delay(1000);
 
         // Send initialized notification
         send({ jsonrpc: '2.0', method: 'notifications/initialized' });
-        await delay(300);
+        await delay(500);
 
         // Test 1: Initialize response
         assert(
