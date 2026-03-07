@@ -81,3 +81,7 @@ Thumbs.db
 .mcp*
 llms
 .claude/ 
+
+# Test artifacts
+test-*.jsonl
+test-memory.jsonl

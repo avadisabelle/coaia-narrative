@@ -21,65 +21,7 @@ import {
   writeMarkdownToFile,
   getDefaultFilename
 } from './markdown-export.js';
-
-// ==================== TYPES ====================
-
-interface Entity {
-  name: string;
-  entityType: string;
-  observations: string[];
-  metadata?: {
-    dueDate?: string;
-    chartId?: string;
-    completionStatus?: boolean;
-    parentChart?: string;
-    level?: number;
-    createdAt?: string;
-    updatedAt?: string;
-    elementsOfPerformance?: Array<{
-      description: string;
-      type: 'DESIGN' | 'EXECUTION';
-    }>;
-    mmotEvaluations?: Array<{
-      phase: 'acknowledge' | 'analyze' | 'update' | 'recommit';
-      assessment: string;
-      direction?: 'South' | 'East' | 'West' | 'North';
-      timestamp: string;
-    }>;
-    // Narrative beat specific metadata
-    act?: number;
-    type_dramatic?: string;
-    universes?: string[];
-    timestamp?: string;
-    narrative?: {
-      description?: string;
-      prose?: string;
-      lessons?: string[];
-    };
-    relationalAlignment?: {
-      assessed?: boolean;
-      score?: number | null;
-      principles?: string[];
-    };
-    fourDirections?: {
-      north_vision?: string | null;
-      east_intention?: string | null;
-      south_emotion?: string | null;
-      west_introspection?: string | null;
-    };
-  };
-}
-
-interface Relation {
-  from: string;
-  to: string;
-  relationType: string;
-}
-
-interface KnowledgeGraph {
-  entities: Entity[];
-  relations: Relation[];
-}
+import type { Entity, Relation, KnowledgeGraph } from './src/types.js';
 
 // ==================== CONFIGURATION ====================
 
