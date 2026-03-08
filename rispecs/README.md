@@ -53,6 +53,18 @@ This directory contains comprehensive RISE (Reverse-engineer, Intent-extract, Sp
    - Elements of Performance (DESIGN & EXECUTION criteria)
    - Directional perspectives and narrative beat emission
 
+8. **[cli_interactive_visualization.spec.md](./cli_interactive_visualization.spec.md)**
+   - Human-intuitive terminal interface for chart management
+   - Progress visualization and status indicators
+   - Multi-format Markdown export (charts, stats, progress)
+   - Interactive configuration and context management
+
+9. **[input_validation_integrity.spec.md](./input_validation_integrity.spec.md)**
+   - Strict schema enforcement for multi-LLM compatibility
+   - Recursive type and constraint checking
+   - Pre-built validation patterns for common data structures
+   - Early-fail integrity protection for storage layer
+
 ---
 
 ## 🎯 Core Creative Intent

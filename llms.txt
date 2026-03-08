@@ -1,0 +1,66 @@
+# COAIA Narrative
+> A Creative-Oriented AI Assistant Memory System implementing structural tension charts. It enables sustainable creative advancement through natural progression dynamics rather than reactive problem-solving.
+
+**Version**: 0.12.0
+**Document ID**: coaia-narrative-llms-txt-v1
+**Last Updated**: 2026-03-08
+**Content Source**: COAIA Narrative Codebase and RISE Specifications
+**Attribution**: Built on Robert Fritz's Structural Tension methodology and Shane Holloman's mcp-knowledge-graph.
+
+## Core Purpose {#core-purpose}
+COAIA Narrative provides an MCP (Model Context Protocol) server and CLI toolset to manage memory as a dynamic graph of structural tension. It helps users and AI assistants move from "fixing problems" to "creating results" by maintaining a clear vision of the desired outcome while being grounded in honest current reality.
+
+## Key Concepts {#key-concepts}
+
+### Creative Orientation {#creative-orientation}
+Focuses on what you want to **CREATE** rather than what you want to eliminate. Creative orientation generates advancing patterns, while problem-solving generates oscillating patterns that return to the status quo.
+
+### Structural Tension {#structural-tension}
+The productive gap between **Current Reality** (where you are) and **Desired Outcome** (where you want to be). This tension naturally seeks resolution through the path of least resistance—advancing the system toward the goal.
+
+### Advancing Patterns {#advancing-patterns}
+A structural design where completed actions flow into current reality, changing the structural dynamic and making the next steps naturally adjacent and easier to achieve.
+
+### Telescoping {#telescoping}
+The ability to "zoom in" on a complex action step and break it down into a detailed sub-chart, maintaining master vision while enabling precise execution.
+
+## Specification Index (RISE) {#spec-index}
+Detailed "prose code" specifications for rebuilding or extending the system:
+
+- **[App Overview](rispecs/app.specs.md)**: How all components interconnect.
+- **[Chart Creation](rispecs/structural_tension_chart_creation.spec.md)**: Validation and distribution logic.
+- **[Hierarchy & Telescoping](rispecs/telescoping_hierarchical_advancement.spec.md)**: Nested chart management.
+- **[Progress Tracking](rispecs/advancing_pattern_tracking.spec.md)**: Momentum and completion flows.
+- **[Narrative Beats](rispecs/narrative_beat_creation.spec.md)**: Story capture across universes.
+- **[MMOT Evaluation](rispecs/mmot_evaluation_loop.spec.md)**: Autonomous agent self-correction.
+- **[Storage](rispecs/storage_knowledge_graph.spec.md)**: JSONL and Graph structures.
+- **[MCP Interface](rispecs/mcp_tool_interface.spec.md)**: Tool definitions and filtering.
+- **[Interactive CLI](rispecs/cli_interactive_visualization.spec.md)**: Human-intuitive visualization.
+- **[Validation](rispecs/input_validation_integrity.spec.md)**: Data integrity and LLM compatibility.
+
+## LLM Interaction Guidelines {#llm-guidelines}
+
+### Recommended Workflow
+1. **Initialize**: Run `init_llm_guidance` to understand the methodology.
+2. **List**: Use `list_active_charts` to see the current structural state.
+3. **Analyze**: Call `get_chart` or `get_action_step` for deep-dive context.
+4. **Act**: Use `manage_action_step` to add or expand strategic actions.
+5. **Update**: Use `mark_action_complete` or `update_action_progress` to advance the story.
+
+### Language Patterns
+- ✅ **DO**: "What do you want to create?", "What is the current reality?", "This action advances toward..."
+- ❌ **DON'T**: "How do we fix this problem?", "Bridge the gap", "I'm ready to begin" (use factual assessment instead).
+
+## Anti-Patterns {#anti-patterns}
+- **Reactive Resolution**: Prematurely assuming "readiness" or "completeness" without factual evidence.
+- **Problem-Solving Oscillation**: Reframing a creative goal as a series of fixes for unwanted conditions.
+- **Disconnected Reality**: Creating action steps that don't ground in the current structural position.
+
+## Related Resources {#related-resources}
+- **[llms-full.txt](llms-full.txt)**: Complete content including code samples and schemas.
+- **[README.md](README.md)**: Human-centric project documentation.
+- **[Architecture](ARCHITECTURE.md)**: System design and data flow.
+
+---
+**Compliance**: LLMS-txt Standard v1.0 Compliant
+**License**: MIT
