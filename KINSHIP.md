@@ -17,4 +17,9 @@
 
 * What will be the relation with npmjs package 'medicine-wheel-ontology-core' and this ??
 
+## `/src/Miadi-18/lib/coaia-narrative` (submodule)
 
+* Miadi-18 consumes coaia-narrative as a git submodule for schema authority
+* Local type mirrors at `Miadi-18/lib/coaia/` maintain runtime independence
+* Schema compatibility: A+ — intentional alignment through mirrored types
+* Related rispecs: `/src/coaia-narrative/rispecs/miadi-submodule-integration.spec.md`
