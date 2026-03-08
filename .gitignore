@@ -79,7 +79,6 @@ Thumbs.db
 .mcp.json
 .hch
 .mcp*
-llms
 .claude/ 
 
 # Test artifacts
