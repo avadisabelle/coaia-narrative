@@ -14,6 +14,95 @@ export interface Entity {
   metadata?: EntityMetadata;
 }
 
+export type Direction = 'EAST' | 'SOUTH' | 'WEST' | 'NORTH';
+
+export type GithubSyncState = 'synced' | 'diverged' | 'conflict' | 'project-only' | 'chart-only';
+
+export type GithubSyncAuthority = 'jsonl' | 'project';
+
+export interface GithubIssueRef {
+  owner: string;
+  repo: string;
+  number: number;
+  nodeId?: string;
+  url?: string;
+}
+
+export interface GithubProjectItemRef {
+  projectNumber: number;
+  projectOwner: string;
+  projectTitle?: string;
+  itemId: string;
+  url?: string;
+}
+
+export interface GithubBridgeMetadata {
+  issue?: GithubIssueRef;
+  projectItem?: GithubProjectItemRef;
+  projectItems?: GithubProjectItemRef[];
+  syncState?: GithubSyncState;
+  lastSyncedAt?: string;
+  fieldHash?: string;
+  authoritativeOnLastSync?: GithubSyncAuthority;
+}
+
+export type GithubChartProvenance = GithubBridgeMetadata;
+
+export type GithubActionStepProvenance = GithubBridgeMetadata;
+
+export interface LegacyGithubSyncTarget {
+  owner?: string;
+  repo?: string;
+  issue_number?: number;
+  issueNumber?: number;
+  number?: number;
+  node_id?: string;
+  nodeId?: string;
+  issue_url?: string;
+  url?: string;
+  project_id?: string;
+  projectId?: string;
+  project_number?: number;
+  projectNumber?: number;
+  project_owner?: string;
+  projectOwner?: string;
+  project_title?: string;
+  projectTitle?: string;
+  item_id?: string;
+  itemId?: string;
+  project_url?: string;
+}
+
+export interface LegacyGithubRef {
+  owner?: string;
+  repo?: string;
+  issue_number?: number;
+  issueNumber?: number;
+  number?: number;
+  node_id?: string;
+  nodeId?: string;
+  issue_url?: string;
+  url?: string;
+}
+
+export type SourceSystem =
+  | 'coaia-narrative'
+  | 'coaia-pde'
+  | 'coaia-planning'
+  | 'mcp-pde'
+  | 'manual'
+  | 'miadi'
+  | 'coaia-github'
+  | (string & {});
+
+export interface SourceProvenance {
+  system: SourceSystem;
+  version?: string;
+  toolName?: string;
+  sessionId?: string;
+  createdAt?: string;
+}
+
 export interface EntityMetadata {
   dueDate?: string;
   chartId?: string;
@@ -55,6 +144,12 @@ export interface EntityMetadata {
     prose: string;
     lessons: string[];
   };
+  github?: GithubBridgeMetadata;
+  source?: SourceProvenance;
+  /** @deprecated Use github.issue and github.projectItem instead. */
+  sync_target?: LegacyGithubSyncTarget;
+  /** @deprecated Use github.issue instead. */
+  github_ref?: LegacyGithubRef;
 }
 
 export interface Relation {

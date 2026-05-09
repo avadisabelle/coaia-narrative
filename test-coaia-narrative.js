@@ -19,6 +19,11 @@ import { KnowledgeGraphManager } from './dist/src/graph-manager.js';
 import { handleToolCall } from './dist/src/tool-handlers.js';
 import { getEnabledTools, TOOL_GROUPS } from './dist/src/tool-groups.js';
 import { ALL_TOOL_DEFINITIONS } from './dist/src/tool-definitions.js';
+import {
+  GITHUB_PROJECT_FIELD_NAMES,
+  createGithubProjectFieldProjection,
+  normalizeGithubBridgeMetadata,
+} from './dist/src/github-bridge.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const serverPath = join(__dirname, 'dist', 'index.js');
@@ -35,6 +40,173 @@ function assert(condition, testName) {
     failed++;
     failures.push(testName);
     console.log(`  ❌ ${testName}`);
+  }
+}
+
+// ==================== GitHub Bridge Helper Tests ====================
+
+async function testGithubBridgeHelpers() {
+  console.log('\n🔗 Testing GitHub Bridge Helpers...');
+  const testFile = join(__dirname, 'test-github-bridge.jsonl');
+
+  const requiredFieldNames = [
+    'goal',
+    'current_reality',
+    'observations',
+    'question',
+    'Status',
+    'phase',
+    'session_id',
+    'four_dir_east',
+    'four_dir_south',
+    'four_dir_west',
+    'four_dir_north',
+    'relational_assessed',
+    'relational_principles',
+  ];
+
+  for (const fieldName of requiredFieldNames) {
+    assert(GITHUB_PROJECT_FIELD_NAMES.includes(fieldName), `GitHub field family includes ${fieldName}`);
+  }
+
+  const chartEntity = {
+    name: 'chart_123_chart',
+    entityType: 'structural_tension_chart',
+    observations: ['Chart created for GitHub bridge verification'],
+    metadata: {
+      chartId: 'chart_123',
+      phase: 'assimilation',
+      source: { system: 'coaia-github', sessionId: 'session-bridge-1' },
+      narrative: {
+        description: 'What creates a stable GitHub bridge?',
+        prose: '',
+        lessons: [],
+      },
+      fourDirections: {
+        east_intention: 'Name the canonical bridge shape',
+        south_emotion: 'Keep compatibility with existing JSONL',
+        west_introspection: 'Project fields are projections, not duplicated state',
+        north_vision: 'Runtime memory mirrors local structural tension',
+      },
+      relationalAlignment: {
+        assessed: true,
+        score: null,
+        principles: ['OCAP', 'dual-read transition'],
+      },
+      github: {
+        issue: {
+          owner: 'avadisabelle',
+          repo: 'coaia-narrative',
+          number: 34,
+        },
+        projectItem: {
+          projectNumber: 18,
+          projectOwner: 'jgwill',
+          itemId: 'PVTI_canonical',
+        },
+        syncState: 'synced',
+      },
+      sync_target: {
+        owner: 'avadisabelle',
+        repo: 'coaia-narrative',
+        issue_number: 28,
+        project_number: 18,
+        item_id: 'PVTI_legacy',
+      },
+    },
+  };
+
+  const desiredOutcome = {
+    name: 'chart_123_desired_outcome',
+    entityType: 'desired_outcome',
+    observations: ['Canonical GitHub bridge support for structural runtime memory.'],
+    metadata: { chartId: 'chart_123' },
+  };
+
+  const currentReality = {
+    name: 'chart_123_current_reality',
+    entityType: 'current_reality',
+    observations: [
+      'metadata.github is not yet represented in runtime types',
+      'legacy aliases still appear in existing bridge specs',
+    ],
+    metadata: { chartId: 'chart_123' },
+  };
+
+  const actionOne = {
+    name: 'chart_123_action_1',
+    entityType: 'action_step',
+    observations: ['Add canonical types'],
+    metadata: { chartId: 'chart_123', completionStatus: true },
+  };
+
+  const actionTwo = {
+    name: 'chart_123_action_2',
+    entityType: 'action_step',
+    observations: ['Add projection helper tests'],
+    metadata: { chartId: 'chart_123', completionStatus: false },
+  };
+
+  const graph = {
+    entities: [chartEntity, desiredOutcome, currentReality, actionOne, actionTwo],
+    relations: [
+      { from: 'chart_123_chart', to: 'chart_123_desired_outcome', relationType: 'contains' },
+      { from: 'chart_123_chart', to: 'chart_123_current_reality', relationType: 'contains' },
+      { from: 'chart_123_chart', to: 'chart_123_action_1', relationType: 'contains' },
+      { from: 'chart_123_chart', to: 'chart_123_action_2', relationType: 'contains' },
+    ],
+  };
+
+  const normalized = normalizeGithubBridgeMetadata(chartEntity.metadata);
+  assert(normalized.issue?.number === 34, 'Canonical metadata.github issue wins over sync_target');
+  assert(normalized.projectItems[0]?.itemId === 'PVTI_canonical', 'Canonical project item wins over legacy item');
+  assert(normalized.syncState === 'synced', 'Canonical sync state is preserved');
+
+  const legacySyncTarget = normalizeGithubBridgeMetadata({
+    sync_target: {
+      owner: 'avadisabelle',
+      repo: 'coaia-narrative',
+      issue_number: 28,
+      project_number: 18,
+      item_id: 'PVTI_legacy',
+    },
+  });
+  assert(legacySyncTarget.issue?.number === 28, 'Legacy sync_target issue normalizes');
+  assert(legacySyncTarget.projectItems[0]?.projectOwner === 'avadisabelle', 'Legacy sync_target project owner falls back to repo owner');
+  assert(legacySyncTarget.legacyProjectItemId === 'PVTI_legacy', 'Legacy sync_target item id is retained');
+
+  const legacyGithubRef = normalizeGithubBridgeMetadata({
+    github_ref: {
+      owner: 'jgwill',
+      repo: 'coaia-agent',
+      issue_number: '18',
+    },
+  });
+  assert(legacyGithubRef.issue?.number === 18, 'Legacy github_ref issue normalizes');
+
+  const projection = createGithubProjectFieldProjection(chartEntity, graph);
+  assert(projection.goal === desiredOutcome.observations[0], 'Projection derives goal from desired_outcome');
+  assert(projection.current_reality === currentReality.observations.join('\n'), 'Projection derives current_reality observations');
+  assert(projection.Status === 'In progress', 'Projection derives Status from phase and completion ratio');
+  assert(projection.phase === 'assimilation', 'Projection includes phase field');
+  assert(projection.session_id === 'session-bridge-1', 'Projection includes session_id from source metadata');
+  assert(projection.four_dir_east === 'Name the canonical bridge shape', 'Projection includes east direction');
+  assert(projection.four_dir_south === 'Keep compatibility with existing JSONL', 'Projection includes south direction');
+  assert(projection.four_dir_west === 'Project fields are projections, not duplicated state', 'Projection includes west direction');
+  assert(projection.four_dir_north === 'Runtime memory mirrors local structural tension', 'Projection includes north direction');
+  assert(projection.relational_assessed === 'Yes', 'Projection maps relational assessment');
+  assert(projection.relational_principles === 'OCAP\ndual-read transition', 'Projection maps relational principles');
+
+  try {
+    try { await fs.unlink(testFile); } catch {}
+    const manager = new KnowledgeGraphManager(testFile);
+    await manager.createEntities(graph.entities);
+    await manager.createRelations(graph.relations);
+
+    const managerProjection = await manager.getGithubProjectFieldProjection('chart_123');
+    assert(managerProjection?.goal === desiredOutcome.observations[0], 'Manager exposes GitHub projection by chart ID');
+  } finally {
+    try { await fs.unlink(testFile); } catch {}
   }
 }
 
@@ -446,6 +618,7 @@ async function runTests() {
   console.log('Testing modular architecture: types → graph-manager → tool-handlers → MCP server');
 
   await testToolGroups();
+  await testGithubBridgeHelpers();
   await testGraphManager();
   await testToolHandlers();
   await testMcpProtocol();
