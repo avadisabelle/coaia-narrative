@@ -1,5 +1,9 @@
 import { Entity, Relation, KnowledgeGraph } from './types.js';
 import { readJsonlMemoryFile, writeJsonlMemoryFile } from './jsonl-preservation.js';
+import {
+  createGithubProjectFieldProjection,
+  type GithubProjectFieldProjection,
+} from './github-bridge.js';
 
 export class KnowledgeGraphManager {
   private memoryFilePath: string;
@@ -103,6 +107,21 @@ export class KnowledgeGraphManager {
 
   async readGraph(): Promise<KnowledgeGraph> {
     return this.loadGraph();
+  }
+
+  async getGithubProjectFieldProjection(entityNameOrChartId: string): Promise<GithubProjectFieldProjection | null> {
+    const graph = await this.loadGraph();
+    const entity = graph.entities.find(e => e.name === entityNameOrChartId)
+      ?? graph.entities.find(e =>
+        e.entityType === 'structural_tension_chart' &&
+        e.metadata?.chartId === entityNameOrChartId
+      );
+
+    if (!entity) {
+      return null;
+    }
+
+    return createGithubProjectFieldProjection(entity, graph);
   }
 
   // Very basic search function

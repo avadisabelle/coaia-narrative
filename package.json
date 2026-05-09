@@ -1,6 +1,6 @@
 {
   "name": "coaia-narrative",
-  "version": "0.13.2",
+  "version": "0.13.3",
   "description": "Creative Orientation AI Agentic Memories - Narrative Beat Extension with IAIP relational integration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -60,6 +60,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/avadisabelle/coaia-narrative"
+    "url": "git+https://github.com/avadisabelle/coaia-narrative.git"
   }
 }
