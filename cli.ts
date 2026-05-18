@@ -21,6 +21,7 @@ import {
   writeMarkdownToFile,
   getDefaultFilename
 } from './markdown-export.js';
+import { handleSkillCommand } from './src/skill.js';
 import type { Entity, Relation, KnowledgeGraph } from './src/types.js';
 
 // ==================== CONFIGURATION ====================
@@ -546,6 +547,7 @@ COMMANDS:
 
   ⚙️  UTILITY
   ───────────────────────────────────────────────────────────────────────────────
+  skill                        Show or install the packaged LLM skill
   help, h                       Show this help message
   version, ver                  Show version information
 
@@ -1439,6 +1441,10 @@ async function main() {
       case '--help':
       case '-h':
         showHelp();
+        break;
+
+      case 'skill':
+        await handleSkillCommand(args);
         break;
         
       case 'version':
