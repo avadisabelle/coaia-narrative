@@ -149,6 +149,8 @@ Memory is stored as JSONL (JSON Lines), an append-only format that ensures data 
 
 All records are backward compatible with the JSONL format, ensuring a seamless and evolving memory of your creations.
 
+Writer operations preserve rich JSONL metadata during chart/action/narrative updates. See [JSONL Metadata Preservation](./docs/development/jsonl-metadata-preservation.md) for the preservation contract and fixture tied to `avadisabelle/coaia-narrative#35`.
+
 ## Schema Documentation: Understanding the Structure
 
 Comprehensive schema documentation is available in the [`schema/`](./schema/) directory:

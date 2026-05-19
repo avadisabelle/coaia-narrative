@@ -8,10 +8,12 @@
 // ==================== Core Data Types ====================
 
 export interface Entity {
+  type?: string;
   name: string;
   entityType: string;
   observations: string[];
   metadata?: EntityMetadata;
+  [key: string]: unknown;
 }
 
 export interface EntityMetadata {
@@ -55,9 +57,11 @@ export interface EntityMetadata {
     prose: string;
     lessons: string[];
   };
+  [key: string]: unknown;
 }
 
 export interface Relation {
+  type?: string;
   from: string;
   to: string;
   relationType: string;
@@ -66,13 +70,18 @@ export interface Relation {
     strength?: number;
     context?: string;
     description?: string;
+    [key: string]: unknown;
   };
+  [key: string]: unknown;
 }
 
 export interface KnowledgeGraph {
   entities: Entity[];
   relations: Relation[];
+  rawRecords?: JsonlRecord[];
 }
+
+export type JsonlRecord = Record<string, unknown>;
 
 // ==================== MCP Tool Result ====================
 

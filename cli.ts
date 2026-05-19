@@ -22,6 +22,7 @@ import {
   getDefaultFilename
 } from './markdown-export.js';
 import { handleSkillCommand } from './src/skill.js';
+import { readJsonlMemoryFile, writeJsonlMemoryFile } from './src/jsonl-preservation.js';
 import type { Entity, Relation, KnowledgeGraph } from './src/types.js';
 
 // ==================== CONFIGURATION ====================
@@ -106,29 +107,11 @@ function loadConfig(args: minimist.ParsedArgs): Config {
 // ==================== UTILITIES ====================
 
 async function loadGraph(memoryPath: string): Promise<KnowledgeGraph> {
-  try {
-    const data = await fs.promises.readFile(memoryPath, "utf-8");
-    const lines = data.split("\n").filter(line => line.trim() !== "");
-    return lines.reduce((graph: KnowledgeGraph, line) => {
-      const item = JSON.parse(line);
-      if (item.type === "entity") graph.entities.push(item as Entity);
-      if (item.type === "relation") graph.relations.push(item as Relation);
-      return graph;
-    }, { entities: [], relations: [] });
-  } catch (error) {
-    if ((error as any).code === "ENOENT") {
-      return { entities: [], relations: [] };
-    }
-    throw error;
-  }
+  return readJsonlMemoryFile(memoryPath);
 }
 
 async function saveGraph(memoryPath: string, graph: KnowledgeGraph): Promise<void> {
-  const lines = [
-    ...graph.entities.map(e => JSON.stringify({ type: 'entity', ...e })),
-    ...graph.relations.map(r => JSON.stringify({ type: 'relation', ...r }))
-  ];
-  await fs.promises.writeFile(memoryPath, lines.join('\n') + '\n', 'utf-8');
+  await writeJsonlMemoryFile(memoryPath, graph);
 }
 
 function formatDate(dateStr?: string): string {

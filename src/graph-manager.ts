@@ -1,5 +1,5 @@
-import { promises as fs } from 'fs';
 import { Entity, Relation, KnowledgeGraph } from './types.js';
+import { readJsonlMemoryFile, writeJsonlMemoryFile } from './jsonl-preservation.js';
 
 export class KnowledgeGraphManager {
   private memoryFilePath: string;
@@ -9,36 +9,7 @@ export class KnowledgeGraphManager {
   }
 
   private async loadGraph(): Promise<KnowledgeGraph> {
-    try {
-      const data = await fs.readFile(this.memoryFilePath, "utf-8");
-      const lines = data.split("\n").filter(line => line.trim() !== "");
-      return lines.reduce((graph: KnowledgeGraph, line) => {
-        const item = JSON.parse(line);
-        if (item.type === "entity") graph.entities.push(item as Entity);
-        if (item.type === "relation") graph.relations.push(item as Relation);
-        // Support narrative_beat entities (convert to entity format)
-        if (item.type === "narrative_beat") {
-          const narrativeBeat: Entity = {
-            name: item.name,
-            entityType: 'narrative_beat',
-            observations: item.observations || [],
-            metadata: {
-              ...item.metadata,
-              narrative: item.narrative,
-              relationalAlignment: item.relational_alignment,
-              fourDirections: item.four_directions
-            }
-          };
-          graph.entities.push(narrativeBeat);
-        }
-        return graph;
-      }, { entities: [], relations: [] });
-    } catch (error) {
-      if (error instanceof Error && 'code' in error && (error as any).code === "ENOENT") {
-        return { entities: [], relations: [] };
-      }
-      throw error;
-    }
+    return readJsonlMemoryFile(this.memoryFilePath);
   }
 
   // Helper function to extract current reality from user context
@@ -64,11 +35,7 @@ export class KnowledgeGraphManager {
   }
 
   private async saveGraph(graph: KnowledgeGraph): Promise<void> {
-    const lines = [
-      ...graph.entities.map(e => JSON.stringify({ type: "entity", ...e })),
-      ...graph.relations.map(r => JSON.stringify({ type: "relation", ...r })),
-    ];
-    await fs.writeFile(this.memoryFilePath, lines.join("\n"));
+    await writeJsonlMemoryFile(this.memoryFilePath, graph);
   }
 
   async createEntities(entities: Entity[]): Promise<Entity[]> {
