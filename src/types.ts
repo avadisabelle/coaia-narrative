@@ -105,6 +105,48 @@ export interface SourceProvenance {
   createdAt?: string;
 }
 
+/**
+ * Deep Research Foundations metadata for tracking research packet context and evaluation status.
+ * Used by Atlas Chronicle and research delegation workflows.
+ * 
+ * @see https://github.com/avadisabelle/coaia-narrative/issues/39
+ */
+export interface DeepResearchFoundationMetadata {
+  packetRoot?: string;
+  foundationType?: string;
+  parentIssue?: string;
+  baselineIssue?: string;
+  inquiryIssue?: string;
+  protocolIssue?: string;
+  schemaIssue?: string;
+  visualizerIssue?: string;
+  expectedArtifacts?: string[];
+  producedArtifacts?: string[];
+  evaluationStatus?: 'expected' | 'delegated' | 'produced' | 'evaluated';
+  privacyClass?: 'public-safe' | 'private' | 'mixed';
+  publicationStatus?: 'planned' | 'draft' | 'reviewed' | 'published';
+  commitHandles?: string[];
+}
+
+/**
+ * Hermes session lineage metadata tracking conversation branching and handoff state.
+ * Used for reconstructing branch maps and session traceability.
+ * 
+ * @see https://github.com/avadisabelle/coaia-narrative/issues/40
+ */
+export interface HermesSessionLineageMetadata {
+  platform?: string;
+  parentChartId?: string;
+  sourceBeat?: string;
+  originalSessionId?: string;
+  branchSessionId?: string;
+  branchIndex?: number;
+  copiedMessageCount?: number;
+  branchPurpose?: string;
+  relatedIssues?: string[];
+  handoffState?: 'requirements-created' | 'implementation-ready' | 'returned-to-parent';
+}
+
 export interface EntityMetadata {
   dueDate?: string;
   chartId?: string;
@@ -148,6 +190,10 @@ export interface EntityMetadata {
   };
   github?: GithubBridgeMetadata;
   source?: SourceProvenance;
+  /** Deep Research Foundations metadata for research packet tracking and evaluation. */
+  foundation?: DeepResearchFoundationMetadata;
+  /** Hermes session lineage metadata for conversation branching and handoff tracking. */
+  sessionLineage?: HermesSessionLineageMetadata;
   /** @deprecated Use github.issue and github.projectItem instead. */
   sync_target?: LegacyGithubSyncTarget;
   /** @deprecated Use github.issue instead. */
