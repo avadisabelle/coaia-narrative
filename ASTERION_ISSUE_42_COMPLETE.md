@@ -118,10 +118,7 @@ Package has been validated with `npm pack --dry-run` and is ready for publicatio
 
 ## GitHub Comments
 
-Due to missing GitHub authentication (gh CLI and GitHub token not configured), prepared comments have been generated but not posted:
-
-- **Issue #42 comment**: `/tmp/issue42-comment.md`
-- **PR #41 comment**: `/tmp/pr41-comment.md`
+Atlas posted implementation comments to issue #42 and PR #41 after local verification.
 
 Comments include:
 - Implementation details
@@ -169,11 +166,7 @@ All three layers preserve independently and coexist with existing COAIA metadata
 
 ## Next Steps
 
-1. **Manual GitHub comment posting** (auth required)
-   - Post `/tmp/issue42-comment.md` to issue #42
-   - Post `/tmp/pr41-comment.md` to PR #41
-
-2. **NPM publishing** (when auth available)
+1. **NPM publishing** (when auth available)
    - `npm whoami` to verify auth
    - `npm publish` to release coaia-narrative@0.13.4
 
