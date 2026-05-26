@@ -147,6 +147,24 @@ export interface HermesSessionLineageMetadata {
   handoffState?: 'requirements-created' | 'implementation-ready' | 'returned-to-parent';
 }
 
+/**
+ * Beat-level lived session context metadata capturing the embodied condition of working sessions.
+ * Records land-based learning, voice/terminal mode, environmental constraints, and continuity context.
+ * 
+ * @see https://github.com/avadisabelle/coaia-narrative/issues/42
+ */
+export interface SessionContextMetadata {
+  mode?: 'voice' | 'terminal' | 'mixed';
+  setting?: 'desk' | 'walking' | 'land-based' | 'transit' | 'unknown';
+  landBasedLearning?: boolean;
+  environmentNotes?: string[];
+  listeningContext?: string;
+  captureQuality?: 'clear' | 'windy' | 'partial';
+  continuationKind?: 'branch' | 'parent-return' | 'follow-up';
+  privateChroniclePath?: string;
+  publicSummaryAllowed?: boolean;
+}
+
 export interface EntityMetadata {
   dueDate?: string;
   chartId?: string;
@@ -194,6 +212,8 @@ export interface EntityMetadata {
   foundation?: DeepResearchFoundationMetadata;
   /** Hermes session lineage metadata for conversation branching and handoff tracking. */
   sessionLineage?: HermesSessionLineageMetadata;
+  /** Beat-level lived session context capturing embodied working conditions and environmental constraints. */
+  sessionContext?: SessionContextMetadata;
   /** @deprecated Use github.issue and github.projectItem instead. */
   sync_target?: LegacyGithubSyncTarget;
   /** @deprecated Use github.issue instead. */

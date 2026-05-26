@@ -157,6 +157,38 @@ async function run() {
       }
     },
     {
+      type: 'entity',
+      name: 'chart_preserve_session_context_entity',
+      entityType: 'narrative_beat',
+      observations: ['Session context metadata test entity with lived working conditions'],
+      metadata: {
+        chartId: 'chart_preserve',
+        act: 2,
+        sessionContext: {
+          mode: 'voice',
+          setting: 'walking',
+          landBasedLearning: true,
+          environmentNotes: ['wind', 'outdoor walking', 'land-based learning context'],
+          listeningContext: 'user listened to Atlas Chronicle while walking',
+          captureQuality: 'windy',
+          continuationKind: 'parent-return',
+          privateChroniclePath: '/opt/data/home/.hermes/voice-episodes/atlas-chronicle/2026-05-26-walking-session.m4a',
+          publicSummaryAllowed: true
+        },
+        narrative: {
+          description: 'Walking session with environmental challenges',
+          prose: 'Outdoor session capturing lived learning while listening to Atlas Chronicle.',
+          lessons: ['Environmental context shapes capture quality', 'Land-based learning enriches narrative']
+        },
+        fourDirections: {
+          north_vision: 'embodied learning',
+          east_intention: null,
+          south_emotion: null,
+          west_introspection: 'wind as teacher'
+        }
+      }
+    },
+    {
       type: 'relation',
       from: 'chart_preserve_beat_1',
       to: 'chart_preserve_chart',
@@ -182,6 +214,7 @@ async function run() {
     const beat = findByName(records, 'chart_preserve_beat_1');
     const foundationEntity = findByName(records, 'chart_preserve_foundation_entity');
     const lineageEntity = findByName(records, 'chart_preserve_lineage_entity');
+    const sessionContextEntity = findByName(records, 'chart_preserve_session_context_entity');
     const relation = records.find((record) => record.type === 'relation');
 
     assert(chart.metadata.github.issue === 35, 'chart metadata.github survived');
@@ -217,6 +250,23 @@ async function run() {
     assert(lineageEntity.metadata.sessionLineage.handoffState === 'implementation-ready', 'sessionLineage metadata.handoffState survived');
     assert(lineageEntity.metadata.sessionLineage.relatedIssues.length === 3, 'sessionLineage metadata.relatedIssues array survived');
     assert(lineageEntity.metadata.sessionLineage.relatedIssues[0] === 'avadisabelle/coaia-narrative#39', 'sessionLineage metadata.relatedIssues[0] survived');
+
+    // Asterion issue #42: Session context metadata preservation tests
+    assert(sessionContextEntity.metadata.sessionContext.mode === 'voice', 'sessionContext metadata.mode survived');
+    assert(sessionContextEntity.metadata.sessionContext.setting === 'walking', 'sessionContext metadata.setting survived');
+    assert(sessionContextEntity.metadata.sessionContext.landBasedLearning === true, 'sessionContext metadata.landBasedLearning survived');
+    assert(sessionContextEntity.metadata.sessionContext.environmentNotes.length === 3, 'sessionContext metadata.environmentNotes array survived');
+    assert(sessionContextEntity.metadata.sessionContext.environmentNotes[0] === 'wind', 'sessionContext metadata.environmentNotes[0] survived');
+    assert(sessionContextEntity.metadata.sessionContext.listeningContext === 'user listened to Atlas Chronicle while walking', 'sessionContext metadata.listeningContext survived');
+    assert(sessionContextEntity.metadata.sessionContext.captureQuality === 'windy', 'sessionContext metadata.captureQuality survived');
+    assert(sessionContextEntity.metadata.sessionContext.continuationKind === 'parent-return', 'sessionContext metadata.continuationKind survived');
+    assert(sessionContextEntity.metadata.sessionContext.privateChroniclePath === '/opt/data/home/.hermes/voice-episodes/atlas-chronicle/2026-05-26-walking-session.m4a', 'sessionContext metadata.privateChroniclePath survived');
+    assert(sessionContextEntity.metadata.sessionContext.publicSummaryAllowed === true, 'sessionContext metadata.publicSummaryAllowed survived');
+    
+    // Verify sessionContext coexists with other metadata
+    assert(sessionContextEntity.metadata.narrative.prose === 'Outdoor session capturing lived learning while listening to Atlas Chronicle.', 'sessionContext entity narrative survived');
+    assert(sessionContextEntity.metadata.fourDirections.north_vision === 'embodied learning', 'sessionContext entity fourDirections survived');
+    assert(sessionContextEntity.metadata.fourDirections.west_introspection === 'wind as teacher', 'sessionContext entity fourDirections.west_introspection survived');
 
     if (failed > 0) {
       throw new Error(`Metadata preservation test failed:\n- ${failures.join('\n- ')}`);

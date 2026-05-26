@@ -295,6 +295,55 @@
               "description": "State of handoff between parent and child sessions: requirements-created (initial), implementation-ready (actionable), returned-to-parent (completed handoff)"
             }
           }
+        },
+        "sessionContext": {
+          "type": "object",
+          "description": "Beat-level lived session context metadata capturing the embodied condition of working sessions. Records land-based learning, voice/terminal mode, environmental constraints, and continuity context.",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["voice", "terminal", "mixed"],
+              "description": "Interaction mode of the session: voice (audio capture), terminal (text-based), mixed (alternating)"
+            },
+            "setting": {
+              "type": "string",
+              "enum": ["desk", "walking", "land-based", "transit", "unknown"],
+              "description": "Physical setting where session took place: desk (stationary workspace), walking (ambulatory), land-based (outdoor learning), transit (in motion), unknown (unrecorded)"
+            },
+            "landBasedLearning": {
+              "type": "boolean",
+              "description": "Whether session engaged land-based learning practices (e.g., walking the land, outdoor observation)"
+            },
+            "environmentNotes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Environmental conditions and constraints affecting capture quality (e.g., 'wind', 'outdoor walking', 'traffic noise')"
+            },
+            "listeningContext": {
+              "type": "string",
+              "description": "Context about what user was listening to or engaging with during session (e.g., 'user listened to Atlas Chronicle while walking')"
+            },
+            "captureQuality": {
+              "type": "string",
+              "enum": ["clear", "windy", "partial"],
+              "description": "Quality of audio/text capture: clear (high quality), windy (environmental interference), partial (incomplete or interrupted)"
+            },
+            "continuationKind": {
+              "type": "string",
+              "enum": ["branch", "parent-return", "follow-up"],
+              "description": "Type of session continuation: branch (new thread), parent-return (returning to main), follow-up (sequential continuation)"
+            },
+            "privateChroniclePath": {
+              "type": "string",
+              "description": "File path to private chronicle recording or transcript (handle only, content not exposed by default)"
+            },
+            "publicSummaryAllowed": {
+              "type": "boolean",
+              "description": "Whether a public summary of this session context is permitted"
+            }
+          }
         }
       }
     }
