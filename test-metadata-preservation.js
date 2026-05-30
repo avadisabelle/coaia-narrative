@@ -110,6 +110,85 @@ async function run() {
       topLevelExtension: { source: 'legacy-beat' }
     },
     {
+      type: 'entity',
+      name: 'chart_preserve_foundation_entity',
+      entityType: 'artifact',
+      observations: ['Foundation research metadata test entity'],
+      metadata: {
+        chartId: 'chart_preserve',
+        foundation: {
+          packetRoot: 'foundations/atlas-chronicle/',
+          foundationType: 'atlas-chronicle',
+          parentIssue: 'jgwill/coaia-agent#27',
+          baselineIssue: 'jgwill/coaia-agent#31',
+          inquiryIssue: 'jgwill/coaia-agent#29',
+          protocolIssue: 'jgwill/coaia-agent#30',
+          schemaIssue: 'avadisabelle/coaia-narrative#39',
+          visualizerIssue: 'jgwill/coaia-visualizer#24',
+          expectedArtifacts: ['README.md', 'ACADEMIC-FIELD-MAP.md', 'ACADEMIC-COVERAGE-MATRIX.md'],
+          producedArtifacts: ['README.md'],
+          evaluationStatus: 'produced',
+          privacyClass: 'public-safe',
+          publicationStatus: 'draft',
+          commitHandles: ['abc123def456', '789ghi012jkl']
+        }
+      }
+    },
+    {
+      type: 'entity',
+      name: 'chart_preserve_lineage_entity',
+      entityType: 'narrative_beat',
+      observations: ['Session lineage metadata test entity'],
+      metadata: {
+        chartId: 'chart_preserve',
+        act: 1,
+        sessionLineage: {
+          platform: 'telegram',
+          parentChartId: 'chart_1779738656753',
+          sourceBeat: 'chart_1779738656753_beat_1779809139411',
+          originalSessionId: '20260526_150547_aac625',
+          branchSessionId: '20260526_190820_c74f5e',
+          branchIndex: 2,
+          copiedMessageCount: 4,
+          branchPurpose: 'Implement cross-repo metadata requirements for foundation/chart metadata',
+          relatedIssues: ['avadisabelle/coaia-narrative#39', 'avadisabelle/coaia-narrative#40', 'jgwill/coaia-visualizer#24'],
+          handoffState: 'implementation-ready'
+        }
+      }
+    },
+    {
+      type: 'entity',
+      name: 'chart_preserve_session_context_entity',
+      entityType: 'narrative_beat',
+      observations: ['Session context metadata test entity with lived working conditions'],
+      metadata: {
+        chartId: 'chart_preserve',
+        act: 2,
+        sessionContext: {
+          mode: 'voice',
+          setting: 'walking',
+          landBasedLearning: true,
+          environmentNotes: ['wind', 'outdoor walking', 'land-based learning context'],
+          listeningContext: 'user listened to Atlas Chronicle while walking',
+          captureQuality: 'windy',
+          continuationKind: 'parent-return',
+          privateChroniclePath: '/opt/data/home/.hermes/voice-episodes/atlas-chronicle/2026-05-26-walking-session.m4a',
+          publicSummaryAllowed: true
+        },
+        narrative: {
+          description: 'Walking session with environmental challenges',
+          prose: 'Outdoor session capturing lived learning while listening to Atlas Chronicle.',
+          lessons: ['Environmental context shapes capture quality', 'Land-based learning enriches narrative']
+        },
+        fourDirections: {
+          north_vision: 'embodied learning',
+          east_intention: null,
+          south_emotion: null,
+          west_introspection: 'wind as teacher'
+        }
+      }
+    },
+    {
       type: 'relation',
       from: 'chart_preserve_beat_1',
       to: 'chart_preserve_chart',
@@ -133,6 +212,9 @@ async function run() {
     const currentReality = findByName(records, 'chart_preserve_current_reality');
     const action = findByName(records, 'chart_preserve_action_1');
     const beat = findByName(records, 'chart_preserve_beat_1');
+    const foundationEntity = findByName(records, 'chart_preserve_foundation_entity');
+    const lineageEntity = findByName(records, 'chart_preserve_lineage_entity');
+    const sessionContextEntity = findByName(records, 'chart_preserve_session_context_entity');
     const relation = records.find((record) => record.type === 'relation');
 
     assert(chart.metadata.github.issue === 35, 'chart metadata.github survived');
@@ -148,6 +230,43 @@ async function run() {
     assert(beat.narrative.lessons[0] === 'Unknown fields matter', 'legacy top-level narrative survived');
     assert(beat.topLevelExtension.source === 'legacy-beat', 'narrative beat top-level extension survived');
     assert(relation.metadata.relationExtension.survives === true, 'relation extension metadata survived');
+    
+    // Asterion metadata preservation tests (issues #39 and #40)
+    assert(foundationEntity.metadata.foundation.packetRoot === 'foundations/atlas-chronicle/', 'foundation metadata.packetRoot survived');
+    assert(foundationEntity.metadata.foundation.foundationType === 'atlas-chronicle', 'foundation metadata.foundationType survived');
+    assert(foundationEntity.metadata.foundation.parentIssue === 'jgwill/coaia-agent#27', 'foundation metadata.parentIssue survived');
+    assert(foundationEntity.metadata.foundation.evaluationStatus === 'produced', 'foundation metadata.evaluationStatus survived');
+    assert(foundationEntity.metadata.foundation.privacyClass === 'public-safe', 'foundation metadata.privacyClass survived');
+    assert(foundationEntity.metadata.foundation.publicationStatus === 'draft', 'foundation metadata.publicationStatus survived');
+    assert(foundationEntity.metadata.foundation.expectedArtifacts.length === 3, 'foundation metadata.expectedArtifacts array survived');
+    assert(foundationEntity.metadata.foundation.producedArtifacts[0] === 'README.md', 'foundation metadata.producedArtifacts survived');
+    assert(foundationEntity.metadata.foundation.commitHandles[0] === 'abc123def456', 'foundation metadata.commitHandles survived');
+    
+    assert(lineageEntity.metadata.sessionLineage.platform === 'telegram', 'sessionLineage metadata.platform survived');
+    assert(lineageEntity.metadata.sessionLineage.parentChartId === 'chart_1779738656753', 'sessionLineage metadata.parentChartId survived');
+    assert(lineageEntity.metadata.sessionLineage.sourceBeat === 'chart_1779738656753_beat_1779809139411', 'sessionLineage metadata.sourceBeat survived');
+    assert(lineageEntity.metadata.sessionLineage.branchIndex === 2, 'sessionLineage metadata.branchIndex survived');
+    assert(lineageEntity.metadata.sessionLineage.copiedMessageCount === 4, 'sessionLineage metadata.copiedMessageCount survived');
+    assert(lineageEntity.metadata.sessionLineage.handoffState === 'implementation-ready', 'sessionLineage metadata.handoffState survived');
+    assert(lineageEntity.metadata.sessionLineage.relatedIssues.length === 3, 'sessionLineage metadata.relatedIssues array survived');
+    assert(lineageEntity.metadata.sessionLineage.relatedIssues[0] === 'avadisabelle/coaia-narrative#39', 'sessionLineage metadata.relatedIssues[0] survived');
+
+    // Asterion issue #42: Session context metadata preservation tests
+    assert(sessionContextEntity.metadata.sessionContext.mode === 'voice', 'sessionContext metadata.mode survived');
+    assert(sessionContextEntity.metadata.sessionContext.setting === 'walking', 'sessionContext metadata.setting survived');
+    assert(sessionContextEntity.metadata.sessionContext.landBasedLearning === true, 'sessionContext metadata.landBasedLearning survived');
+    assert(sessionContextEntity.metadata.sessionContext.environmentNotes.length === 3, 'sessionContext metadata.environmentNotes array survived');
+    assert(sessionContextEntity.metadata.sessionContext.environmentNotes[0] === 'wind', 'sessionContext metadata.environmentNotes[0] survived');
+    assert(sessionContextEntity.metadata.sessionContext.listeningContext === 'user listened to Atlas Chronicle while walking', 'sessionContext metadata.listeningContext survived');
+    assert(sessionContextEntity.metadata.sessionContext.captureQuality === 'windy', 'sessionContext metadata.captureQuality survived');
+    assert(sessionContextEntity.metadata.sessionContext.continuationKind === 'parent-return', 'sessionContext metadata.continuationKind survived');
+    assert(sessionContextEntity.metadata.sessionContext.privateChroniclePath === '/opt/data/home/.hermes/voice-episodes/atlas-chronicle/2026-05-26-walking-session.m4a', 'sessionContext metadata.privateChroniclePath survived');
+    assert(sessionContextEntity.metadata.sessionContext.publicSummaryAllowed === true, 'sessionContext metadata.publicSummaryAllowed survived');
+    
+    // Verify sessionContext coexists with other metadata
+    assert(sessionContextEntity.metadata.narrative.prose === 'Outdoor session capturing lived learning while listening to Atlas Chronicle.', 'sessionContext entity narrative survived');
+    assert(sessionContextEntity.metadata.fourDirections.north_vision === 'embodied learning', 'sessionContext entity fourDirections survived');
+    assert(sessionContextEntity.metadata.fourDirections.west_introspection === 'wind as teacher', 'sessionContext entity fourDirections.west_introspection survived');
 
     if (failed > 0) {
       throw new Error(`Metadata preservation test failed:\n- ${failures.join('\n- ')}`);

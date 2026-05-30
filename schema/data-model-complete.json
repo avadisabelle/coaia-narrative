@@ -1,14 +1,19 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/avadisabelle/coaia-narrative/schema/data-model-complete.json",
-  "title": "COAIA Complete Data Model",
-  "description": "Consolidated schema containing all data models used in the COAIA Narrative system. This single file provides a complete reference for the Entity structure, Relation structure, KnowledgeGraph container, and JSONL storage format.",
-  "version": "2.3.0",
+  "title": "COAIA Narrative Complete Data Model",
+  "description": "Combined schema definitions for all COAIA data structures",
   "definitions": {
     "Entity": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "$id": "https://github.com/avadisabelle/coaia-narrative/schema/data-model/entity.json",
+      "title": "COAIA Entity",
+      "description": "Core entity structure for COAIA memory system. Entities represent nodes in the knowledge graph with typed observations and rich metadata.",
       "type": "object",
-      "required": ["name", "entityType", "observations"],
-      "description": "Core entity structure representing nodes in the knowledge graph with typed observations and rich metadata",
+      "required": [
+        "name",
+        "entityType",
+        "observations"
+      ],
       "properties": {
         "name": {
           "type": "string",
@@ -54,7 +59,11 @@
             },
             "phase": {
               "type": "string",
-              "enum": ["germination", "assimilation", "completion"],
+              "enum": [
+                "germination",
+                "assimilation",
+                "completion"
+              ],
               "description": "Creative phase of the chart or action (based on Robert Fritz's creative process)"
             },
             "completionStatus": {
@@ -114,7 +123,10 @@
                   "description": "Whether relational alignment has been assessed"
                 },
                 "score": {
-                  "type": ["number", "null"],
+                  "type": [
+                    "number",
+                    "null"
+                  ],
                   "description": "Alignment score (0-100) or null if not assessed",
                   "minimum": 0,
                   "maximum": 100
@@ -127,30 +139,51 @@
                   "description": "Array of aligned relational principles"
                 }
               },
-              "required": ["assessed", "score", "principles"]
+              "required": [
+                "assessed",
+                "score",
+                "principles"
+              ]
             },
             "fourDirections": {
               "type": "object",
               "description": "Four Directions wisdom framework assessment",
               "properties": {
                 "north_vision": {
-                  "type": ["string", "null"],
+                  "type": [
+                    "string",
+                    "null"
+                  ],
                   "description": "North direction: Vision, clarity, big picture perspective"
                 },
                 "east_intention": {
-                  "type": ["string", "null"],
+                  "type": [
+                    "string",
+                    "null"
+                  ],
                   "description": "East direction: Intention, new beginnings, illumination"
                 },
                 "south_emotion": {
-                  "type": ["string", "null"],
+                  "type": [
+                    "string",
+                    "null"
+                  ],
                   "description": "South direction: Emotion, passion, relationships, heart wisdom"
                 },
                 "west_introspection": {
-                  "type": ["string", "null"],
+                  "type": [
+                    "string",
+                    "null"
+                  ],
                   "description": "West direction: Introspection, reflection, lessons learned"
                 }
               },
-              "required": ["north_vision", "east_intention", "south_emotion", "west_introspection"]
+              "required": [
+                "north_vision",
+                "east_intention",
+                "south_emotion",
+                "west_introspection"
+              ]
             },
             "narrative": {
               "type": "object",
@@ -172,16 +205,238 @@
                   "description": "Lessons learned or insights derived from this narrative"
                 }
               },
-              "required": ["description", "prose", "lessons"]
+              "required": [
+                "description",
+                "prose",
+                "lessons"
+              ]
+            },
+            "foundation": {
+              "type": "object",
+              "description": "Deep Research Foundations metadata tracking research packet context and evaluation status. Used by Atlas Chronicle and research delegation workflows.",
+              "properties": {
+                "packetRoot": {
+                  "type": "string",
+                  "description": "Root identifier for research packet (e.g., 'foundations/atlas-chronicle/')"
+                },
+                "foundationType": {
+                  "type": "string",
+                  "description": "Type of foundation research (e.g., 'atlas-chronicle', 'inquiry', 'baseline')"
+                },
+                "parentIssue": {
+                  "type": "string",
+                  "description": "GitHub issue reference for parent research context (e.g., 'owner/repo#number')"
+                },
+                "baselineIssue": {
+                  "type": "string",
+                  "description": "GitHub issue establishing baseline requirements"
+                },
+                "inquiryIssue": {
+                  "type": "string",
+                  "description": "GitHub issue defining research inquiry"
+                },
+                "protocolIssue": {
+                  "type": "string",
+                  "description": "GitHub issue documenting research protocol"
+                },
+                "schemaIssue": {
+                  "type": "string",
+                  "description": "GitHub issue defining data schema"
+                },
+                "visualizerIssue": {
+                  "type": "string",
+                  "description": "GitHub issue for visualization specifications"
+                },
+                "expectedArtifacts": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "List of expected research artifacts/deliverables"
+                },
+                "producedArtifacts": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "List of produced research artifacts/deliverables"
+                },
+                "evaluationStatus": {
+                  "type": "string",
+                  "enum": [
+                    "expected",
+                    "delegated",
+                    "produced",
+                    "evaluated"
+                  ],
+                  "description": "Current evaluation status of research: expected (planned), delegated (assigned), produced (completed), evaluated (reviewed)"
+                },
+                "privacyClass": {
+                  "type": "string",
+                  "enum": [
+                    "public-safe",
+                    "private",
+                    "mixed"
+                  ],
+                  "description": "Privacy classification of research data: public-safe (can be shared), private (confidential), mixed (requires filtering)"
+                },
+                "publicationStatus": {
+                  "type": "string",
+                  "enum": [
+                    "planned",
+                    "draft",
+                    "reviewed",
+                    "published"
+                  ],
+                  "description": "Publication workflow status"
+                },
+                "commitHandles": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Associated commit hashes or version control handles"
+                }
+              }
+            },
+            "sessionLineage": {
+              "type": "object",
+              "description": "Hermes session lineage metadata tracking conversation branching and handoff state. Enables reconstruction of session branch maps and parent-child traceability.",
+              "properties": {
+                "platform": {
+                  "type": "string",
+                  "description": "Platform where session originated (e.g., 'telegram', 'hermes', 'slack')"
+                },
+                "parentChartId": {
+                  "type": "string",
+                  "description": "Parent chart ID if session is branched from a parent context"
+                },
+                "sourceBeat": {
+                  "type": "string",
+                  "description": "Source narrative beat entity name that triggered session branching"
+                },
+                "originalSessionId": {
+                  "type": "string",
+                  "description": "Original session identifier before any branching occurred"
+                },
+                "branchSessionId": {
+                  "type": "string",
+                  "description": "Session ID of this specific branch point"
+                },
+                "branchIndex": {
+                  "type": "integer",
+                  "description": "Index of this branch among siblings (e.g., branch 1, 2, 3...)",
+                  "minimum": 0
+                },
+                "copiedMessageCount": {
+                  "type": "integer",
+                  "description": "Number of messages copied from parent session to this branch",
+                  "minimum": 0
+                },
+                "branchPurpose": {
+                  "type": "string",
+                  "description": "Purpose or reason for creating this session branch"
+                },
+                "relatedIssues": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Related GitHub issue references (e.g., 'owner/repo#number')"
+                },
+                "handoffState": {
+                  "type": "string",
+                  "enum": [
+                    "requirements-created",
+                    "implementation-ready",
+                    "returned-to-parent"
+                  ],
+                  "description": "State of handoff between parent and child sessions: requirements-created (initial), implementation-ready (actionable), returned-to-parent (completed handoff)"
+                }
+              }
+            },
+            "sessionContext": {
+              "type": "object",
+              "description": "Beat-level lived session context metadata capturing the embodied condition of working sessions. Records land-based learning, voice/terminal mode, environmental constraints, and continuity context.",
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "voice",
+                    "terminal",
+                    "mixed"
+                  ],
+                  "description": "Interaction mode of the session: voice (audio capture), terminal (text-based), mixed (alternating)"
+                },
+                "setting": {
+                  "type": "string",
+                  "enum": [
+                    "desk",
+                    "walking",
+                    "land-based",
+                    "transit",
+                    "unknown"
+                  ],
+                  "description": "Physical setting where session took place: desk (stationary workspace), walking (ambulatory), land-based (outdoor learning), transit (in motion), unknown (unrecorded)"
+                },
+                "landBasedLearning": {
+                  "type": "boolean",
+                  "description": "Whether session engaged land-based learning practices (e.g., walking the land, outdoor observation)"
+                },
+                "environmentNotes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Environmental conditions and constraints affecting capture quality (e.g., 'wind', 'outdoor walking', 'traffic noise')"
+                },
+                "listeningContext": {
+                  "type": "string",
+                  "description": "Context about what user was listening to or engaging with during session (e.g., 'user listened to Atlas Chronicle while walking')"
+                },
+                "captureQuality": {
+                  "type": "string",
+                  "enum": [
+                    "clear",
+                    "windy",
+                    "partial"
+                  ],
+                  "description": "Quality of audio/text capture: clear (high quality), windy (environmental interference), partial (incomplete or interrupted)"
+                },
+                "continuationKind": {
+                  "type": "string",
+                  "enum": [
+                    "branch",
+                    "parent-return",
+                    "follow-up"
+                  ],
+                  "description": "Type of session continuation: branch (new thread), parent-return (returning to main), follow-up (sequential continuation)"
+                },
+                "privateChroniclePath": {
+                  "type": "string",
+                  "description": "File path to private chronicle recording or transcript (handle only, content not exposed by default)"
+                },
+                "publicSummaryAllowed": {
+                  "type": "boolean",
+                  "description": "Whether a public summary of this session context is permitted"
+                }
+              }
             }
           }
         }
       }
     },
     "Relation": {
-      "type": "object",
-      "required": ["from", "to", "relationType"],
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "$id": "https://github.com/avadisabelle/coaia-narrative/schema/data-model/relation.json",
+      "title": "COAIA Relation",
       "description": "Relation structure connecting entities in the COAIA knowledge graph. Relations define typed connections with optional metadata for context and strength.",
+      "type": "object",
+      "required": [
+        "from",
+        "to",
+        "relationType"
+      ],
       "properties": {
         "from": {
           "type": "string",
@@ -239,93 +494,255 @@
             }
           }
         }
-      }
+      },
+      "examples": [
+        {
+          "from": "chart_123_current_reality",
+          "to": "chart_123_desired_outcome",
+          "relationType": "creates_tension_with",
+          "metadata": {
+            "description": "The gap between current reality and desired outcome creates productive structural tension",
+            "createdAt": "2026-02-13T07:00:00Z"
+          }
+        },
+        {
+          "from": "chart_123_action_1",
+          "to": "chart_123_desired_outcome",
+          "relationType": "advances_toward",
+          "metadata": {
+            "description": "Completing this action step moves the system closer to the desired outcome",
+            "strength": 0.8
+          }
+        },
+        {
+          "from": "chart_123_action_1",
+          "to": "chart_456",
+          "relationType": "telescopes_into",
+          "metadata": {
+            "description": "This action has been broken down into a detailed sub-chart"
+          }
+        },
+        {
+          "from": "chart_123_action_1",
+          "to": "chart_123_current_reality",
+          "relationType": "flows_into",
+          "metadata": {
+            "description": "Upon completion, this action's result becomes part of current reality",
+            "createdAt": "2026-02-13T08:00:00Z"
+          }
+        }
+      ]
     },
     "KnowledgeGraph": {
-      "type": "object",
-      "required": ["entities", "relations"],
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "$id": "https://github.com/avadisabelle/coaia-narrative/schema/data-model/knowledge-graph.json",
+      "title": "COAIA Knowledge Graph",
       "description": "Complete knowledge graph structure containing entities and relations. This is the in-memory representation of the graph.",
+      "type": "object",
+      "required": [
+        "entities",
+        "relations"
+      ],
       "properties": {
         "entities": {
           "type": "array",
           "description": "Array of all entities in the knowledge graph",
           "items": {
-            "$ref": "#/definitions/Entity"
+            "$ref": "entity.json"
           }
         },
         "relations": {
           "type": "array",
           "description": "Array of all relations connecting entities in the graph",
           "items": {
-            "$ref": "#/definitions/Relation"
+            "$ref": "relation.json"
           }
         }
-      }
-    },
-    "EntityStorageLine": {
-      "type": "object",
-      "required": ["type", "name", "entityType", "observations"],
-      "description": "Entity record as stored in JSONL format (single line)",
-      "properties": {
-        "type": {
-          "const": "entity",
-          "description": "Discriminator indicating this line contains an entity record"
-        },
-        "name": {
-          "type": "string",
-          "description": "Unique identifier for this entity"
-        },
-        "entityType": {
-          "type": "string",
-          "description": "Type of entity"
-        },
-        "observations": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Array of observations/facts"
-        },
-        "metadata": {
-          "$ref": "#/definitions/Entity/properties/metadata"
+      },
+      "examples": [
+        {
+          "entities": [
+            {
+              "name": "chart_123",
+              "entityType": "structural_tension_chart",
+              "observations": [
+                "Python learning journey"
+              ],
+              "metadata": {
+                "dueDate": "2026-03-15T00:00:00Z",
+                "chartId": "chart_123",
+                "level": 0,
+                "createdAt": "2026-02-13T07:00:00Z"
+              }
+            },
+            {
+              "name": "chart_123_desired_outcome",
+              "entityType": "desired_outcome",
+              "observations": [
+                "Build and deploy a Python web application"
+              ],
+              "metadata": {
+                "chartId": "chart_123"
+              }
+            },
+            {
+              "name": "chart_123_current_reality",
+              "entityType": "current_reality",
+              "observations": [
+                "Know basic Python syntax",
+                "Never worked with web frameworks"
+              ],
+              "metadata": {
+                "chartId": "chart_123"
+              }
+            },
+            {
+              "name": "chart_123_action_1",
+              "entityType": "action_step",
+              "observations": [
+                "Complete Django tutorial"
+              ],
+              "metadata": {
+                "chartId": "chart_123",
+                "dueDate": "2026-02-20T00:00:00Z",
+                "completionStatus": false
+              }
+            }
+          ],
+          "relations": [
+            {
+              "from": "chart_123_current_reality",
+              "to": "chart_123_desired_outcome",
+              "relationType": "creates_tension_with"
+            },
+            {
+              "from": "chart_123_action_1",
+              "to": "chart_123_desired_outcome",
+              "relationType": "advances_toward"
+            }
+          ]
         }
-      }
+      ]
     },
-    "RelationStorageLine": {
-      "type": "object",
-      "required": ["type", "from", "to", "relationType"],
-      "description": "Relation record as stored in JSONL format (single line)",
-      "properties": {
-        "type": {
-          "const": "relation",
-          "description": "Discriminator indicating this line contains a relation record"
+    "StorageFormat": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "$id": "https://github.com/avadisabelle/coaia-narrative/schema/data-model/storage-format.json",
+      "title": "COAIA JSONL Storage Format",
+      "description": "Schema for structural tension chart data stored in JSONL (JSON Lines) format. Each line is either an Entity or Relation record with a type discriminator.",
+      "oneOf": [
+        {
+          "$ref": "#/definitions/EntityLine"
         },
-        "from": {
-          "type": "string",
-          "description": "Source entity name"
-        },
-        "to": {
-          "type": "string",
-          "description": "Target entity name"
-        },
-        "relationType": {
-          "type": "string",
-          "description": "Type of relationship"
-        },
-        "metadata": {
-          "$ref": "#/definitions/Relation/properties/metadata"
+        {
+          "$ref": "#/definitions/RelationLine"
         }
-      }
-    }
-  },
-  "description_extended": {
-    "purpose": "This schema defines the complete data model for the COAIA (Creative-Oriented AI Assistant) Narrative system, which implements structural tension charts based on Robert Fritz's creative methodology.",
-    "storage": "Data is stored in JSONL (JSON Lines) format where each line is either an EntityStorageLine or RelationStorageLine with a 'type' discriminator field.",
-    "in_memory": "Data is loaded into a KnowledgeGraph structure containing arrays of Entity and Relation objects.",
-    "key_concepts": {
-      "structural_tension": "The productive tension between current reality and desired outcome that drives creative advancement",
-      "telescoping": "Breaking down action steps into detailed sub-charts while maintaining structural integrity",
-      "advancing_patterns": "Completed actions flow into current reality, changing the structural dynamic and creating momentum"
+      ],
+      "definitions": {
+        "EntityLine": {
+          "type": "object",
+          "required": [
+            "type",
+            "name",
+            "entityType",
+            "observations"
+          ],
+          "properties": {
+            "type": {
+              "const": "entity",
+              "description": "Discriminator indicating this line contains an entity record"
+            },
+            "name": {
+              "type": "string",
+              "description": "Unique identifier for this entity. For structural tension components, follows naming convention: 'chart_{id}_{component}'"
+            },
+            "entityType": {
+              "type": "string",
+              "description": "Type of entity defining its role in the system",
+              "enum": [
+                "structural_tension_chart",
+                "desired_outcome",
+                "current_reality",
+                "action_step",
+                "narrative_beat",
+                "person",
+                "concept",
+                "event",
+                "location",
+                "organization",
+                "artifact",
+                "custom"
+              ]
+            },
+            "observations": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Array of observations/facts about this entity"
+            },
+            "metadata": {
+              "type": "object",
+              "description": "Optional metadata (see entity.json schema for full specification)"
+            }
+          }
+        },
+        "RelationLine": {
+          "type": "object",
+          "required": [
+            "type",
+            "from",
+            "to",
+            "relationType"
+          ],
+          "properties": {
+            "type": {
+              "const": "relation",
+              "description": "Discriminator indicating this line contains a relation record"
+            },
+            "from": {
+              "type": "string",
+              "description": "Source entity name (must match an existing entity's name field)"
+            },
+            "to": {
+              "type": "string",
+              "description": "Target entity name (must match an existing entity's name field)"
+            },
+            "relationType": {
+              "type": "string",
+              "description": "Type of relationship between entities",
+              "enum": [
+                "creates_tension_with",
+                "advances_toward",
+                "telescopes_into",
+                "flows_into",
+                "part_of",
+                "related_to",
+                "depends_on",
+                "influences",
+                "precedes",
+                "follows",
+                "contains",
+                "member_of",
+                "owns",
+                "created_by",
+                "mentions",
+                "references",
+                "custom"
+              ]
+            },
+            "metadata": {
+              "type": "object",
+              "description": "Optional metadata (see relation.json schema for full specification)"
+            }
+          }
+        }
+      },
+      "examples": [
+        "{\"type\":\"entity\",\"name\":\"chart_123\",\"entityType\":\"structural_tension_chart\",\"observations\":[\"Python learning journey\"],\"metadata\":{\"chartId\":\"chart_123\",\"dueDate\":\"2026-03-15T00:00:00Z\",\"level\":0}}",
+        "{\"type\":\"entity\",\"name\":\"chart_123_desired_outcome\",\"entityType\":\"desired_outcome\",\"observations\":[\"Build and deploy a Python web application\"],\"metadata\":{\"chartId\":\"chart_123\"}}",
+        "{\"type\":\"entity\",\"name\":\"chart_123_current_reality\",\"entityType\":\"current_reality\",\"observations\":[\"Know basic Python syntax\",\"Never worked with web frameworks\"],\"metadata\":{\"chartId\":\"chart_123\"}}",
+        "{\"type\":\"relation\",\"from\":\"chart_123_current_reality\",\"to\":\"chart_123_desired_outcome\",\"relationType\":\"creates_tension_with\"}"
+      ]
     }
   }
 }

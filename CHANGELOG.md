@@ -5,6 +5,64 @@ All notable changes to COAIA Memory will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.4] - 2026-05-26
+
+### ✨ Asterion: Deep Research Foundations & Session Lineage Metadata
+
+**Issues:** #39, #40 | **Parent:** jgwill/coaia-agent#27
+
+Added support for tracking research packet context and conversation branching metadata to enable Atlas Chronicle workflows and session lineage reconstruction.
+
+#### New Metadata Types
+
+- **`metadata.foundation`** - Deep Research Foundations metadata for tracking:
+  - Research packet roots and types (e.g., `atlas-chronicle`)
+  - GitHub issue references (parent, baseline, inquiry, protocol, schema, visualizer)
+  - Expected vs. produced artifacts
+  - Evaluation status: `expected | delegated | produced | evaluated`
+  - Privacy classification: `public-safe | private | mixed`
+  - Publication workflow status: `planned | draft | reviewed | published`
+  - Associated commit handles
+
+- **`metadata.sessionLineage`** - Hermes session lineage tracking:
+  - Platform identification (telegram, hermes, slack)
+  - Parent chart and source beat references
+  - Original and branch session IDs
+  - Branch index and copied message count
+  - Branch purpose and related issues
+  - Handoff state: `requirements-created | implementation-ready | returned-to-parent`
+
+#### Schema Updates
+
+- Added `DeepResearchFoundationMetadata` interface to TypeScript types
+- Added `HermesSessionLineageMetadata` interface to TypeScript types
+- Updated `EntityMetadata` with optional `foundation` and `sessionLineage` fields
+- Extended JSON Schema definitions in `schema/data-model/entity.json`
+- Extended complete schema in `schema/data-model-complete.json`
+
+#### Backward Compatibility
+
+- All new fields are optional - existing charts continue to work unchanged
+- JSONL preservation logic automatically handles new metadata (immutable like `github`)
+- No migration required - new metadata populated only on new/updated entities
+- Test coverage confirms preservation across read/write cycles
+
+#### Testing
+
+- Added comprehensive test fixtures for both metadata types
+- 17 new test assertions verify nested objects, arrays, and enum values survive JSONL round-trips
+- All 30 metadata preservation tests pass (13 legacy + 17 new Asterion tests)
+
+#### Use Cases
+
+This enhancement enables:
+- Atlas to delegate research packets with clear artifact expectations
+- Comparing expected vs. produced research deliverables
+- Tracking evaluation and publication status for research work
+- Reconstructing Hermes conversation branch maps from metadata
+- Parent-child session traceability without parsing transcripts
+- Implementation readiness tracking across branch handoffs
+
 ## [0.6.0] - 2026-01-03
 
 ### ✨ Major Feature: CLI Visualizer
