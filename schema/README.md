@@ -2,12 +2,28 @@
 
 This folder contains comprehensive schema documentation for the COAIA (Creative-Oriented AI Assistant) Narrative system. The schemas define both the data models and the MCP tool interfaces that applications can use to interact with structural tension charts and knowledge graphs.
 
+## 📐 Schema Format Convention
+
+**JSON is the canonical schema format.** All schema definitions live in `.json` files.
+
+YAML files (`.yaml`) are **generated** from their JSON counterparts and must not be edited manually:
+
+```bash
+# Regenerate all YAML files from JSON sources
+npm run schema:generate
+
+# Verify JSON/YAML parity (CI check)
+npm run schema:check
+```
+
+If you modify a `.json` schema, run `npm run schema:generate` to keep the YAML in sync.
+
 ## 📁 Quick Navigation
 
 ### Data Models
 - **[data-model/](data-model/)** - Core data structures (Entity, Relation, KnowledgeGraph, Storage Format)
-- **[data-model-complete.json](data-model-complete.json)** - ✨ **Single consolidated file** with all data schemas
-- **[data-model-complete.yaml](data-model-complete.yaml)** - Same as above in YAML format
+- **[data-model-complete.json](data-model-complete.json)** - ✨ **Single consolidated file** with all data schemas (canonical JSON)
+- **[data-model-complete.yaml](data-model-complete.yaml)** - Same as above in YAML format (generated)
 
 ### MCP Tools
 - **[tools/stc/](tools/stc/)** - Structural Tension Chart tools (11 tools)
