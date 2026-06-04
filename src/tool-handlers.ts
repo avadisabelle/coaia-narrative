@@ -6,7 +6,7 @@
  * Testable without MCP transport.
  */
 
-import type { Entity, Relation, McpToolResult } from './types.js';
+import type { Entity, Relation, McpToolResult, WampumCeremonyLink } from './types.js';
 import type { KnowledgeGraphManager } from './graph-manager.js';
 import { validate, ValidationSchemas } from '../validation.js';
 import { LLM_GUIDANCE } from '../generated-llm-guidance.js';
@@ -378,6 +378,71 @@ export async function handleToolCall(
       });
 
       return { content: [{ type: "text", text: beatsText }] };
+    }
+    case "create_wampum_belt": {
+      const valResult = validate(toolArgs, {
+        title: ValidationSchemas.nonEmptyString(),
+        purpose: ValidationSchemas.nonEmptyString(),
+        rows: { type: 'number' },
+        cols: { type: 'number' }
+      });
+      if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
+      const result = await manager.createWampumBelt(
+        toolArgs.title as string,
+        toolArgs.purpose as string,
+        (toolArgs.rows as number) || 1,
+        (toolArgs.cols as number) || 1
+      );
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+    case "add_wampum_bead": {
+      const valResult = validate(toolArgs, {
+        beltId: ValidationSchemas.nonEmptyString(),
+        mnemonic: ValidationSchemas.nonEmptyString(),
+        color: { type: 'enum', required: true, enumValues: ['white', 'purple', 'black', 'mixed'] },
+        position: {
+          type: 'object',
+          required: true,
+          properties: {
+            row: { type: 'number', required: true },
+            col: { type: 'number', required: true }
+          }
+        },
+        reading: ValidationSchemas.nonEmptyString(),
+        relationalReadings: { type: 'object' },
+        ceremonyLink: { type: 'object' },
+        observations: { type: 'array', items: { type: 'string' } }
+      });
+      if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
+      const result = await manager.addWampumBead(
+        toolArgs.beltId as string,
+        toolArgs.mnemonic as string,
+        toolArgs.color as 'white' | 'purple' | 'black' | 'mixed',
+        toolArgs.position as { row: number; col: number },
+        toolArgs.reading as string,
+        toolArgs.relationalReadings as Record<string, string> | undefined,
+        toolArgs.ceremonyLink as WampumCeremonyLink | undefined,
+        (toolArgs.observations as string[] | undefined) || []
+      );
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+    case "read_wampum_belt": {
+      const valResult = validate(toolArgs, {
+        beltId: ValidationSchemas.nonEmptyString(),
+        position: {
+          type: 'object',
+          properties: {
+            row: { type: 'number', required: true },
+            col: { type: 'number', required: true }
+          }
+        }
+      });
+      if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
+      const result = await manager.readWampumBelt(
+        toolArgs.beltId as string,
+        toolArgs.position as { row: number; col: number } | undefined
+      );
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
     case "init_llm_guidance": {
       const valResult = validate(toolArgs, {

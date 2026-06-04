@@ -523,5 +523,74 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
         parentChartId: { type: "string", description: "Optional: Filter by parent chart ID" }
       }
     }
+  },
+  {
+    name: "create_wampum_belt",
+    description: "Create a Wampum Belt: a non-linear mnemonic grid that runs in parallel with linear narrative beats.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Name of this Wampum belt" },
+        purpose: { type: "string", description: "What this belt encodes or remembers" },
+        rows: { type: "number", description: "Grid row count (default 1)" },
+        cols: { type: "number", description: "Grid column count (default 1)" }
+      },
+      required: ["title", "purpose"]
+    }
+  },
+  {
+    name: "add_wampum_bead",
+    description: "Add a bead at a grid position with mnemonic anchor, optional relational readings, and optional ceremony/accountability links.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        beltId: { type: "string", description: "Target belt ID" },
+        mnemonic: { type: "string", description: "Short anchor phrase for this bead" },
+        color: { type: "string", enum: ["white", "purple", "black", "mixed"], description: "Bead color" },
+        position: {
+          type: "object",
+          properties: {
+            row: { type: "number" },
+            col: { type: "number" }
+          },
+          required: ["row", "col"]
+        },
+        reading: { type: "string", description: "Canonical meaning for the bead" },
+        relationalReadings: { type: "object", description: "Optional perspective-specific readings (left/center/right/row:N/col:N)" },
+        ceremonyLink: {
+          type: "object",
+          properties: {
+            ceremonyType: { type: "string", enum: ["commitment", "accountability", "witness", "renewal"] },
+            chartId: { type: "string" },
+            beatName: { type: "string" },
+            witnessNames: { type: "array", items: { type: "string" } },
+            renewalDate: { type: "string" },
+            notes: { type: "string" }
+          },
+          required: ["ceremonyType"]
+        },
+        observations: { type: "array", items: { type: "string" } }
+      },
+      required: ["beltId", "mnemonic", "color", "position", "reading"]
+    }
+  },
+  {
+    name: "read_wampum_belt",
+    description: "Read a Wampum Belt in full, or read a bead by position with relational interpretation.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        beltId: { type: "string", description: "Wampum belt ID" },
+        position: {
+          type: "object",
+          properties: {
+            row: { type: "number" },
+            col: { type: "number" }
+          },
+          required: ["row", "col"]
+        }
+      },
+      required: ["beltId"]
+    }
   }
 ];

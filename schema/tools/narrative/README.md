@@ -323,6 +323,16 @@ Beat: "The Complete Journey" (Act 1-3)
       └─ Beat: "New Normal"
 ```
 
+### Wampum Belt Sequencing (Parallel Non-Linear Model)
+
+In addition to linear beat sequencing, the engine now supports a parallel **Wampum Belt** model:
+
+- `create_wampum_belt` — define a non-linear mnemonic grid (`rows` × `cols`)
+- `add_wampum_bead` — add a bead with mnemonic anchor, positional meaning, and optional ceremony/accountability links
+- `read_wampum_belt` — read full belt or resolve bead reading by relational position (`left` / `center` / `right`)
+
+This does **not** replace narrative beats. It runs alongside them as a relational memory layer.
+
 ## 🔗 Relation to Other Systems
 
 ### Integration with STC

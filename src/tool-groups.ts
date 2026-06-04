@@ -27,6 +27,11 @@ export const TOOL_GROUPS: Record<string, string[]> = {
     'telescope_narrative_beat',
     'list_narrative_beats'
   ],
+  WAMPUM_TOOLS: [
+    'create_wampum_belt',
+    'add_wampum_bead',
+    'read_wampum_belt'
+  ],
   KG_TOOLS: [
     'create_entities',
     'create_relations',

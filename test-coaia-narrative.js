@@ -352,6 +352,38 @@ async function testGraphManager() {
     );
     assert(manageResult.chartId.startsWith('chart_'), 'manage_action_step creates chart');
 
+    // Test 17: Wampum belt sequencing (parallel non-linear narrative layer)
+    const { beltId, entity: beltEntity } = await manager.createWampumBelt(
+      'Treaty Belt',
+      'Anchor obligations and witness relational memory',
+      2,
+      3
+    );
+    assert(beltId.startsWith('belt_'), 'Wampum belt created');
+    assert(beltEntity.entityType === 'wampum_belt', 'Wampum entity type stored');
+
+    const { bead } = await manager.addWampumBead(
+      beltId,
+      'the crossing',
+      'purple',
+      { row: 0, col: 0 },
+      'Where paths first met',
+      { left: 'Origin point', center: 'Meeting place' },
+      { ceremonyType: 'accountability', chartId: chart.chartId }
+    );
+    assert(bead.id === `bead_${beltId}_0_0`, 'Wampum bead created at position');
+
+    const beltRead = await manager.readWampumBelt(beltId, { row: 0, col: 0 });
+    assert(beltRead.bead?.mnemonic === 'the crossing', 'Wampum bead resolved by position');
+    assert(beltRead.positionalReading === 'Origin point', 'Relational reading resolved by position');
+
+    let outOfBoundsReadThrown = false;
+    try {
+      await manager.readWampumBelt(beltId, { row: 4, col: 0 });
+    } catch {
+      outOfBoundsReadThrown = true;
+    }
+    assert(outOfBoundsReadThrown, 'Out-of-bounds Wampum read throws error');
   } finally {
     // Clean up
     try { await fs.unlink(testFile); } catch {}
@@ -435,6 +467,36 @@ async function testToolHandlers() {
     assert(!mmotResult.isError, 'perform_mmot_evaluation succeeds');
     assert(mmotResult.content[0].text.includes('MMOT'), 'MMOT response text');
 
+    // Test 10: create_wampum_belt via handler
+    const createWampumResult = await handleToolCall('create_wampum_belt', {
+      title: 'Handler Belt',
+      purpose: 'Validate non-linear narrative memory',
+      rows: 1,
+      cols: 2
+    }, manager);
+    assert(!createWampumResult.isError, 'create_wampum_belt succeeds');
+    const parsedBelt = JSON.parse(createWampumResult.content[0].text);
+
+    // Test 11: add_wampum_bead via handler
+    const addBeadResult = await handleToolCall('add_wampum_bead', {
+      beltId: parsedBelt.beltId,
+      mnemonic: 'dawn light',
+      color: 'white',
+      position: { row: 0, col: 1 },
+      reading: 'Beginnings',
+      relationalReadings: { right: 'Horizon intention' }
+    }, manager);
+    assert(!addBeadResult.isError, 'add_wampum_bead succeeds');
+
+    // Test 12: read_wampum_belt via handler
+    const readWampumResult = await handleToolCall('read_wampum_belt', {
+      beltId: parsedBelt.beltId,
+      position: { row: 0, col: 1 }
+    }, manager);
+    assert(!readWampumResult.isError, 'read_wampum_belt succeeds');
+    const parsedRead = JSON.parse(readWampumResult.content[0].text);
+    assert(parsedRead.positionalReading === 'Horizon intention', 'read_wampum_belt returns relational positional reading');
+
   } finally {
     try { await fs.unlink(testFile); } catch {}
   }
@@ -460,6 +522,7 @@ async function testToolGroups() {
   // Test 3: All tool groups exist
   assert(TOOL_GROUPS.STC_TOOLS.length >= 14, 'STC_TOOLS has 14+ tools');
   assert(TOOL_GROUPS.NARRATIVE_TOOLS.length === 3, 'NARRATIVE_TOOLS has 3 tools');
+  assert(TOOL_GROUPS.WAMPUM_TOOLS.length === 3, 'WAMPUM_TOOLS has 3 tools');
   assert(TOOL_GROUPS.KG_TOOLS.length === 9, 'KG_TOOLS has 9 tools');
   assert(TOOL_GROUPS.CORE_TOOLS.length === 4, 'CORE_TOOLS has 4 tools');
 
@@ -477,7 +540,7 @@ async function testToolGroups() {
   }
 
   // Test 5: Tool definitions count matches
-  assert(ALL_TOOL_DEFINITIONS.length >= 18, 'At least 18 tool definitions');
+  assert(ALL_TOOL_DEFINITIONS.length >= 21, 'At least 21 tool definitions');
 
   // Test 6: Every tool in TOOL_GROUPS has a matching definition
   const definedToolNames = new Set(ALL_TOOL_DEFINITIONS.map(t => t.name));

@@ -1,4 +1,4 @@
-import { Entity, Relation, KnowledgeGraph } from './types.js';
+import { Entity, Relation, KnowledgeGraph, WampumBead, WampumBeltMetadata, WampumBeadPosition, WampumCeremonyLink } from './types.js';
 import { readJsonlMemoryFile, writeJsonlMemoryFile } from './jsonl-preservation.js';
 import {
   createGithubProjectFieldProjection,
@@ -953,6 +953,168 @@ Current Reality: "${currentReality}"
     }
     
     return beats;
+  }
+
+  // Wampum Belt sequencing functionality (parallel to linear narrative beats)
+  async createWampumBelt(
+    title: string,
+    purpose: string,
+    rows: number = 1,
+    cols: number = 1
+  ): Promise<{ beltId: string; entity: Entity }> {
+    const beltId = `belt_${Date.now()}`;
+    const timestamp = new Date().toISOString();
+    const normalizedRows = Number.isInteger(rows) && rows > 0 ? rows : 1;
+    const normalizedCols = Number.isInteger(cols) && cols > 0 ? cols : 1;
+
+    const beltMetadata: WampumBeltMetadata = {
+      beltId,
+      title,
+      purpose,
+      rows: normalizedRows,
+      cols: normalizedCols,
+      beads: [],
+      createdAt: timestamp,
+      updatedAt: timestamp
+    };
+
+    const entity: Entity = {
+      name: `${beltId}_belt`,
+      entityType: 'wampum_belt',
+      observations: [`Wampum Belt created: ${title}`, `Purpose: ${purpose}`],
+      metadata: {
+        beltId,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        wampumBelt: beltMetadata
+      }
+    };
+
+    await this.createEntities([entity]);
+    return { beltId, entity };
+  }
+
+  async addWampumBead(
+    beltId: string,
+    mnemonic: string,
+    color: WampumBead['color'],
+    position: WampumBeadPosition,
+    reading: string,
+    relationalReadings?: Record<string, string>,
+    ceremonyLink?: WampumCeremonyLink,
+    observations: string[] = []
+  ): Promise<{ bead: WampumBead }> {
+    const graph = await this.loadGraph();
+    const beltEntity = graph.entities.find(
+      e => e.entityType === 'wampum_belt' && e.metadata?.beltId === beltId
+    );
+    if (!beltEntity?.metadata?.wampumBelt) {
+      throw new Error(`Wampum Belt not found: ${beltId}`);
+    }
+
+    const beltMeta = beltEntity.metadata.wampumBelt as WampumBeltMetadata;
+    if (
+      !Number.isInteger(position.row) ||
+      !Number.isInteger(position.col) ||
+      position.row < 0 ||
+      position.col < 0 ||
+      position.row >= beltMeta.rows ||
+      position.col >= beltMeta.cols
+    ) {
+      throw new Error(`Position (${position.row},${position.col}) out of bounds for belt ${beltId} (${beltMeta.rows}x${beltMeta.cols})`);
+    }
+
+    const conflict = beltMeta.beads.find(
+      b => b.position.row === position.row && b.position.col === position.col
+    );
+    if (conflict) {
+      throw new Error(`Position (${position.row},${position.col}) already occupied by bead "${conflict.mnemonic}"`);
+    }
+
+    const timestamp = new Date().toISOString();
+    const bead: WampumBead = {
+      id: `bead_${beltId}_${position.row}_${position.col}`,
+      mnemonic,
+      color,
+      position,
+      reading,
+      ...(relationalReadings ? { relationalReadings } : {}),
+      ...(ceremonyLink ? { ceremonyLink } : {}),
+      observations,
+      createdAt: timestamp
+    };
+
+    beltMeta.beads.push(bead);
+    beltMeta.updatedAt = timestamp;
+    beltEntity.metadata.updatedAt = timestamp;
+
+    if (ceremonyLink?.chartId) {
+      graph.relations.push({
+        from: `${beltId}_belt`,
+        to: `${ceremonyLink.chartId}_chart`,
+        relationType: 'wampum_holds_accountable',
+        metadata: { createdAt: timestamp, context: ceremonyLink.ceremonyType }
+      });
+    }
+    if (ceremonyLink?.beatName) {
+      graph.relations.push({
+        from: `${beltId}_belt`,
+        to: ceremonyLink.beatName,
+        relationType: 'wampum_witnesses',
+        metadata: { createdAt: timestamp }
+      });
+    }
+
+    await this.saveGraph(graph);
+    return { bead };
+  }
+
+  async readWampumBelt(
+    beltId: string,
+    position?: WampumBeadPosition
+  ): Promise<{ belt: WampumBeltMetadata; bead?: WampumBead; positionalReading?: string }> {
+    const graph = await this.loadGraph();
+    const beltEntity = graph.entities.find(
+      e => e.entityType === 'wampum_belt' && e.metadata?.beltId === beltId
+    );
+    if (!beltEntity?.metadata?.wampumBelt) {
+      throw new Error(`Wampum Belt not found: ${beltId}`);
+    }
+
+    const belt = beltEntity.metadata.wampumBelt as WampumBeltMetadata;
+    if (!position) {
+      return { belt };
+    }
+    if (
+      !Number.isInteger(position.row) ||
+      !Number.isInteger(position.col) ||
+      position.row < 0 ||
+      position.col < 0 ||
+      position.row >= belt.rows ||
+      position.col >= belt.cols
+    ) {
+      throw new Error(`Position (${position.row},${position.col}) out of bounds for belt ${beltId} (${belt.rows}x${belt.cols})`);
+    }
+
+    const bead = belt.beads.find(
+      b => b.position.row === position.row && b.position.col === position.col
+    );
+    if (!bead) {
+      return { belt };
+    }
+
+    const colLabel = position.col === 0
+      ? 'left'
+      : position.col === belt.cols - 1
+        ? 'right'
+        : 'center';
+    const positionalReading =
+      bead.relationalReadings?.[colLabel] ??
+      bead.relationalReadings?.[`row:${position.row}`] ??
+      bead.relationalReadings?.[`col:${position.col}`] ??
+      bead.reading;
+
+    return { belt, bead, positionalReading };
   }
 
   async addActionStep(
