@@ -962,17 +962,18 @@ Current Reality: "${currentReality}"
     rows: number = 1,
     cols: number = 1
   ): Promise<{ beltId: string; entity: Entity }> {
+    if (!Number.isInteger(rows) || rows <= 0 || !Number.isInteger(cols) || cols <= 0) {
+      throw new Error(`rows and cols must be positive integers (received rows=${rows}, cols=${cols})`);
+    }
     const beltId = `belt_${Date.now()}`;
     const timestamp = new Date().toISOString();
-    const normalizedRows = Number.isInteger(rows) && rows > 0 ? rows : 1;
-    const normalizedCols = Number.isInteger(cols) && cols > 0 ? cols : 1;
 
     const beltMetadata: WampumBeltMetadata = {
       beltId,
       title,
       purpose,
-      rows: normalizedRows,
-      cols: normalizedCols,
+      rows,
+      cols,
       beads: [],
       createdAt: timestamp,
       updatedAt: timestamp
@@ -1109,9 +1110,9 @@ Current Reality: "${currentReality}"
         ? 'right'
         : 'center';
     const positionalReading =
-      bead.relationalReadings?.[colLabel] ??
-      bead.relationalReadings?.[`row:${position.row}`] ??
       bead.relationalReadings?.[`col:${position.col}`] ??
+      bead.relationalReadings?.[`row:${position.row}`] ??
+      bead.relationalReadings?.[colLabel] ??
       bead.reading;
 
     return { belt, bead, positionalReading };

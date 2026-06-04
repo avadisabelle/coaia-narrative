@@ -369,21 +369,52 @@ async function testGraphManager() {
       { row: 0, col: 0 },
       'Where paths first met',
       { left: 'Origin point', center: 'Meeting place' },
-      { ceremonyType: 'accountability', chartId: chart.chartId }
+      { ceremonyType: 'accountability', chartId: chart.chartId, beatName: beat.beatName }
     );
     assert(bead.id === `bead_${beltId}_0_0`, 'Wampum bead created at position');
+    const graphWithWampum = await manager.readGraph();
+    assert(
+      graphWithWampum.relations.some(r => r.relationType === 'wampum_holds_accountable' && r.from === `${beltId}_belt` && r.to === `${chart.chartId}_chart`),
+      'Wampum ceremony link creates accountability relation'
+    );
+    assert(
+      graphWithWampum.relations.some(r => r.relationType === 'wampum_witnesses' && r.from === `${beltId}_belt` && r.to === beat.beatName),
+      'Wampum ceremony link creates witness relation'
+    );
+
+    const { bead: edgeBead } = await manager.addWampumBead(
+      beltId,
+      'western witness',
+      'white',
+      { row: 1, col: 2 },
+      'Boundary witness',
+      { right: 'Edge perspective' }
+    );
+    assert(edgeBead.id === `bead_${beltId}_1_2`, 'Wampum bead supports multi-row multi-column positions');
 
     const beltRead = await manager.readWampumBelt(beltId, { row: 0, col: 0 });
     assert(beltRead.bead?.mnemonic === 'the crossing', 'Wampum bead resolved by position');
     assert(beltRead.positionalReading === 'Origin point', 'Relational reading resolved by position');
+    const edgeRead = await manager.readWampumBelt(beltId, { row: 1, col: 2 });
+    assert(edgeRead.positionalReading === 'Edge perspective', 'Wampum right-edge positional reading resolved');
 
     let outOfBoundsReadThrown = false;
+    let outOfBoundsMessage = '';
     try {
       await manager.readWampumBelt(beltId, { row: 4, col: 0 });
-    } catch {
+    } catch (error) {
       outOfBoundsReadThrown = true;
+      outOfBoundsMessage = error.message;
     }
     assert(outOfBoundsReadThrown, 'Out-of-bounds Wampum read throws error');
+    assert(outOfBoundsMessage.includes('out of bounds'), 'Out-of-bounds read returns explicit bounds error');
+    let outOfBoundsColThrown = false;
+    try {
+      await manager.readWampumBelt(beltId, { row: 0, col: 5 });
+    } catch {
+      outOfBoundsColThrown = true;
+    }
+    assert(outOfBoundsColThrown, 'Out-of-bounds Wampum column read throws error');
   } finally {
     // Clean up
     try { await fs.unlink(testFile); } catch {}
@@ -496,6 +527,15 @@ async function testToolHandlers() {
     assert(!readWampumResult.isError, 'read_wampum_belt succeeds');
     const parsedRead = JSON.parse(readWampumResult.content[0].text);
     assert(parsedRead.positionalReading === 'Horizon intention', 'read_wampum_belt returns relational positional reading');
+
+    // Test 13: invalid belt dimensions are rejected
+    const invalidBeltResult = await handleToolCall('create_wampum_belt', {
+      title: 'Invalid Belt',
+      purpose: 'Should fail',
+      rows: 0,
+      cols: 2
+    }, manager);
+    assert(invalidBeltResult.isError === true, 'create_wampum_belt rejects non-positive dimensions');
 
   } finally {
     try { await fs.unlink(testFile); } catch {}

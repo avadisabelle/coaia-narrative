@@ -383,15 +383,15 @@ export async function handleToolCall(
       const valResult = validate(toolArgs, {
         title: ValidationSchemas.nonEmptyString(),
         purpose: ValidationSchemas.nonEmptyString(),
-        rows: { type: 'number' },
-        cols: { type: 'number' }
+        rows: { type: 'number', minValue: 1 },
+        cols: { type: 'number', minValue: 1 }
       });
       if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
       const result = await manager.createWampumBelt(
         toolArgs.title as string,
         toolArgs.purpose as string,
-        (toolArgs.rows as number) || 1,
-        (toolArgs.cols as number) || 1
+        (toolArgs.rows as number | undefined) ?? 1,
+        (toolArgs.cols as number | undefined) ?? 1
       );
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
