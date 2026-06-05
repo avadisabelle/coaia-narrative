@@ -419,14 +419,22 @@ export async function handleToolCall(
         observations: { type: 'array', items: { type: 'string' } }
       });
       if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
+      const position = toolArgs.position as { row: number; col: number };
+      if (!Number.isInteger(position.row) || !Number.isInteger(position.col)) {
+        return { content: [{ type: "text", text: "Error: position.row and position.col must be integers" }], isError: true };
+      }
+      const ceremonyLink = toolArgs.ceremonyLink as WampumCeremonyLink | undefined;
+      if (ceremonyLink && !['commitment', 'accountability', 'witness', 'renewal'].includes(ceremonyLink.ceremonyType as string)) {
+        return { content: [{ type: "text", text: "Error: ceremonyLink.ceremonyType must be one of commitment, accountability, witness, renewal" }], isError: true };
+      }
       const result = await manager.addWampumBead(
         toolArgs.beltId as string,
         toolArgs.mnemonic as string,
         toolArgs.color as 'white' | 'purple' | 'black' | 'mixed',
-        toolArgs.position as { row: number; col: number },
+        position,
         toolArgs.reading as string,
         toolArgs.relationalReadings as Record<string, string> | undefined,
-        toolArgs.ceremonyLink as WampumCeremonyLink | undefined,
+        ceremonyLink,
         (toolArgs.observations as string[] | undefined) || []
       );
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
