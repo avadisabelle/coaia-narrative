@@ -1063,12 +1063,17 @@ Current Reality: "${currentReality}"
       }
     }
     if (ceremonyLink?.beatName) {
-      graph.relations.push({
-        from: `${beltId}_belt`,
-        to: ceremonyLink.beatName,
-        relationType: 'wampum_witnesses',
-        metadata: { createdAt: timestamp }
-      });
+      const from = `${beltId}_belt`;
+      const to = ceremonyLink.beatName;
+      const exists = graph.relations.some(r => r.from === from && r.to === to && r.relationType === 'wampum_witnesses');
+      if (!exists) {
+        graph.relations.push({
+          from,
+          to,
+          relationType: 'wampum_witnesses',
+          metadata: { createdAt: timestamp }
+        });
+      }
     }
 
     await this.saveGraph(graph);
