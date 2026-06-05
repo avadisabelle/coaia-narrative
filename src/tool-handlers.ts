@@ -387,11 +387,16 @@ export async function handleToolCall(
         cols: { type: 'number', minValue: 1 }
       });
       if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
+      const rows = (toolArgs.rows as number | undefined) ?? 1;
+      const cols = (toolArgs.cols as number | undefined) ?? 1;
+      if (!Number.isInteger(rows) || !Number.isInteger(cols)) {
+        return { content: [{ type: "text", text: "Error: rows and cols must be integers" }], isError: true };
+      }
       const result = await manager.createWampumBelt(
         toolArgs.title as string,
         toolArgs.purpose as string,
-        (toolArgs.rows as number | undefined) ?? 1,
-        (toolArgs.cols as number | undefined) ?? 1
+        rows,
+        cols
       );
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
