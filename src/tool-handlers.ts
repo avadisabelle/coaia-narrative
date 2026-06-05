@@ -451,9 +451,13 @@ export async function handleToolCall(
         }
       });
       if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
+      const position = toolArgs.position as { row: number; col: number } | undefined;
+      if (position && (!Number.isInteger(position.row) || !Number.isInteger(position.col))) {
+        return { content: [{ type: "text", text: "Error: position.row and position.col must be integers" }], isError: true };
+      }
       const result = await manager.readWampumBelt(
         toolArgs.beltId as string,
-        toolArgs.position as { row: number; col: number } | undefined
+        position
       );
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
