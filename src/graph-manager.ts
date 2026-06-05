@@ -1050,12 +1050,17 @@ Current Reality: "${currentReality}"
     beltEntity.metadata.updatedAt = timestamp;
 
     if (ceremonyLink?.chartId) {
-      graph.relations.push({
-        from: `${beltId}_belt`,
-        to: `${ceremonyLink.chartId}_chart`,
-        relationType: 'wampum_holds_accountable',
-        metadata: { createdAt: timestamp, context: ceremonyLink.ceremonyType }
-      });
+      const from = `${beltId}_belt`;
+      const to = `${ceremonyLink.chartId}_chart`;
+      const exists = graph.relations.some(r => r.from === from && r.to === to && r.relationType === 'wampum_holds_accountable');
+      if (!exists) {
+        graph.relations.push({
+          from,
+          to,
+          relationType: 'wampum_holds_accountable',
+          metadata: { createdAt: timestamp, context: ceremonyLink.ceremonyType }
+        });
+      }
     }
     if (ceremonyLink?.beatName) {
       graph.relations.push({
