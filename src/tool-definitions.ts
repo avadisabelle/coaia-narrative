@@ -588,6 +588,18 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
     }
   },
   {
+    name: "list_wampum_belts",
+    description: "List Wampum Belts, optionally only those holding a given chart accountable. Use this to obtain a beltId — read_wampum_belt is a lookup and cannot discover one. heldCharts is an array: a belt may hold several charts accountable.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        chartId: { type: "string", description: "Optional: return only belts holding this chart accountable" },
+        ceremonyType: { type: "string", enum: ["commitment", "accountability", "witness", "renewal"], description: "Optional: return only belts holding a chart accountable under this ceremony type" },
+        includeBeads: { type: "boolean", description: "Include the full beads array (default false — a list call returns beadCount only, so an index view stays cheap)" }
+      }
+    }
+  },
+  {
     name: "read_wampum_belt",
     description: "Read a Wampum Belt in full, or read a bead by position with relational interpretation.",
     inputSchema: {

@@ -453,6 +453,20 @@ export async function handleToolCall(
       );
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
+    case "list_wampum_belts": {
+      const valResult = validate(toolArgs, {
+        chartId: { type: 'string' },
+        ceremonyType: { type: 'enum', enumValues: ['commitment', 'accountability', 'witness', 'renewal'] },
+        includeBeads: { type: 'boolean' }
+      });
+      if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
+      const result = await manager.listWampumBelts({
+        chartId: toolArgs.chartId as string | undefined,
+        ceremonyType: toolArgs.ceremonyType as 'commitment' | 'accountability' | 'witness' | 'renewal' | undefined,
+        includeBeads: toolArgs.includeBeads as boolean | undefined
+      });
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
     case "read_wampum_belt": {
       const valResult = validate(toolArgs, {
         beltId: ValidationSchemas.nonEmptyString(),

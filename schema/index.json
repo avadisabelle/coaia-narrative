@@ -60,11 +60,12 @@
         ]
       },
       "WAMPUM_TOOLS": {
-        "description": "Wampum Belt sequencing tools (3 tools). Opt-in: not enabled by default COAIA_TOOLS.",
+        "description": "Wampum Belt sequencing tools (4 tools). Opt-in: not enabled by default COAIA_TOOLS.",
         "tools": [
           "create_wampum_belt",
           "add_wampum_bead",
-          "read_wampum_belt"
+          "read_wampum_belt",
+          "list_wampum_belts"
         ]
       },
       "KG_TOOLS": {

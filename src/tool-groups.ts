@@ -31,7 +31,8 @@ export const TOOL_GROUPS: Record<string, string[]> = {
   WAMPUM_TOOLS: [
     'create_wampum_belt',
     'add_wampum_bead',
-    'read_wampum_belt'
+    'read_wampum_belt',
+    'list_wampum_belts'
   ],
   KG_TOOLS: [
     'create_entities',

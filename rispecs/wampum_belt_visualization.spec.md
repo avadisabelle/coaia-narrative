@@ -111,7 +111,7 @@ relationalReadings["col:N"] → relationalReadings["row:N"] → relationalReadin
 - **No mutation.** Three wampum methods exist (`graph-manager.ts:959, 998, 1073`) — no update, delete, or move. Occupied positions throw on re-add (`:1028-1033`). Belts are append-only.
 - **No bead-level entity or relation.** Beads are invisible to `search_nodes`, `open_nodes`, and relation traversal.
 - **No CLI surface.** `cli.ts` and `markdown-export.ts` contain zero occurrences of `wampum`.
-- **No listing tool.** `read_wampum_belt` requires a known `beltId`; MCP-only viewers cannot discover one.
+- ~~**No listing tool.**~~ **Resolved in 0.15.0**: `list_wampum_belts` returns `{beltId, title, purpose, rows, cols, beadCount, heldCharts[]}` per belt, optionally filtered by `chartId` or `ceremonyType`, with `includeBeads` defaulting to false. It is a read-side projection — `heldCharts` is derived by walking `wampum_holds_accountable` relations, and nothing is stored. `read_wampum_belt` remains a pure lookup.
 - **Not enabled by default.** `WAMPUM_TOOLS` (`src/tool-groups.ts:30-34`) is excluded from the default `COAIA_TOOLS` (`:64`); `schema/index.json` labels it opt-in.
 - **Tools return raw JSON.** All three handlers emit `JSON.stringify(result, null, 2)` (`tool-handlers.ts:396, 427, 445`).
 - **Coverage**: `test-coaia-narrative.js:355-417` covers placement, both relations, positional resolution, and bounds. No display or serialization-shape test.
@@ -180,7 +180,7 @@ A viewer obtains belt content from the same JSONL memory file it already reads f
 - The bead `id` (`bead_<beltId>_<row>_<col>`) is deterministic from position and serves as the stable anchor for deep links (`#bead_<beltId>_<row>_<col>`).
 - **Belt↔chart association is relational only** — see the R section table. Ceremony edges are subject to the bead, so a chart's belts are reached by matching `to === ${chartId}_chart` and resolving each edge's `metadata.beltId` (or the `bead_${beltId}_` prefix of `from`). A viewer must also accept edges written from `` `${beltId}_belt` `` — the pre-fix shape — and must not assume one edge per belt: several beads on one belt may each hold the same chart under a different ceremony type, and each is its own edge.
 - **Required addition — visualizer ingestion.** `organizeData` attaches entities to charts by `entity.metadata.chartId` or a `^(chart_\d+)` name match. Belts satisfy neither. A `wampumBelts: EntityRecord[]` collection on `Chart`, populated by scanning `wampum_holds_accountable` relations whose `to` equals `<chartId>_chart`, is required.
-- **Required addition — discovery.** No `list_wampum_belts` tool exists. A viewer reading JSONL directly can enumerate by `entityType`; an MCP-only viewer cannot discover a `beltId` it was not handed.
+- **Discovery — available from 0.15.0.** `list_wampum_belts` obtains the `beltId` that `read_wampum_belt` cannot. Call it with `chartId` for the chart view's belt region (one call, no relation archaeology), without arguments for a belt index, and with `includeBeads: true` only for a detail view — the default omits beads so an index call stays cheap. `heldCharts` is an array; a viewer that renders it as a single chart will be wrong for any belt holding more than one.
 
 **Read surface** — two observable modes:
 
@@ -295,7 +295,7 @@ A bead's `ceremonyLink` shows on the cell as a compact marker and in the reading
 - `cli.ts` — belt section in `viewChart`; a `wampum` / `wb` command taking `<beltId> [row col]` mirroring the two read modes
 - `markdown-export.ts` — belt as a Markdown table with a readings list, so exported charts carry their belts
 - `schema/data-model/entity.json` + `data-model-complete.{json,yaml}` — the `metadata.wampumBelt` sub-schema. The registry lists the entity type and both relation types but not the metadata shape; **required addition**
-- **Required addition if MCP-only viewers are in scope**: a belt-listing capability, since `read_wampum_belt` requires a known `beltId`
+- ~~Required addition: a belt-listing capability~~ — **delivered in 0.15.0** as `list_wampum_belts`, so an MCP-only viewer can reach belts without reading the JSONL file itself
 
 ## Out of Scope
 

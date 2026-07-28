@@ -44,8 +44,7 @@ function assert(condition, testName) {
   }
 }
 
-// ==================== GitHub Bridge Helper Tests ====================
-
+// ==================== GitHub Bridge Helper Tests =============
 async function testGithubBridgeHelpers() {
   console.log('\n🔗 Testing GitHub Bridge Helpers...');
   const testFile = join(__dirname, 'test-github-bridge.jsonl');
@@ -447,6 +446,65 @@ async function testGraphManager() {
     assert(
       new Set(twoWayEdges.map(r => r.from)).size === 2,
       'Each ceremony edge is subject to its own bead'
+=======
+    // Test 17b: Belt discovery — list_wampum_belts as a derived projection
+    const allBelts = await manager.listWampumBelts();
+    assert(allBelts.length >= 1, 'listWampumBelts returns created belts');
+    const listedBelt = allBelts.find(b => b.beltId === beltId);
+    assert(listedBelt.title === 'Treaty Belt', 'Listed belt carries its title');
+    assert(listedBelt.beadCount === 2, 'Listed belt reports beadCount');
+    assert(listedBelt.beads === undefined, 'Beads are omitted by default');
+    assert(Array.isArray(listedBelt.heldCharts), 'heldCharts is an array, never a scalar');
+    assert(
+      listedBelt.heldCharts.some(h => h.chartId === chart.chartId && h.ceremonyType === 'accountability'),
+      'heldCharts derives chartId and ceremonyType from the relation'
+    );
+
+    const withBeads = await manager.listWampumBelts({ includeBeads: true });
+    assert(
+      withBeads.find(b => b.beltId === beltId).beads.length === 2,
+      'includeBeads returns the full beads array'
+    );
+
+    // A belt holding two different charts — the cardinality a scalar field would erase
+    const { beltId: multiBeltId } = await manager.createWampumBelt('Two Fires', 'Hold two charts', 1, 2);
+    const secondChart = await manager.createStructuralTensionChart(
+      'Have a second chart a belt can hold accountable',
+      'Only one chart is linked to any belt so far',
+      '2026-09-01T00:00:00Z'
+    );
+    await manager.addWampumBead(multiBeltId, 'first fire', 'purple', { row: 0, col: 0 }, 'One', undefined, {
+      ceremonyType: 'commitment',
+      chartId: chart.chartId
+    });
+    await manager.addWampumBead(multiBeltId, 'second fire', 'white', { row: 0, col: 1 }, 'Two', undefined, {
+      ceremonyType: 'witness',
+      chartId: secondChart.chartId
+    });
+    const multiBelt = (await manager.listWampumBelts()).find(b => b.beltId === multiBeltId);
+    assert(multiBelt.heldCharts.length === 2, 'One belt reports several held charts');
+    assert(
+      multiBelt.heldCharts.some(h => h.chartId === secondChart.chartId && h.ceremonyType === 'witness'),
+      'Each held chart carries its own ceremony type'
+    );
+
+    const byChart = await manager.listWampumBelts({ chartId: secondChart.chartId });
+    assert(byChart.length === 1 && byChart[0].beltId === multiBeltId, 'chartId filter returns only belts holding that chart');
+    const byCeremony = await manager.listWampumBelts({ ceremonyType: 'witness' });
+    assert(byCeremony.some(b => b.beltId === multiBeltId), 'ceremonyType filter matches relation context');
+    const noMatch = await manager.listWampumBelts({ chartId: 'chart_does_not_exist' });
+    assert(noMatch.length === 0, 'Filtering an unknown chart returns an empty list, not an error');
+
+    // Discovery must not write anything — derive, never store
+    const graphAfterList = await manager.readGraph();
+    const multiBeltEntity = graphAfterList.entities.find(e => e.metadata?.beltId === multiBeltId);
+    assert(
+      multiBeltEntity.metadata.wampumBelt.chartId === undefined && multiBeltEntity.metadata.chartId === undefined,
+      'Listing stores no denormalized chartId on the belt'
+    );
+    assert(
+      !graphAfterList.entities.some(e => e.entityType === 'wampum_belt_index'),
+      'Listing writes no index entity'
     );
 
     // Test 18: GitHub issue provenance on charts (metadata.github.issue)
@@ -621,6 +679,20 @@ async function testToolHandlers() {
     }, manager);
     assert(invalidBeltResult.isError === true, 'create_wampum_belt rejects non-positive dimensions');
 
+    // Test 13b: list_wampum_belts via handler
+    const listBeltsResult = await handleToolCall('list_wampum_belts', {}, manager);
+    assert(!listBeltsResult.isError, 'list_wampum_belts succeeds');
+    const parsedBelts = JSON.parse(listBeltsResult.content[0].text);
+    assert(Array.isArray(parsedBelts), 'list_wampum_belts returns an array');
+    assert(
+      parsedBelts.every(b => Array.isArray(b.heldCharts)),
+      'Every listed belt exposes heldCharts as an array'
+    );
+    const invalidCeremonyResult = await handleToolCall('list_wampum_belts', {
+      ceremonyType: 'gossip'
+    }, manager);
+    assert(invalidCeremonyResult.isError === true, 'list_wampum_belts rejects an unknown ceremony type');
+
     // Test 14: link_chart_to_github_issue via handler
     const issueChartResult = await handleToolCall('create_structural_tension_chart', {
       desiredOutcome: 'Have each chart carry the issue it was written from',
@@ -679,7 +751,11 @@ async function testToolGroups() {
     'STC_TOOLS includes link_chart_to_github_issue'
   );
   assert(TOOL_GROUPS.NARRATIVE_TOOLS.length === 3, 'NARRATIVE_TOOLS has 3 tools');
-  assert(TOOL_GROUPS.WAMPUM_TOOLS.length === 3, 'WAMPUM_TOOLS has 3 tools');
+  assert(TOOL_GROUPS.WAMPUM_TOOLS.length === 4, 'WAMPUM_TOOLS has 4 tools');
+  assert(
+    TOOL_GROUPS.WAMPUM_TOOLS.includes('list_wampum_belts'),
+    'WAMPUM_TOOLS includes list_wampum_belts'
+  );
   assert(TOOL_GROUPS.KG_TOOLS.length === 9, 'KG_TOOLS has 9 tools');
   assert(TOOL_GROUPS.CORE_TOOLS.length === 4, 'CORE_TOOLS has 4 tools');
 

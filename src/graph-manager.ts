@@ -1196,6 +1196,84 @@ Current Reality: "${currentReality}"
     return { belt, bead, positionalReading };
   }
 
+  /**
+   * List Wampum Belts as a read-side projection over entities and relations
+   * that already exist. Nothing here is stored: heldCharts is derived by
+   * walking wampum_holds_accountable relations, because the belt entity holds
+   * no chartId and must not gain one — a denormalized field would become a
+   * second source of truth that drifts from the edges.
+   *
+   * heldCharts is an ARRAY. A belt may hold several charts accountable, one
+   * relation per ceremony-linked bead; a scalar would tell implementers the
+   * wrong cardinality.
+   *
+   * Entities typed wampum_belt whose metadata.wampumBelt is absent are skipped
+   * — there is no belt to report, and readWampumBelt already throws for them.
+   */
+  async listWampumBelts(options: {
+    chartId?: string;
+    ceremonyType?: WampumCeremonyLink['ceremonyType'];
+    includeBeads?: boolean;
+  } = {}): Promise<Array<{
+    beltId: string;
+    title: string;
+    purpose: string;
+    rows: number;
+    cols: number;
+    beadCount: number;
+    heldCharts: Array<{ chartId: string; ceremonyType?: string }>;
+    beads?: WampumBead[];
+  }>> {
+    const { chartId, ceremonyType, includeBeads = false } = options;
+    const graph = await this.loadGraph();
+
+    const belts = graph.entities
+      .filter(e => e.entityType === 'wampum_belt' && e.metadata?.wampumBelt)
+      .map(e => e.metadata!.wampumBelt as WampumBeltMetadata);
+
+    const projected = belts.map(belt => {
+      const seen = new Set<string>();
+      const heldCharts: Array<{ chartId: string; ceremonyType?: string }> = [];
+
+      for (const relation of graph.relations) {
+        if (relation.relationType !== 'wampum_holds_accountable') continue;
+        if (relation.from !== `${belt.beltId}_belt`) continue;
+
+        const heldChartId = relation.to.replace(/_chart$/, '');
+        const context = relation.metadata?.context as string | undefined;
+        const key = `${heldChartId} ${context ?? ''}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        heldCharts.push({ chartId: heldChartId, ...(context ? { ceremonyType: context } : {}) });
+      }
+
+      return {
+        beltId: belt.beltId,
+        title: belt.title,
+        purpose: belt.purpose,
+        rows: belt.rows,
+        cols: belt.cols,
+        beadCount: belt.beads.length,
+        heldCharts,
+        ...(includeBeads ? { beads: belt.beads } : {}),
+        createdAt: belt.createdAt
+      };
+    });
+
+    const filtered = projected.filter(belt => {
+      if (chartId && !belt.heldCharts.some(held => held.chartId === chartId)) return false;
+      if (ceremonyType && !belt.heldCharts.some(held => held.ceremonyType === ceremonyType)) return false;
+      return true;
+    });
+
+    // Deterministic order so a list view does not reshuffle between reads.
+    filtered.sort((a, b) =>
+      a.createdAt === b.createdAt ? a.beltId.localeCompare(b.beltId) : a.createdAt.localeCompare(b.createdAt)
+    );
+
+    return filtered.map(({ createdAt, ...belt }) => belt);
+  }
+
   async addActionStep(
     parentChartId: string,
     actionStepTitle: string,
