@@ -24,6 +24,7 @@ properties:
       - current_reality
       - action_step
       - narrative_beat
+      - wampum_belt
       - person
       - concept
       - event
