@@ -211,7 +211,8 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
             required: ["description", "type"]
           },
           description: "Optional Elements of Performance for MMOT evaluation — criteria the agent uses to self-assess output"
-        }
+        },
+        githubIssue: { type: "string", description: "Optional GitHub issue this chart is written from, as the FULL path 'owner/repo#number' (e.g. avadisabelle/coaia-narrative#50). A bare '#number' is rejected — charts travel between repositories, and a bare number cites the wrong project once the chart is read elsewhere." }
       },
       required: ["desiredOutcome", "currentReality", "dueDate"]
     }
@@ -522,6 +523,18 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
       properties: {
         parentChartId: { type: "string", description: "Optional: Filter by parent chart ID" }
       }
+    }
+  },
+  {
+    name: "link_chart_to_github_issue",
+    description: "Record on an existing chart the GitHub issue it was written from. The reference must be the full 'owner/repo#number' path.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        chartId: { type: "string", description: "ID of the chart to link" },
+        githubIssue: { type: "string", description: "GitHub issue as the FULL path 'owner/repo#number' (e.g. avadisabelle/coaia-narrative#50). A bare '#number' is rejected." }
+      },
+      required: ["chartId", "githubIssue"]
     }
   },
   {

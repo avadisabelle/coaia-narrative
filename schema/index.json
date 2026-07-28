@@ -47,6 +47,7 @@
           "update_current_reality",
           "update_desired_outcome",
           "manage_action_step",
+          "link_chart_to_github_issue",
           "perform_mmot_evaluation"
         ]
       },

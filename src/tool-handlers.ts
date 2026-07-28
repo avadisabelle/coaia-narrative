@@ -100,7 +100,8 @@ export async function handleToolCall(
         desiredOutcome: ValidationSchemas.nonEmptyString(),
         currentReality: ValidationSchemas.nonEmptyString(),
         dueDate: ValidationSchemas.isoDate(),
-        actionSteps: { type: 'array', items: { type: 'string' } }
+        actionSteps: { type: 'array', items: { type: 'string' } },
+        githubIssue: { type: 'string' }
       });
       if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
       const chartResult = await manager.createStructuralTensionChart(
@@ -108,7 +109,8 @@ export async function handleToolCall(
         toolArgs.currentReality as string,
         toolArgs.dueDate as string,
         (Array.isArray(toolArgs.actionSteps) ? toolArgs.actionSteps : []) as string[],
-        toolArgs.elementsOfPerformance as Array<{ description: string; type: 'DESIGN' | 'EXECUTION' }> | undefined
+        toolArgs.elementsOfPerformance as Array<{ description: string; type: 'DESIGN' | 'EXECUTION' }> | undefined,
+        toolArgs.githubIssue as string | undefined
       );
       return { content: [{ type: "text", text: JSON.stringify(chartResult, null, 2) }] };
     }
@@ -378,6 +380,18 @@ export async function handleToolCall(
       });
 
       return { content: [{ type: "text", text: beatsText }] };
+    }
+    case "link_chart_to_github_issue": {
+      const valResult = validate(toolArgs, {
+        chartId: ValidationSchemas.nonEmptyString(),
+        githubIssue: ValidationSchemas.nonEmptyString()
+      });
+      if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
+      const result = await manager.linkChartToGithubIssue(
+        toolArgs.chartId as string,
+        toolArgs.githubIssue as string
+      );
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
     case "create_wampum_belt": {
       const valResult = validate(toolArgs, {

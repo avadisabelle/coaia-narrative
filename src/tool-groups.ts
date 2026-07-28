@@ -20,6 +20,7 @@ export const TOOL_GROUPS: Record<string, string[]> = {
     'update_action_progress',
     'update_current_reality',
     'update_desired_outcome',
+    'link_chart_to_github_issue',
     'perform_mmot_evaluation'
   ],
   NARRATIVE_TOOLS: [

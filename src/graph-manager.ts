@@ -1,9 +1,33 @@
-import { Entity, Relation, KnowledgeGraph, WampumBead, WampumBeltMetadata, WampumBeadPosition, WampumCeremonyLink } from './types.js';
+import { Entity, Relation, KnowledgeGraph, WampumBead, WampumBeltMetadata, WampumBeadPosition, WampumCeremonyLink, GithubIssueRef } from './types.js';
 import { readJsonlMemoryFile, writeJsonlMemoryFile } from './jsonl-preservation.js';
 import {
   createGithubProjectFieldProjection,
   type GithubProjectFieldProjection,
 } from './github-bridge.js';
+
+/**
+ * Parse a GitHub issue reference written as `owner/repo#number`.
+ *
+ * The full path is required. A bare `#42` is rejected: charts travel between
+ * repositories, and a bare number silently resolves against whichever repo the
+ * reader happens to be in — which is how an issue from one project ends up
+ * cited as another project's.
+ */
+export function parseGithubIssueSpec(spec: string): GithubIssueRef {
+  const match = /^([A-Za-z0-9._-]+)\/([A-Za-z0-9._-]+)#(\d+)$/.exec(spec.trim());
+  if (!match) {
+    throw new Error(
+      `Invalid GitHub issue reference: "${spec}". Use the full path 'owner/repo#number' (e.g. avadisabelle/coaia-narrative#50). A bare '#number' is not accepted — it resolves against the wrong repository as soon as the chart is read somewhere else.`
+    );
+  }
+  const [, owner, repo, number] = match;
+  return {
+    owner,
+    repo,
+    number: Number(number),
+    url: `https://github.com/${owner}/${repo}/issues/${number}`
+  };
+}
 
 export class KnowledgeGraphManager {
   private memoryFilePath: string;
@@ -221,7 +245,8 @@ export class KnowledgeGraphManager {
     currentReality: string,
     dueDate: string,
     actionSteps?: string[],
-    elementsOfPerformance?: Array<{ description: string; type: 'DESIGN' | 'EXECUTION' }>
+    elementsOfPerformance?: Array<{ description: string; type: 'DESIGN' | 'EXECUTION' }>,
+    githubIssue?: string
   ): Promise<{ chartId: string; entities: Entity[]; relations: Relation[] }> {
     // Educational validation for creative orientation
     const problemSolvingWords = ['fix', 'solve', 'eliminate', 'prevent', 'stop', 'avoid', 'reduce', 'remove'];
@@ -282,7 +307,8 @@ Current Reality: "${currentReality}"
 
     const chartId = `chart_${Date.now()}`;
     const timestamp = new Date().toISOString();
-    
+    const issueRef = githubIssue ? parseGithubIssueSpec(githubIssue) : undefined;
+
     // Create chart, desired outcome, and current reality entities
     const entities: Entity[] = [
       {
@@ -295,7 +321,8 @@ Current Reality: "${currentReality}"
           level: 0,
           createdAt: timestamp,
           updatedAt: timestamp,
-          ...(elementsOfPerformance && elementsOfPerformance.length > 0 ? { elementsOfPerformance } : {})
+          ...(elementsOfPerformance && elementsOfPerformance.length > 0 ? { elementsOfPerformance } : {}),
+          ...(issueRef ? { github: { issue: issueRef } } : {})
         }
       },
       {
@@ -640,6 +667,35 @@ Current Reality: "${currentReality}"
     }
 
     await this.saveGraph(graph);
+  }
+
+  /**
+   * Record on an existing chart the GitHub issue it was written from.
+   * Writes metadata.github.issue, which EntityMetadata already carried and no
+   * tool could reach.
+   */
+  async linkChartToGithubIssue(
+    chartId: string,
+    githubIssue: string
+  ): Promise<{ chartId: string; issue: GithubIssueRef }> {
+    const graph = await this.loadGraph();
+    const chartEntity = graph.entities.find(
+      e => e.name === `${chartId}_chart` && e.entityType === 'structural_tension_chart'
+    );
+
+    if (!chartEntity) {
+      throw new Error(`Chart ${chartId} not found`);
+    }
+
+    const issue = parseGithubIssueSpec(githubIssue);
+    const timestamp = new Date().toISOString();
+
+    chartEntity.metadata = chartEntity.metadata || {};
+    chartEntity.metadata.github = { ...(chartEntity.metadata.github || {}), issue };
+    chartEntity.metadata.updatedAt = timestamp;
+
+    await this.saveGraph(graph);
+    return { chartId, issue };
   }
 
   async updateDesiredOutcome(chartId: string, newDesiredOutcome: string): Promise<void> {

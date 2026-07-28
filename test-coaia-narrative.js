@@ -415,6 +415,57 @@ async function testGraphManager() {
       outOfBoundsColThrown = true;
     }
     assert(outOfBoundsColThrown, 'Out-of-bounds Wampum column read throws error');
+
+    // Test 18: GitHub issue provenance on charts (metadata.github.issue)
+    const issueChart = await manager.createStructuralTensionChart(
+      'Establish a readable record of where each chart came from',
+      'Charts carry no reference to the issue they were written from',
+      '2026-08-15T00:00:00Z',
+      [],
+      undefined,
+      'avadisabelle/coaia-narrative#50'
+    );
+    const issueChartEntity = issueChart.entities.find(e => e.entityType === 'structural_tension_chart');
+    assert(issueChartEntity.metadata.github.issue.owner === 'avadisabelle', 'Chart create records issue owner');
+    assert(issueChartEntity.metadata.github.issue.repo === 'coaia-narrative', 'Chart create records issue repo');
+    assert(issueChartEntity.metadata.github.issue.number === 50, 'Chart create records issue number');
+    assert(
+      issueChartEntity.metadata.github.issue.url === 'https://github.com/avadisabelle/coaia-narrative/issues/50',
+      'Chart create derives issue url'
+    );
+
+    const linked = await manager.linkChartToGithubIssue(chart.chartId, 'jgwill/Miadi#36');
+    assert(linked.issue.owner === 'jgwill' && linked.issue.number === 36, 'Existing chart links to issue');
+    const graphWithIssue = await manager.readGraph();
+    const linkedEntity = graphWithIssue.entities.find(e => e.name === `${chart.chartId}_chart`);
+    assert(linkedEntity.metadata.github.issue.repo === 'Miadi', 'Issue reference persists on the chart entity');
+
+    let bareRefThrown = false;
+    let bareRefMessage = '';
+    try {
+      await manager.linkChartToGithubIssue(chart.chartId, '#36');
+    } catch (error) {
+      bareRefThrown = true;
+      bareRefMessage = error.message;
+    }
+    assert(bareRefThrown, 'Bare #number issue reference is rejected');
+    assert(bareRefMessage.includes('owner/repo#number'), 'Rejection names the required full path form');
+
+    let ownerOnlyThrown = false;
+    try {
+      await manager.linkChartToGithubIssue(chart.chartId, 'coaia-narrative#50');
+    } catch {
+      ownerOnlyThrown = true;
+    }
+    assert(ownerOnlyThrown, 'Repo-without-owner issue reference is rejected');
+
+    let missingChartThrown = false;
+    try {
+      await manager.linkChartToGithubIssue('chart_does_not_exist', 'jgwill/Miadi#36');
+    } catch {
+      missingChartThrown = true;
+    }
+    assert(missingChartThrown, 'Linking an absent chart throws');
   } finally {
     // Clean up
     try { await fs.unlink(testFile); } catch {}
@@ -537,6 +588,35 @@ async function testToolHandlers() {
     }, manager);
     assert(invalidBeltResult.isError === true, 'create_wampum_belt rejects non-positive dimensions');
 
+    // Test 14: link_chart_to_github_issue via handler
+    const issueChartResult = await handleToolCall('create_structural_tension_chart', {
+      desiredOutcome: 'Have each chart carry the issue it was written from',
+      currentReality: 'Chart provenance lives only in commit messages',
+      dueDate: '2026-08-15T00:00:00Z',
+      githubIssue: 'avadisabelle/coaia-narrative#50'
+    }, manager);
+    assert(!issueChartResult.isError, 'create_structural_tension_chart accepts githubIssue');
+    const issueChartId = JSON.parse(issueChartResult.content[0].text).chartId;
+
+    const linkResult = await handleToolCall('link_chart_to_github_issue', {
+      chartId: issueChartId,
+      githubIssue: 'jgwill/Miadi#36'
+    }, manager);
+    assert(!linkResult.isError, 'link_chart_to_github_issue succeeds');
+    assert(JSON.parse(linkResult.content[0].text).issue.owner === 'jgwill', 'link returns parsed issue reference');
+
+    // Test 15: bare #number is rejected at the handler boundary
+    let bareRefHandlerThrew = false;
+    try {
+      await handleToolCall('link_chart_to_github_issue', {
+        chartId: issueChartId,
+        githubIssue: '#36'
+      }, manager);
+    } catch {
+      bareRefHandlerThrew = true;
+    }
+    assert(bareRefHandlerThrew, 'link_chart_to_github_issue rejects bare #number');
+
   } finally {
     try { await fs.unlink(testFile); } catch {}
   }
@@ -561,6 +641,10 @@ async function testToolGroups() {
 
   // Test 3: All tool groups exist
   assert(TOOL_GROUPS.STC_TOOLS.length >= 14, 'STC_TOOLS has 14+ tools');
+  assert(
+    TOOL_GROUPS.STC_TOOLS.includes('link_chart_to_github_issue'),
+    'STC_TOOLS includes link_chart_to_github_issue'
+  );
   assert(TOOL_GROUPS.NARRATIVE_TOOLS.length === 3, 'NARRATIVE_TOOLS has 3 tools');
   assert(TOOL_GROUPS.WAMPUM_TOOLS.length === 3, 'WAMPUM_TOOLS has 3 tools');
   assert(TOOL_GROUPS.KG_TOOLS.length === 9, 'KG_TOOLS has 9 tools');
