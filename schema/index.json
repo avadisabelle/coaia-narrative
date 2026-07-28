@@ -34,7 +34,7 @@
     },
     "tool_groups": {
       "STC_TOOLS": {
-        "description": "Structural Tension Chart tools (11 tools)",
+        "description": "Structural Tension Chart tools (13 tools)",
         "tools": [
           "create_structural_tension_chart",
           "telescope_action_step",

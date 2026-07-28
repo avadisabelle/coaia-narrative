@@ -13,6 +13,17 @@ export interface ToolDefinition {
     properties: Record<string, unknown>;
     required?: string[];
   };
+  /**
+   * Optional result schema (MCP 2025-06-18). Where the shape of a result
+   * carries meaning a caller can get wrong — an array that must not be read as
+   * a scalar — this is what makes that machine-checked rather than prose.
+   */
+  outputSchema?: {
+    type: string;
+    properties?: Record<string, unknown>;
+    items?: unknown;
+    required?: string[];
+  };
 }
 
 export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
@@ -596,6 +607,49 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
         chartId: { type: "string", description: "Optional: return only belts holding this chart accountable" },
         ceremonyType: { type: "string", enum: ["commitment", "accountability", "witness", "renewal"], description: "Optional: return only belts holding a chart accountable under this ceremony type" },
         includeBeads: { type: "boolean", description: "Include the full beads array (default false — a list call returns beadCount only, so an index view stays cheap)" }
+      }
+    },
+    outputSchema: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          beltId: { type: "string" },
+          title: { type: "string" },
+          purpose: { type: "string" },
+          rows: { type: "integer" },
+          cols: { type: "integer" },
+          beadCount: { type: "integer", description: "Number of beads placed; the beads themselves are omitted unless includeBeads is true" },
+          heldCharts: {
+            type: "array",
+            description: "Charts this belt holds accountable. ALWAYS an array — a belt may hold several charts, and one chart under more than one ceremony type, each as its own edge.",
+            items: {
+              type: "object",
+              properties: {
+                chartId: { type: "string", description: "Resolved through the entity map, not inferred from the edge target's name" },
+                ceremonyType: { type: "string", enum: ["commitment", "accountability", "witness", "renewal"] },
+                beadId: { type: "string", description: "The bead carrying this obligation. Absent on edges written before ceremony edges became subject to the bead." },
+                present: { type: "boolean", description: "False when the target chart does not exist in this graph — a dangling ceremony link, reported rather than hidden" }
+              },
+              required: ["chartId", "present"]
+            }
+          },
+          heldBeats: {
+            type: "array",
+            description: "Narrative beats this belt witnesses. Witness edges carry no ceremony context.",
+            items: {
+              type: "object",
+              properties: {
+                beatName: { type: "string" },
+                beadId: { type: "string" },
+                present: { type: "boolean" }
+              },
+              required: ["beatName", "present"]
+            }
+          },
+          beads: { type: "array", description: "Present only when includeBeads is true" }
+        },
+        required: ["beltId", "title", "purpose", "rows", "cols", "beadCount", "heldCharts", "heldBeats"]
       }
     }
   },

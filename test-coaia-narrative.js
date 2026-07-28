@@ -44,7 +44,7 @@ function assert(condition, testName) {
   }
 }
 
-// ==================== GitHub Bridge Helper Tests =============
+// ==================== GitHub Bridge Helper Tests ====================
 async function testGithubBridgeHelpers() {
   console.log('\n🔗 Testing GitHub Bridge Helpers...');
   const testFile = join(__dirname, 'test-github-bridge.jsonl');
@@ -446,7 +446,7 @@ async function testGraphManager() {
     assert(
       new Set(twoWayEdges.map(r => r.from)).size === 2,
       'Each ceremony edge is subject to its own bead'
-=======
+    );
     // Test 17b: Belt discovery — list_wampum_belts as a derived projection
     const allBelts = await manager.listWampumBelts();
     assert(allBelts.length >= 1, 'listWampumBelts returns created belts');
@@ -494,6 +494,46 @@ async function testGraphManager() {
     assert(byCeremony.some(b => b.beltId === multiBeltId), 'ceremonyType filter matches relation context');
     const noMatch = await manager.listWampumBelts({ chartId: 'chart_does_not_exist' });
     assert(noMatch.length === 0, 'Filtering an unknown chart returns an empty list, not an error');
+
+    // Witnessed beats are projected in the same walk
+    assert(
+      listedBelt.heldBeats.some(b => b.beatName === beat.beatName && b.present === true),
+      'heldBeats projects witnessed beats'
+    );
+    assert(
+      listedBelt.heldCharts.every(h => typeof h.beadId === 'string'),
+      'Held charts name the bead carrying the obligation'
+    );
+
+    // A ceremony link to a chart that does not exist is reported as absent,
+    // not presented as a real held chart inferred from the edge target string
+    const { beltId: danglingBeltId } = await manager.createWampumBelt('Dangling', 'Points nowhere', 1, 1);
+    await manager.addWampumBead(danglingBeltId, 'lost thread', 'black', { row: 0, col: 0 }, 'Nowhere', undefined, {
+      ceremonyType: 'commitment',
+      chartId: 'chart_never_created'
+    });
+    const danglingBelt = (await manager.listWampumBelts()).find(b => b.beltId === danglingBeltId);
+    assert(danglingBelt.heldCharts[0].chartId === 'chart_never_created', 'Dangling link keeps its raw target id');
+    assert(danglingBelt.heldCharts[0].present === false, 'Dangling link is marked absent, not reported as real');
+    assert(
+      listedBelt.heldCharts.every(h => h.present === true),
+      'A resolvable chart is marked present'
+    );
+
+    // Edges written before ceremony edges became subject to the bead are still listed
+    const { beltId: legacyBeltId } = await manager.createWampumBelt('Older Belt', 'Written the old way', 1, 1);
+    await manager.createRelations([{
+      from: `${legacyBeltId}_belt`,
+      to: `${chart.chartId}_chart`,
+      relationType: 'wampum_holds_accountable',
+      metadata: { createdAt: new Date().toISOString(), context: 'renewal' }
+    }]);
+    const legacyBelt = (await manager.listWampumBelts()).find(b => b.beltId === legacyBeltId);
+    assert(
+      legacyBelt.heldCharts.some(h => h.chartId === chart.chartId && h.ceremonyType === 'renewal'),
+      'Belt-subject edges written before the fix are still projected'
+    );
+    assert(legacyBelt.heldCharts[0].beadId === undefined, 'A pre-fix edge names no bead, and none is invented');
 
     // Discovery must not write anything — derive, never store
     const graphAfterList = await manager.readGraph();
@@ -755,6 +795,19 @@ async function testToolGroups() {
   assert(
     TOOL_GROUPS.WAMPUM_TOOLS.includes('list_wampum_belts'),
     'WAMPUM_TOOLS includes list_wampum_belts'
+  );
+
+  // The cardinality of heldCharts is machine-checked, not prose-checked
+  const listBeltsDefinition = ALL_TOOL_DEFINITIONS.find(t => t.name === 'list_wampum_belts');
+  assert(listBeltsDefinition.outputSchema !== undefined, 'list_wampum_belts declares an outputSchema');
+  assert(listBeltsDefinition.outputSchema.type === 'array', 'list_wampum_belts returns an array of belts');
+  assert(
+    listBeltsDefinition.outputSchema.items.properties.heldCharts.type === 'array',
+    'outputSchema declares heldCharts as an array'
+  );
+  assert(
+    listBeltsDefinition.outputSchema.items.properties.heldBeats.type === 'array',
+    'outputSchema declares heldBeats as an array'
   );
   assert(TOOL_GROUPS.KG_TOOLS.length === 9, 'KG_TOOLS has 9 tools');
   assert(TOOL_GROUPS.CORE_TOOLS.length === 4, 'CORE_TOOLS has 4 tools');

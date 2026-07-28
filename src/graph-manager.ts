@@ -1221,30 +1221,78 @@ Current Reality: "${currentReality}"
     rows: number;
     cols: number;
     beadCount: number;
-    heldCharts: Array<{ chartId: string; ceremonyType?: string }>;
+    heldCharts: Array<{ chartId: string; ceremonyType?: string; beadId?: string; present: boolean }>;
+    heldBeats: Array<{ beatName: string; beadId?: string; present: boolean }>;
     beads?: WampumBead[];
   }>> {
     const { chartId, ceremonyType, includeBeads = false } = options;
     const graph = await this.loadGraph();
 
+    const entitiesByName = new Map(graph.entities.map(e => [e.name, e]));
+
     const belts = graph.entities
       .filter(e => e.entityType === 'wampum_belt' && e.metadata?.wampumBelt)
       .map(e => e.metadata!.wampumBelt as WampumBeltMetadata);
 
+    // Ceremony edges are subject to the bead (`bead_${beltId}_${row}_${col}`).
+    // Edges written before that fix are subject to `${beltId}_belt`; both are
+    // matched, so no migration is needed and nothing written earlier drops out
+    // of a listing.
+    const beltIdOfEdge = (relation: Relation): string | undefined => {
+      const declared = relation.metadata?.beltId;
+      if (typeof declared === 'string') return declared;
+      const beadMatch = /^bead_(belt_\d+)_\d+_\d+$/.exec(relation.from);
+      if (beadMatch) return beadMatch[1];
+      if (relation.from.endsWith('_belt')) return relation.from.slice(0, -'_belt'.length);
+      return undefined;
+    };
+
+    const beadIdOfEdge = (relation: Relation): string | undefined =>
+      relation.from.startsWith('bead_') ? relation.from : undefined;
+
     const projected = belts.map(belt => {
-      const seen = new Set<string>();
-      const heldCharts: Array<{ chartId: string; ceremonyType?: string }> = [];
+      const chartsSeen = new Set<string>();
+      const beatsSeen = new Set<string>();
+      const heldCharts: Array<{ chartId: string; ceremonyType?: string; beadId?: string; present: boolean }> = [];
+      const heldBeats: Array<{ beatName: string; beadId?: string; present: boolean }> = [];
 
       for (const relation of graph.relations) {
-        if (relation.relationType !== 'wampum_holds_accountable') continue;
-        if (relation.from !== `${belt.beltId}_belt`) continue;
+        if (beltIdOfEdge(relation) !== belt.beltId) continue;
 
-        const heldChartId = relation.to.replace(/_chart$/, '');
-        const context = relation.metadata?.context as string | undefined;
-        const key = `${heldChartId} ${context ?? ''}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        heldCharts.push({ chartId: heldChartId, ...(context ? { ceremonyType: context } : {}) });
+        if (relation.relationType === 'wampum_holds_accountable') {
+          // Resolve the target through the entity map rather than trusting its
+          // name. A ceremony link to a chart id that does not exist is accepted
+          // on write, and inferring the id by stripping `_chart` would present
+          // that typo as a real held chart.
+          const target = entitiesByName.get(relation.to);
+          const resolvedChartId = (target?.metadata?.chartId as string | undefined)
+            ?? relation.to.replace(/_chart$/, '');
+          const context = relation.metadata?.context as string | undefined;
+          const key = `${resolvedChartId}::${context ?? ''}`;
+          if (chartsSeen.has(key)) continue;
+          chartsSeen.add(key);
+          const beadId = beadIdOfEdge(relation);
+          heldCharts.push({
+            chartId: resolvedChartId,
+            ...(context ? { ceremonyType: context } : {}),
+            ...(beadId ? { beadId } : {}),
+            present: target !== undefined
+          });
+          continue;
+        }
+
+        if (relation.relationType === 'wampum_witnesses') {
+          // Witness edges carry no metadata.context. The asymmetry lives in the
+          // writer, not here.
+          if (beatsSeen.has(relation.to)) continue;
+          beatsSeen.add(relation.to);
+          const beadId = beadIdOfEdge(relation);
+          heldBeats.push({
+            beatName: relation.to,
+            ...(beadId ? { beadId } : {}),
+            present: entitiesByName.has(relation.to)
+          });
+        }
       }
 
       return {
@@ -1255,6 +1303,7 @@ Current Reality: "${currentReality}"
         cols: belt.cols,
         beadCount: belt.beads.length,
         heldCharts,
+        heldBeats,
         ...(includeBeads ? { beads: belt.beads } : {}),
         createdAt: belt.createdAt
       };
