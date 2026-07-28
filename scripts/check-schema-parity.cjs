@@ -11,6 +11,7 @@ const GENERATE = process.argv.includes('--generate');
 
 const pairs = [
   ['schema/data-model/entity.json', 'schema/data-model/entity.yaml'],
+  ['schema/data-model/relation.json', 'schema/data-model/relation.yaml'],
   ['schema/data-model-complete.json', 'schema/data-model-complete.yaml'],
 ];
 

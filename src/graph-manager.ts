@@ -1,9 +1,33 @@
-import { Entity, Relation, KnowledgeGraph } from './types.js';
+import { Entity, Relation, KnowledgeGraph, WampumBead, WampumBeltMetadata, WampumBeadPosition, WampumCeremonyLink, GithubIssueRef } from './types.js';
 import { readJsonlMemoryFile, writeJsonlMemoryFile } from './jsonl-preservation.js';
 import {
   createGithubProjectFieldProjection,
   type GithubProjectFieldProjection,
 } from './github-bridge.js';
+
+/**
+ * Parse a GitHub issue reference written as `owner/repo#number`.
+ *
+ * The full path is required. A bare `#42` is rejected: charts travel between
+ * repositories, and a bare number silently resolves against whichever repo the
+ * reader happens to be in — which is how an issue from one project ends up
+ * cited as another project's.
+ */
+export function parseGithubIssueSpec(spec: string): GithubIssueRef {
+  const match = /^([A-Za-z0-9._-]+)\/([A-Za-z0-9._-]+)#(\d+)$/.exec(spec.trim());
+  if (!match) {
+    throw new Error(
+      `Invalid GitHub issue reference: "${spec}". Use the full path 'owner/repo#number' (e.g. avadisabelle/coaia-narrative#50). A bare '#number' is not accepted — it resolves against the wrong repository as soon as the chart is read somewhere else.`
+    );
+  }
+  const [, owner, repo, number] = match;
+  return {
+    owner,
+    repo,
+    number: Number(number),
+    url: `https://github.com/${owner}/${repo}/issues/${number}`
+  };
+}
 
 export class KnowledgeGraphManager {
   private memoryFilePath: string;
@@ -221,7 +245,8 @@ export class KnowledgeGraphManager {
     currentReality: string,
     dueDate: string,
     actionSteps?: string[],
-    elementsOfPerformance?: Array<{ description: string; type: 'DESIGN' | 'EXECUTION' }>
+    elementsOfPerformance?: Array<{ description: string; type: 'DESIGN' | 'EXECUTION' }>,
+    githubIssue?: string
   ): Promise<{ chartId: string; entities: Entity[]; relations: Relation[] }> {
     // Educational validation for creative orientation
     const problemSolvingWords = ['fix', 'solve', 'eliminate', 'prevent', 'stop', 'avoid', 'reduce', 'remove'];
@@ -282,7 +307,8 @@ Current Reality: "${currentReality}"
 
     const chartId = `chart_${Date.now()}`;
     const timestamp = new Date().toISOString();
-    
+    const issueRef = githubIssue ? parseGithubIssueSpec(githubIssue) : undefined;
+
     // Create chart, desired outcome, and current reality entities
     const entities: Entity[] = [
       {
@@ -295,7 +321,8 @@ Current Reality: "${currentReality}"
           level: 0,
           createdAt: timestamp,
           updatedAt: timestamp,
-          ...(elementsOfPerformance && elementsOfPerformance.length > 0 ? { elementsOfPerformance } : {})
+          ...(elementsOfPerformance && elementsOfPerformance.length > 0 ? { elementsOfPerformance } : {}),
+          ...(issueRef ? { github: { issue: issueRef } } : {})
         }
       },
       {
@@ -642,6 +669,35 @@ Current Reality: "${currentReality}"
     await this.saveGraph(graph);
   }
 
+  /**
+   * Record on an existing chart the GitHub issue it was written from.
+   * Writes metadata.github.issue, which EntityMetadata already carried and no
+   * tool could reach.
+   */
+  async linkChartToGithubIssue(
+    chartId: string,
+    githubIssue: string
+  ): Promise<{ chartId: string; issue: GithubIssueRef }> {
+    const graph = await this.loadGraph();
+    const chartEntity = graph.entities.find(
+      e => e.name === `${chartId}_chart` && e.entityType === 'structural_tension_chart'
+    );
+
+    if (!chartEntity) {
+      throw new Error(`Chart ${chartId} not found`);
+    }
+
+    const issue = parseGithubIssueSpec(githubIssue);
+    const timestamp = new Date().toISOString();
+
+    chartEntity.metadata = chartEntity.metadata || {};
+    chartEntity.metadata.github = { ...(chartEntity.metadata.github || {}), issue };
+    chartEntity.metadata.updatedAt = timestamp;
+
+    await this.saveGraph(graph);
+    return { chartId, issue };
+  }
+
   async updateDesiredOutcome(chartId: string, newDesiredOutcome: string): Promise<void> {
     const graph = await this.loadGraph();
     const desiredOutcomeEntity = graph.entities.find(e => 
@@ -953,6 +1009,191 @@ Current Reality: "${currentReality}"
     }
     
     return beats;
+  }
+
+  // Wampum Belt sequencing functionality (parallel to linear narrative beats)
+  async createWampumBelt(
+    title: string,
+    purpose: string,
+    rows: number = 1,
+    cols: number = 1
+  ): Promise<{ beltId: string; entity: Entity }> {
+    if (!Number.isInteger(rows) || rows <= 0 || !Number.isInteger(cols) || cols <= 0) {
+      throw new Error(`rows and cols must be positive integers (received rows=${rows}, cols=${cols})`);
+    }
+    const beltId = `belt_${Date.now()}`;
+    const timestamp = new Date().toISOString();
+
+    const beltMetadata: WampumBeltMetadata = {
+      beltId,
+      title,
+      purpose,
+      rows,
+      cols,
+      beads: [],
+      createdAt: timestamp,
+      updatedAt: timestamp
+    };
+
+    const entity: Entity = {
+      name: `${beltId}_belt`,
+      entityType: 'wampum_belt',
+      observations: [`Wampum Belt created: ${title}`, `Purpose: ${purpose}`],
+      metadata: {
+        beltId,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        wampumBelt: beltMetadata
+      }
+    };
+
+    await this.createEntities([entity]);
+    return { beltId, entity };
+  }
+
+  async addWampumBead(
+    beltId: string,
+    mnemonic: string,
+    color: WampumBead['color'],
+    position: WampumBeadPosition,
+    reading: string,
+    relationalReadings?: Record<string, string>,
+    ceremonyLink?: WampumCeremonyLink,
+    observations: string[] = []
+  ): Promise<{ bead: WampumBead }> {
+    const graph = await this.loadGraph();
+    const beltEntity = graph.entities.find(
+      e => e.entityType === 'wampum_belt' && e.metadata?.beltId === beltId
+    );
+    if (!beltEntity?.metadata?.wampumBelt) {
+      throw new Error(`Wampum Belt not found: ${beltId}`);
+    }
+
+    const beltMeta = beltEntity.metadata.wampumBelt as WampumBeltMetadata;
+    if (
+      !Number.isInteger(position.row) ||
+      !Number.isInteger(position.col) ||
+      position.row < 0 ||
+      position.col < 0 ||
+      position.row >= beltMeta.rows ||
+      position.col >= beltMeta.cols
+    ) {
+      throw new Error(`Position (${position.row},${position.col}) out of bounds for belt ${beltId} (${beltMeta.rows}x${beltMeta.cols})`);
+    }
+
+    const conflict = beltMeta.beads.find(
+      b => b.position.row === position.row && b.position.col === position.col
+    );
+    if (conflict) {
+      throw new Error(`Position (${position.row},${position.col}) already occupied by bead "${conflict.mnemonic}"`);
+    }
+
+    const timestamp = new Date().toISOString();
+    const bead: WampumBead = {
+      id: `bead_${beltId}_${position.row}_${position.col}`,
+      mnemonic,
+      color,
+      position,
+      reading,
+      ...(relationalReadings ? { relationalReadings } : {}),
+      ...(ceremonyLink ? { ceremonyLink } : {}),
+      observations,
+      createdAt: timestamp
+    };
+
+    beltMeta.beads.push(bead);
+    beltMeta.updatedAt = timestamp;
+    beltEntity.metadata.updatedAt = timestamp;
+
+    // Ceremony edges are subject to the BEAD, not the belt.
+    //
+    // A relation's identity in the store is (from, to, relationType) —
+    // jsonl-preservation.ts:57-59. With the belt as subject, a second bead
+    // linking the same chart under a different ceremonyType collided on that
+    // triple: the existence check below matched, the push was skipped, and the
+    // bead kept a ceremonyType the graph had no edge for. Silent discard — the
+    // bead's own record disagreed with the graph, and nothing said so.
+    //
+    // bead.id is `bead_${beltId}_${row}_${col}` and a position can be written
+    // only once, so (bead, target, relationType) is unique by construction and
+    // every ceremony link survives with its own ceremonyType.
+    if (ceremonyLink?.chartId) {
+      const from = bead.id;
+      const to = `${ceremonyLink.chartId}_chart`;
+      const exists = graph.relations.some(r => r.from === from && r.to === to && r.relationType === 'wampum_holds_accountable');
+      if (!exists) {
+        graph.relations.push({
+          from,
+          to,
+          relationType: 'wampum_holds_accountable',
+          metadata: { createdAt: timestamp, context: ceremonyLink.ceremonyType, beltId }
+        });
+      }
+    }
+    if (ceremonyLink?.beatName) {
+      const from = bead.id;
+      const to = ceremonyLink.beatName;
+      const exists = graph.relations.some(r => r.from === from && r.to === to && r.relationType === 'wampum_witnesses');
+      if (!exists) {
+        graph.relations.push({
+          from,
+          to,
+          relationType: 'wampum_witnesses',
+          metadata: { createdAt: timestamp, beltId }
+        });
+      }
+    }
+
+    await this.saveGraph(graph);
+    return { bead };
+  }
+
+  async readWampumBelt(
+    beltId: string,
+    position?: WampumBeadPosition
+  ): Promise<{ belt: WampumBeltMetadata; bead?: WampumBead; positionalReading?: string }> {
+    const graph = await this.loadGraph();
+    const beltEntity = graph.entities.find(
+      e => e.entityType === 'wampum_belt' && e.metadata?.beltId === beltId
+    );
+    if (!beltEntity?.metadata?.wampumBelt) {
+      throw new Error(`Wampum Belt not found: ${beltId}`);
+    }
+
+    const belt = beltEntity.metadata.wampumBelt as WampumBeltMetadata;
+    if (!position) {
+      return { belt };
+    }
+    if (
+      !Number.isInteger(position.row) ||
+      !Number.isInteger(position.col) ||
+      position.row < 0 ||
+      position.col < 0 ||
+      position.row >= belt.rows ||
+      position.col >= belt.cols
+    ) {
+      throw new Error(`Position (${position.row},${position.col}) out of bounds for belt ${beltId} (${belt.rows}x${belt.cols})`);
+    }
+
+    const bead = belt.beads.find(
+      b => b.position.row === position.row && b.position.col === position.col
+    );
+    if (!bead) {
+      return { belt };
+    }
+
+    const colLabel = position.col === 0
+      ? 'left'
+      : position.col === belt.cols - 1
+        ? 'right'
+        : 'center';
+    const positionalReading =
+      bead.relationalReadings?.[`col:${position.col}`] ??
+      bead.relationalReadings?.[`row:${position.row}`] ??
+      bead.relationalReadings?.[colLabel] ??
+      bead.reading;
+
+    return { belt, bead, positionalReading };
   }
 
   async addActionStep(

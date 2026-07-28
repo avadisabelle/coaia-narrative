@@ -20,12 +20,18 @@ export const TOOL_GROUPS: Record<string, string[]> = {
     'update_action_progress',
     'update_current_reality',
     'update_desired_outcome',
+    'link_chart_to_github_issue',
     'perform_mmot_evaluation'
   ],
   NARRATIVE_TOOLS: [
     'create_narrative_beat',
     'telescope_narrative_beat',
     'list_narrative_beats'
+  ],
+  WAMPUM_TOOLS: [
+    'create_wampum_belt',
+    'add_wampum_bead',
+    'read_wampum_belt'
   ],
   KG_TOOLS: [
     'create_entities',

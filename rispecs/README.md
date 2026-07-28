@@ -65,6 +65,12 @@ This directory contains comprehensive RISE (Reverse-engineer, Intent-extract, Sp
    - Pre-built validation patterns for common data structures
    - Early-fail integrity protection for storage layer
 
+10. **[wampum_belt_visualization.spec.md](./wampum_belt_visualization.spec.md)**
+    - Displaying Wampum Belt content from a chart in a visual interface
+    - Grid render model: rows × cols, bead color as encoded meaning, vacancy as content
+    - Positional reading resolution (`col:N` → `row:N` → left/center/right → canonical)
+    - Ceremony surface: witnesses, renewal dates, and links that no relation edge carries
+
 ---
 
 ## 🎯 Core Creative Intent

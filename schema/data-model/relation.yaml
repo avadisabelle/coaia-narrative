@@ -24,6 +24,8 @@ properties:
       - advances_toward
       - telescopes_into
       - flows_into
+      - wampum_holds_accountable
+      - wampum_witnesses
       - part_of
       - related_to
       - depends_on
