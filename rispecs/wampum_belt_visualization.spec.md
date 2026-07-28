@@ -74,17 +74,18 @@ There is **no forward link**. `createWampumBelt` takes no `chartId` and writes n
 
 The link appears later, and **only as a side effect of adding a bead** carrying a `ceremonyLink`:
 
-| Relation | `from` | `to` | `metadata.context` |
+| Relation | `from` | `to` | `metadata` |
 |---|---|---|---|
-| `wampum_holds_accountable` | `` `${beltId}_belt` `` | `` `${ceremonyLink.chartId}_chart` `` | `ceremonyType` |
-| `wampum_witnesses` | `` `${beltId}_belt` `` | `ceremonyLink.beatName` (verbatim) | — |
+| `wampum_holds_accountable` | `bead.id` | `` `${ceremonyLink.chartId}_chart` `` | `context` = `ceremonyType`, `beltId` |
+| `wampum_witnesses` | `bead.id` | `ceremonyLink.beatName` (verbatim) | `beltId` |
 
 Consequences a renderer must handle:
 
-- **Relations are belt→target, not bead→target.** N beads pointing at one chart collapse to one edge. The graph says *that* a belt is accountable to a chart; only `beads[].ceremonyLink` says *which bead* carries the obligation.
-- **Repeat links dedupe; conflicting ones throw.** The relation key is `from\0to\0relationType` (`jsonl-preservation.ts:57-59`). A second bead linking the same chart under the *same* `ceremonyType` collapses to one line; under a *different* `ceremonyType` the save is rejected by `validateRecordPreservation` with `metadata.context changed unexpectedly` (reproduced by execution). The uniqueness is **per (chart, ceremonyType)**, not per belt: one belt may hold *several* charts accountable, one relation per distinct chart, each carrying its own `ceremonyType` in `metadata.context`. What a belt cannot do is hold the *same* chart accountable under two different ceremony types. A viewer presents distinct `(from, to, relationType)` links and must never assume one row per bead.
-- Both edge types and the `wampum_belt` entity type are declared in the JSONL contract (`schema/data-model-complete.json:31, 458-459, 670, 722-723`).
-- **`metadata.wampumBelt` is NOT documented in the schema.** A consumer building from the published contract alone sees the entity type and the two relation types, and finds no belt payload described. Required addition (see Exportation).
+- **Relations are bead→target.** Each ceremony link is subject to the bead that carries it, so the edge layer answers *which bead* holds the obligation — it no longer collapses N beads into one link. `metadata.beltId` carries the belt back without parsing the bead id.
+- **The edge subject was the belt until this was fixed, and the difference was data loss.** A relation's identity in the store is `from\0to\0relationType` (`jsonl-preservation.ts:57-59`). With the belt as subject, a second bead linking the *same chart* under a *different* `ceremonyType` matched the existence check, its push was skipped, and the bead kept a `ceremonyType` the graph had no edge for — accepted, then discarded, with nothing said. Reproduced by execution before and after the fix. `bead.id` is `bead_${beltId}_${row}_${col}` and a position can be written only once, so `(bead, target, relationType)` is unique by construction and every ceremony link survives with its own type.
+- **Readers must accept both shapes.** Edges written before the fix are subject to `` `${beltId}_belt` ``. Match `from === ${beltId}_belt` **or** `from` beginning `bead_${beltId}_`; prefer `metadata.beltId` where present. No migration is required, and none should be written.
+- Both edge types and the `wampum_belt` entity type are declared in the JSONL contract (`schema/data-model-complete.json`).
+- **`metadata.wampumBelt` is documented** in `schema/data-model/entity.json` and `data-model-complete.json` — belt, bead, position, relational readings, and ceremony link, including which ceremony fields never become relations. A consumer can build from the published contract alone.
 
 ## What the Read Path Returns
 
@@ -155,7 +156,9 @@ The edge labels are not three-column bookkeeping; they are edge-versus-interior 
 - **`witness`** — a beat this belt saw, via `wampum_witnesses`; plus `witnessNames[]`, which produces **no edge at all**
 - **`renewal`** — `renewalDate`, likewise edge-less and bead-interior
 
-Two of the four ceremony types carry their most human content where a relation traversal cannot reach. **The display is the only surface where a named witness or a renewal date can become visible.** A belt view that renders edges alone renders the institutional obligation and drops the people — the exact failure the belt exists to hold against. Likewise, the belt→chart edge collapses N beads to one link; the display is what restores bead-level attribution.
+Two of the four ceremony types carry their most human content where a relation traversal cannot reach. **The display is the only surface where a named witness or a renewal date can become visible.** A belt view that renders edges alone renders the institutional obligation and drops the people — the exact failure the belt exists to hold against.
+
+Bead-level attribution *was* also lost at the edge layer and is not any longer: ceremony relations are subject to the bead, so the graph itself says which bead carries which obligation. The witnesses and the renewal dates remain the display's alone.
 
 ## Structural Tension
 
@@ -175,7 +178,7 @@ A viewer obtains belt content from the same JSONL memory file it already reads f
 
 - A belt is **one entity record**; reading that line yields the complete belt. A viewer holding the belt entity needs no further lookups to render the grid.
 - The bead `id` (`bead_<beltId>_<row>_<col>`) is deterministic from position and serves as the stable anchor for deep links (`#bead_<beltId>_<row>_<col>`).
-- **Belt↔chart association is relational only** — see the R section table. The viewer presents the **distinct** `(from, to, relationType)` set and may show how many beads contribute to each link.
+- **Belt↔chart association is relational only** — see the R section table. Ceremony edges are subject to the bead, so a chart's belts are reached by matching `to === ${chartId}_chart` and resolving each edge's `metadata.beltId` (or the `bead_${beltId}_` prefix of `from`). A viewer must also accept edges written from `` `${beltId}_belt` `` — the pre-fix shape — and must not assume one edge per belt: several beads on one belt may each hold the same chart under a different ceremony type, and each is its own edge.
 - **Required addition — visualizer ingestion.** `organizeData` attaches entities to charts by `entity.metadata.chartId` or a `^(chart_\d+)` name match. Belts satisfy neither. A `wampumBelts: EntityRecord[]` collection on `Chart`, populated by scanning `wampum_holds_accountable` relations whose `to` equals `<chartId>_chart`, is required.
 - **Required addition — discovery.** No `list_wampum_belts` tool exists. A viewer reading JSONL directly can enumerate by `entityType`; an MCP-only viewer cannot discover a `beltId` it was not handed.
 

@@ -374,12 +374,16 @@ async function testGraphManager() {
     assert(bead.id === `bead_${beltId}_0_0`, 'Wampum bead created at position');
     const graphWithWampum = await manager.readGraph();
     assert(
-      graphWithWampum.relations.some(r => r.relationType === 'wampum_holds_accountable' && r.from === `${beltId}_belt` && r.to === `${chart.chartId}_chart`),
-      'Wampum ceremony link creates accountability relation'
+      graphWithWampum.relations.some(r => r.relationType === 'wampum_holds_accountable' && r.from === bead.id && r.to === `${chart.chartId}_chart`),
+      'Wampum ceremony link creates accountability relation subject to the bead'
     );
     assert(
-      graphWithWampum.relations.some(r => r.relationType === 'wampum_witnesses' && r.from === `${beltId}_belt` && r.to === beat.beatName),
-      'Wampum ceremony link creates witness relation'
+      graphWithWampum.relations.some(r => r.relationType === 'wampum_witnesses' && r.from === bead.id && r.to === beat.beatName),
+      'Wampum ceremony link creates witness relation subject to the bead'
+    );
+    assert(
+      graphWithWampum.relations.find(r => r.relationType === 'wampum_holds_accountable' && r.from === bead.id).metadata.beltId === beltId,
+      'Ceremony relation carries its belt id so the reverse walk needs no string surgery'
     );
 
     const { bead: edgeBead } = await manager.addWampumBead(
@@ -415,6 +419,35 @@ async function testGraphManager() {
       outOfBoundsColThrown = true;
     }
     assert(outOfBoundsColThrown, 'Out-of-bounds Wampum column read throws error');
+
+    // Test 17c: two ceremony types toward ONE chart both survive.
+    // Regression: with the belt as edge subject, the second link collided on
+    // (from, to, relationType), the push was skipped, and the bead kept a
+    // ceremonyType the graph had no edge for — discarded without a word.
+    const { beltId: twoWayBeltId } = await manager.createWampumBelt('Two Ceremonies', 'One chart, two obligations', 1, 2);
+    await manager.addWampumBead(twoWayBeltId, 'promised', 'purple', { row: 0, col: 0 }, 'The promise', undefined, {
+      ceremonyType: 'commitment',
+      chartId: chart.chartId
+    });
+    await manager.addWampumBead(twoWayBeltId, 'answerable', 'white', { row: 0, col: 1 }, 'The answering', undefined, {
+      ceremonyType: 'accountability',
+      chartId: chart.chartId
+    });
+    const twoWayGraph = await manager.readGraph();
+    const twoWayEdges = twoWayGraph.relations.filter(
+      r => r.relationType === 'wampum_holds_accountable' &&
+           r.metadata?.beltId === twoWayBeltId &&
+           r.to === `${chart.chartId}_chart`
+    );
+    assert(twoWayEdges.length === 2, 'Both ceremony types toward one chart persist as distinct edges');
+    assert(
+      ['commitment', 'accountability'].every(t => twoWayEdges.some(r => r.metadata.context === t)),
+      'Neither ceremony type is silently discarded'
+    );
+    assert(
+      new Set(twoWayEdges.map(r => r.from)).size === 2,
+      'Each ceremony edge is subject to its own bead'
+    );
 
     // Test 18: GitHub issue provenance on charts (metadata.github.issue)
     const issueChart = await manager.createStructuralTensionChart(

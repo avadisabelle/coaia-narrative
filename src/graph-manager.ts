@@ -1105,8 +1105,20 @@ Current Reality: "${currentReality}"
     beltMeta.updatedAt = timestamp;
     beltEntity.metadata.updatedAt = timestamp;
 
+    // Ceremony edges are subject to the BEAD, not the belt.
+    //
+    // A relation's identity in the store is (from, to, relationType) —
+    // jsonl-preservation.ts:57-59. With the belt as subject, a second bead
+    // linking the same chart under a different ceremonyType collided on that
+    // triple: the existence check below matched, the push was skipped, and the
+    // bead kept a ceremonyType the graph had no edge for. Silent discard — the
+    // bead's own record disagreed with the graph, and nothing said so.
+    //
+    // bead.id is `bead_${beltId}_${row}_${col}` and a position can be written
+    // only once, so (bead, target, relationType) is unique by construction and
+    // every ceremony link survives with its own ceremonyType.
     if (ceremonyLink?.chartId) {
-      const from = `${beltId}_belt`;
+      const from = bead.id;
       const to = `${ceremonyLink.chartId}_chart`;
       const exists = graph.relations.some(r => r.from === from && r.to === to && r.relationType === 'wampum_holds_accountable');
       if (!exists) {
@@ -1114,12 +1126,12 @@ Current Reality: "${currentReality}"
           from,
           to,
           relationType: 'wampum_holds_accountable',
-          metadata: { createdAt: timestamp, context: ceremonyLink.ceremonyType }
+          metadata: { createdAt: timestamp, context: ceremonyLink.ceremonyType, beltId }
         });
       }
     }
     if (ceremonyLink?.beatName) {
-      const from = `${beltId}_belt`;
+      const from = bead.id;
       const to = ceremonyLink.beatName;
       const exists = graph.relations.some(r => r.from === from && r.to === to && r.relationType === 'wampum_witnesses');
       if (!exists) {
@@ -1127,7 +1139,7 @@ Current Reality: "${currentReality}"
           from,
           to,
           relationType: 'wampum_witnesses',
-          metadata: { createdAt: timestamp }
+          metadata: { createdAt: timestamp, beltId }
         });
       }
     }

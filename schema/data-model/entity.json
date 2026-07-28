@@ -4,7 +4,11 @@
   "title": "COAIA Entity",
   "description": "Core entity structure for COAIA memory system. Entities represent nodes in the knowledge graph with typed observations and rich metadata.",
   "type": "object",
-  "required": ["name", "entityType", "observations"],
+  "required": [
+    "name",
+    "entityType",
+    "observations"
+  ],
   "properties": {
     "name": {
       "type": "string",
@@ -51,7 +55,11 @@
         },
         "phase": {
           "type": "string",
-          "enum": ["germination", "assimilation", "completion"],
+          "enum": [
+            "germination",
+            "assimilation",
+            "completion"
+          ],
           "description": "Creative phase of the chart or action (based on Robert Fritz's creative process)"
         },
         "completionStatus": {
@@ -111,7 +119,10 @@
               "description": "Whether relational alignment has been assessed"
             },
             "score": {
-              "type": ["number", "null"],
+              "type": [
+                "number",
+                "null"
+              ],
               "description": "Alignment score (0-100) or null if not assessed",
               "minimum": 0,
               "maximum": 100
@@ -124,30 +135,51 @@
               "description": "Array of aligned relational principles"
             }
           },
-          "required": ["assessed", "score", "principles"]
+          "required": [
+            "assessed",
+            "score",
+            "principles"
+          ]
         },
         "fourDirections": {
           "type": "object",
           "description": "Four Directions wisdom framework assessment",
           "properties": {
             "north_vision": {
-              "type": ["string", "null"],
+              "type": [
+                "string",
+                "null"
+              ],
               "description": "North direction: Vision, clarity, big picture perspective"
             },
             "east_intention": {
-              "type": ["string", "null"],
+              "type": [
+                "string",
+                "null"
+              ],
               "description": "East direction: Intention, new beginnings, illumination"
             },
             "south_emotion": {
-              "type": ["string", "null"],
+              "type": [
+                "string",
+                "null"
+              ],
               "description": "South direction: Emotion, passion, relationships, heart wisdom"
             },
             "west_introspection": {
-              "type": ["string", "null"],
+              "type": [
+                "string",
+                "null"
+              ],
               "description": "West direction: Introspection, reflection, lessons learned"
             }
           },
-          "required": ["north_vision", "east_intention", "south_emotion", "west_introspection"]
+          "required": [
+            "north_vision",
+            "east_intention",
+            "south_emotion",
+            "west_introspection"
+          ]
         },
         "narrative": {
           "type": "object",
@@ -169,7 +201,11 @@
               "description": "Lessons learned or insights derived from this narrative"
             }
           },
-          "required": ["description", "prose", "lessons"]
+          "required": [
+            "description",
+            "prose",
+            "lessons"
+          ]
         },
         "foundation": {
           "type": "object",
@@ -223,17 +259,31 @@
             },
             "evaluationStatus": {
               "type": "string",
-              "enum": ["expected", "delegated", "produced", "evaluated"],
+              "enum": [
+                "expected",
+                "delegated",
+                "produced",
+                "evaluated"
+              ],
               "description": "Current evaluation status of research: expected (planned), delegated (assigned), produced (completed), evaluated (reviewed)"
             },
             "privacyClass": {
               "type": "string",
-              "enum": ["public-safe", "private", "mixed"],
+              "enum": [
+                "public-safe",
+                "private",
+                "mixed"
+              ],
               "description": "Privacy classification of research data: public-safe (can be shared), private (confidential), mixed (requires filtering)"
             },
             "publicationStatus": {
               "type": "string",
-              "enum": ["planned", "draft", "reviewed", "published"],
+              "enum": [
+                "planned",
+                "draft",
+                "reviewed",
+                "published"
+              ],
               "description": "Publication workflow status"
             },
             "commitHandles": {
@@ -292,7 +342,11 @@
             },
             "handoffState": {
               "type": "string",
-              "enum": ["requirements-created", "implementation-ready", "returned-to-parent"],
+              "enum": [
+                "requirements-created",
+                "implementation-ready",
+                "returned-to-parent"
+              ],
               "description": "State of handoff between parent and child sessions: requirements-created (initial), implementation-ready (actionable), returned-to-parent (completed handoff)"
             }
           }
@@ -303,12 +357,22 @@
           "properties": {
             "mode": {
               "type": "string",
-              "enum": ["voice", "terminal", "mixed"],
+              "enum": [
+                "voice",
+                "terminal",
+                "mixed"
+              ],
               "description": "Interaction mode of the session: voice (audio capture), terminal (text-based), mixed (alternating)"
             },
             "setting": {
               "type": "string",
-              "enum": ["desk", "walking", "land-based", "transit", "unknown"],
+              "enum": [
+                "desk",
+                "walking",
+                "land-based",
+                "transit",
+                "unknown"
+              ],
               "description": "Physical setting where session took place: desk (stationary workspace), walking (ambulatory), land-based (outdoor learning), transit (in motion), unknown (unrecorded)"
             },
             "landBasedLearning": {
@@ -328,12 +392,20 @@
             },
             "captureQuality": {
               "type": "string",
-              "enum": ["clear", "windy", "partial"],
+              "enum": [
+                "clear",
+                "windy",
+                "partial"
+              ],
               "description": "Quality of audio/text capture: clear (high quality), windy (environmental interference), partial (incomplete or interrupted)"
             },
             "continuationKind": {
               "type": "string",
-              "enum": ["branch", "parent-return", "follow-up"],
+              "enum": [
+                "branch",
+                "parent-return",
+                "follow-up"
+              ],
               "description": "Type of session continuation: branch (new thread), parent-return (returning to main), follow-up (sequential continuation)"
             },
             "privateChroniclePath": {
@@ -345,6 +417,169 @@
               "description": "Whether a public summary of this session context is permitted"
             }
           }
+        },
+        "wampumBelt": {
+          "type": "object",
+          "description": "Wampum Belt payload for non-linear mnemonic sequencing. Present on entities of type wampum_belt. Beads are NOT separate entities \u2014 the whole belt travels inside this one object, so reading the belt entity yields every bead without further lookups.",
+          "properties": {
+            "beltId": {
+              "type": "string",
+              "description": "Belt identifier, minted as belt_{timestamp}. The belt entity is named `{beltId}_belt`."
+            },
+            "title": {
+              "type": "string",
+              "description": "Name of this belt"
+            },
+            "purpose": {
+              "type": "string",
+              "description": "What this belt encodes or remembers"
+            },
+            "rows": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Grid row count. A belt always renders at full declared dimension; vacant positions are content, not absence."
+            },
+            "cols": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Grid column count"
+            },
+            "beads": {
+              "type": "array",
+              "description": "Beads placed on the grid, in insertion order \u2014 NOT spatial order. Position is carried by each bead, never by array index.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "bead_{beltId}_{row}_{col} \u2014 position is fused into identity, and is the subject of this bead's ceremony relations"
+                  },
+                  "mnemonic": {
+                    "type": "string",
+                    "description": "Short anchor phrase; the label a viewer shows at grid scale"
+                  },
+                  "color": {
+                    "type": "string",
+                    "enum": [
+                      "white",
+                      "purple",
+                      "black",
+                      "mixed"
+                    ],
+                    "description": "Encoded meaning, not decoration. Reproduce it named as well as shown."
+                  },
+                  "position": {
+                    "type": "object",
+                    "description": "0-indexed grid position; one bead per cell, re-placement is rejected",
+                    "properties": {
+                      "row": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "col": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "required": [
+                      "row",
+                      "col"
+                    ]
+                  },
+                  "reading": {
+                    "type": "string",
+                    "description": "Canonical meaning, always present"
+                  },
+                  "relationalReadings": {
+                    "type": "object",
+                    "description": "Perspective-specific readings. Resolution order on a positional read: col:N, then row:N, then the derived edge label (left when col is 0, right when col is cols-1, otherwise center), then the canonical reading. Keys outside those forms are stored but never resolved.",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "ceremonyLink": {
+                    "type": "object",
+                    "description": "The obligation this bead carries. Only chartId and beatName become graph relations; witnessNames, renewalDate and notes live ONLY here, so a consumer reading the relation graph alone cannot see them.",
+                    "properties": {
+                      "ceremonyType": {
+                        "type": "string",
+                        "enum": [
+                          "commitment",
+                          "accountability",
+                          "witness",
+                          "renewal"
+                        ],
+                        "description": "Also written to the relation's metadata.context"
+                      },
+                      "chartId": {
+                        "type": "string",
+                        "description": "Chart held accountable; produces a wampum_holds_accountable relation from this BEAD to `{chartId}_chart`"
+                      },
+                      "beatName": {
+                        "type": "string",
+                        "description": "Narrative beat witnessed; produces a wampum_witnesses relation from this BEAD to the beat entity name"
+                      },
+                      "witnessNames": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "People who stood present. No relation carries these \u2014 list them by name, never as a count."
+                      },
+                      "renewalDate": {
+                        "type": "string",
+                        "description": "Free-form; not validated on write. A date already passed means the obligation needs renewal."
+                      },
+                      "notes": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "ceremonyType"
+                    ]
+                  },
+                  "observations": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "id",
+                  "mnemonic",
+                  "color",
+                  "position",
+                  "reading",
+                  "observations",
+                  "createdAt"
+                ]
+              }
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updatedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Advances on every bead add"
+            }
+          },
+          "required": [
+            "beltId",
+            "title",
+            "purpose",
+            "rows",
+            "cols",
+            "beads",
+            "createdAt",
+            "updatedAt"
+          ]
         }
       }
     }
