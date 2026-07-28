@@ -165,6 +165,45 @@ export interface SessionContextMetadata {
   publicSummaryAllowed?: boolean;
 }
 
+// ==================== Wampum Belt Sequencing ====================
+
+export interface WampumBeadPosition {
+  row: number;
+  col: number;
+}
+
+export interface WampumCeremonyLink {
+  ceremonyType: 'commitment' | 'accountability' | 'witness' | 'renewal';
+  chartId?: string;
+  beatName?: string;
+  witnessNames?: string[];
+  renewalDate?: string;
+  notes?: string;
+}
+
+export interface WampumBead {
+  id: string;
+  mnemonic: string;
+  color: 'white' | 'purple' | 'black' | 'mixed';
+  position: WampumBeadPosition;
+  reading: string;
+  relationalReadings?: Record<string, string>;
+  ceremonyLink?: WampumCeremonyLink;
+  observations: string[];
+  createdAt: string;
+}
+
+export interface WampumBeltMetadata {
+  beltId: string;
+  title: string;
+  purpose: string;
+  rows: number;
+  cols: number;
+  beads: WampumBead[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface EntityMetadata {
   dueDate?: string;
   chartId?: string;
@@ -214,6 +253,8 @@ export interface EntityMetadata {
   sessionLineage?: HermesSessionLineageMetadata;
   /** Beat-level lived session context capturing embodied working conditions and environmental constraints. */
   sessionContext?: SessionContextMetadata;
+  /** Wampum Belt metadata for non-linear mnemonic sequencing with ceremony links. */
+  wampumBelt?: WampumBeltMetadata;
   /** @deprecated Use github.issue and github.projectItem instead. */
   sync_target?: LegacyGithubSyncTarget;
   /** @deprecated Use github.issue instead. */

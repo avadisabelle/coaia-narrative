@@ -45,7 +45,6 @@ function assert(condition, testName) {
 }
 
 // ==================== GitHub Bridge Helper Tests ====================
-
 async function testGithubBridgeHelpers() {
   console.log('\n🔗 Testing GitHub Bridge Helpers...');
   const testFile = join(__dirname, 'test-github-bridge.jsonl');
@@ -352,6 +351,252 @@ async function testGraphManager() {
     );
     assert(manageResult.chartId.startsWith('chart_'), 'manage_action_step creates chart');
 
+    // Test 17: Wampum belt sequencing (parallel non-linear narrative layer)
+    const { beltId, entity: beltEntity } = await manager.createWampumBelt(
+      'Treaty Belt',
+      'Anchor obligations and witness relational memory',
+      2,
+      3
+    );
+    assert(beltId.startsWith('belt_'), 'Wampum belt created');
+    assert(beltEntity.entityType === 'wampum_belt', 'Wampum entity type stored');
+
+    const { bead } = await manager.addWampumBead(
+      beltId,
+      'the crossing',
+      'purple',
+      { row: 0, col: 0 },
+      'Where paths first met',
+      { left: 'Origin point', center: 'Meeting place' },
+      { ceremonyType: 'accountability', chartId: chart.chartId, beatName: beat.beatName }
+    );
+    assert(bead.id === `bead_${beltId}_0_0`, 'Wampum bead created at position');
+    const graphWithWampum = await manager.readGraph();
+    assert(
+      graphWithWampum.relations.some(r => r.relationType === 'wampum_holds_accountable' && r.from === bead.id && r.to === `${chart.chartId}_chart`),
+      'Wampum ceremony link creates accountability relation subject to the bead'
+    );
+    assert(
+      graphWithWampum.relations.some(r => r.relationType === 'wampum_witnesses' && r.from === bead.id && r.to === beat.beatName),
+      'Wampum ceremony link creates witness relation subject to the bead'
+    );
+    assert(
+      graphWithWampum.relations.find(r => r.relationType === 'wampum_holds_accountable' && r.from === bead.id).metadata.beltId === beltId,
+      'Ceremony relation carries its belt id so the reverse walk needs no string surgery'
+    );
+
+    const { bead: edgeBead } = await manager.addWampumBead(
+      beltId,
+      'western witness',
+      'white',
+      { row: 1, col: 2 },
+      'Boundary witness',
+      { right: 'Edge perspective' }
+    );
+    assert(edgeBead.id === `bead_${beltId}_1_2`, 'Wampum bead supports multi-row multi-column positions');
+
+    const beltRead = await manager.readWampumBelt(beltId, { row: 0, col: 0 });
+    assert(beltRead.bead?.mnemonic === 'the crossing', 'Wampum bead resolved by position');
+    assert(beltRead.positionalReading === 'Origin point', 'Relational reading resolved by position');
+    const edgeRead = await manager.readWampumBelt(beltId, { row: 1, col: 2 });
+    assert(edgeRead.positionalReading === 'Edge perspective', 'Wampum right-edge positional reading resolved');
+
+    let outOfBoundsReadThrown = false;
+    let outOfBoundsMessage = '';
+    try {
+      await manager.readWampumBelt(beltId, { row: 4, col: 0 });
+    } catch (error) {
+      outOfBoundsReadThrown = true;
+      outOfBoundsMessage = error.message;
+    }
+    assert(outOfBoundsReadThrown, 'Out-of-bounds Wampum read throws error');
+    assert(outOfBoundsMessage.includes('out of bounds'), 'Out-of-bounds read returns explicit bounds error');
+    let outOfBoundsColThrown = false;
+    try {
+      await manager.readWampumBelt(beltId, { row: 0, col: 5 });
+    } catch {
+      outOfBoundsColThrown = true;
+    }
+    assert(outOfBoundsColThrown, 'Out-of-bounds Wampum column read throws error');
+
+    // Test 17c: two ceremony types toward ONE chart both survive.
+    // Regression: with the belt as edge subject, the second link collided on
+    // (from, to, relationType), the push was skipped, and the bead kept a
+    // ceremonyType the graph had no edge for — discarded without a word.
+    const { beltId: twoWayBeltId } = await manager.createWampumBelt('Two Ceremonies', 'One chart, two obligations', 1, 2);
+    await manager.addWampumBead(twoWayBeltId, 'promised', 'purple', { row: 0, col: 0 }, 'The promise', undefined, {
+      ceremonyType: 'commitment',
+      chartId: chart.chartId
+    });
+    await manager.addWampumBead(twoWayBeltId, 'answerable', 'white', { row: 0, col: 1 }, 'The answering', undefined, {
+      ceremonyType: 'accountability',
+      chartId: chart.chartId
+    });
+    const twoWayGraph = await manager.readGraph();
+    const twoWayEdges = twoWayGraph.relations.filter(
+      r => r.relationType === 'wampum_holds_accountable' &&
+           r.metadata?.beltId === twoWayBeltId &&
+           r.to === `${chart.chartId}_chart`
+    );
+    assert(twoWayEdges.length === 2, 'Both ceremony types toward one chart persist as distinct edges');
+    assert(
+      ['commitment', 'accountability'].every(t => twoWayEdges.some(r => r.metadata.context === t)),
+      'Neither ceremony type is silently discarded'
+    );
+    assert(
+      new Set(twoWayEdges.map(r => r.from)).size === 2,
+      'Each ceremony edge is subject to its own bead'
+    );
+    // Test 17b: Belt discovery — list_wampum_belts as a derived projection
+    const allBelts = await manager.listWampumBelts();
+    assert(allBelts.length >= 1, 'listWampumBelts returns created belts');
+    const listedBelt = allBelts.find(b => b.beltId === beltId);
+    assert(listedBelt.title === 'Treaty Belt', 'Listed belt carries its title');
+    assert(listedBelt.beadCount === 2, 'Listed belt reports beadCount');
+    assert(listedBelt.beads === undefined, 'Beads are omitted by default');
+    assert(Array.isArray(listedBelt.heldCharts), 'heldCharts is an array, never a scalar');
+    assert(
+      listedBelt.heldCharts.some(h => h.chartId === chart.chartId && h.ceremonyType === 'accountability'),
+      'heldCharts derives chartId and ceremonyType from the relation'
+    );
+
+    const withBeads = await manager.listWampumBelts({ includeBeads: true });
+    assert(
+      withBeads.find(b => b.beltId === beltId).beads.length === 2,
+      'includeBeads returns the full beads array'
+    );
+
+    // A belt holding two different charts — the cardinality a scalar field would erase
+    const { beltId: multiBeltId } = await manager.createWampumBelt('Two Fires', 'Hold two charts', 1, 2);
+    const secondChart = await manager.createStructuralTensionChart(
+      'Have a second chart a belt can hold accountable',
+      'Only one chart is linked to any belt so far',
+      '2026-09-01T00:00:00Z'
+    );
+    await manager.addWampumBead(multiBeltId, 'first fire', 'purple', { row: 0, col: 0 }, 'One', undefined, {
+      ceremonyType: 'commitment',
+      chartId: chart.chartId
+    });
+    await manager.addWampumBead(multiBeltId, 'second fire', 'white', { row: 0, col: 1 }, 'Two', undefined, {
+      ceremonyType: 'witness',
+      chartId: secondChart.chartId
+    });
+    const multiBelt = (await manager.listWampumBelts()).find(b => b.beltId === multiBeltId);
+    assert(multiBelt.heldCharts.length === 2, 'One belt reports several held charts');
+    assert(
+      multiBelt.heldCharts.some(h => h.chartId === secondChart.chartId && h.ceremonyType === 'witness'),
+      'Each held chart carries its own ceremony type'
+    );
+
+    const byChart = await manager.listWampumBelts({ chartId: secondChart.chartId });
+    assert(byChart.length === 1 && byChart[0].beltId === multiBeltId, 'chartId filter returns only belts holding that chart');
+    const byCeremony = await manager.listWampumBelts({ ceremonyType: 'witness' });
+    assert(byCeremony.some(b => b.beltId === multiBeltId), 'ceremonyType filter matches relation context');
+    const noMatch = await manager.listWampumBelts({ chartId: 'chart_does_not_exist' });
+    assert(noMatch.length === 0, 'Filtering an unknown chart returns an empty list, not an error');
+
+    // Witnessed beats are projected in the same walk
+    assert(
+      listedBelt.heldBeats.some(b => b.beatName === beat.beatName && b.present === true),
+      'heldBeats projects witnessed beats'
+    );
+    assert(
+      listedBelt.heldCharts.every(h => typeof h.beadId === 'string'),
+      'Held charts name the bead carrying the obligation'
+    );
+
+    // A ceremony link to a chart that does not exist is reported as absent,
+    // not presented as a real held chart inferred from the edge target string
+    const { beltId: danglingBeltId } = await manager.createWampumBelt('Dangling', 'Points nowhere', 1, 1);
+    await manager.addWampumBead(danglingBeltId, 'lost thread', 'black', { row: 0, col: 0 }, 'Nowhere', undefined, {
+      ceremonyType: 'commitment',
+      chartId: 'chart_never_created'
+    });
+    const danglingBelt = (await manager.listWampumBelts()).find(b => b.beltId === danglingBeltId);
+    assert(danglingBelt.heldCharts[0].chartId === 'chart_never_created', 'Dangling link keeps its raw target id');
+    assert(danglingBelt.heldCharts[0].present === false, 'Dangling link is marked absent, not reported as real');
+    assert(
+      listedBelt.heldCharts.every(h => h.present === true),
+      'A resolvable chart is marked present'
+    );
+
+    // Edges written before ceremony edges became subject to the bead are still listed
+    const { beltId: legacyBeltId } = await manager.createWampumBelt('Older Belt', 'Written the old way', 1, 1);
+    await manager.createRelations([{
+      from: `${legacyBeltId}_belt`,
+      to: `${chart.chartId}_chart`,
+      relationType: 'wampum_holds_accountable',
+      metadata: { createdAt: new Date().toISOString(), context: 'renewal' }
+    }]);
+    const legacyBelt = (await manager.listWampumBelts()).find(b => b.beltId === legacyBeltId);
+    assert(
+      legacyBelt.heldCharts.some(h => h.chartId === chart.chartId && h.ceremonyType === 'renewal'),
+      'Belt-subject edges written before the fix are still projected'
+    );
+    assert(legacyBelt.heldCharts[0].beadId === undefined, 'A pre-fix edge names no bead, and none is invented');
+
+    // Discovery must not write anything — derive, never store
+    const graphAfterList = await manager.readGraph();
+    const multiBeltEntity = graphAfterList.entities.find(e => e.metadata?.beltId === multiBeltId);
+    assert(
+      multiBeltEntity.metadata.wampumBelt.chartId === undefined && multiBeltEntity.metadata.chartId === undefined,
+      'Listing stores no denormalized chartId on the belt'
+    );
+    assert(
+      !graphAfterList.entities.some(e => e.entityType === 'wampum_belt_index'),
+      'Listing writes no index entity'
+    );
+
+    // Test 18: GitHub issue provenance on charts (metadata.github.issue)
+    const issueChart = await manager.createStructuralTensionChart(
+      'Establish a readable record of where each chart came from',
+      'Charts carry no reference to the issue they were written from',
+      '2026-08-15T00:00:00Z',
+      [],
+      undefined,
+      'avadisabelle/coaia-narrative#50'
+    );
+    const issueChartEntity = issueChart.entities.find(e => e.entityType === 'structural_tension_chart');
+    assert(issueChartEntity.metadata.github.issue.owner === 'avadisabelle', 'Chart create records issue owner');
+    assert(issueChartEntity.metadata.github.issue.repo === 'coaia-narrative', 'Chart create records issue repo');
+    assert(issueChartEntity.metadata.github.issue.number === 50, 'Chart create records issue number');
+    assert(
+      issueChartEntity.metadata.github.issue.url === 'https://github.com/avadisabelle/coaia-narrative/issues/50',
+      'Chart create derives issue url'
+    );
+
+    const linked = await manager.linkChartToGithubIssue(chart.chartId, 'jgwill/Miadi#36');
+    assert(linked.issue.owner === 'jgwill' && linked.issue.number === 36, 'Existing chart links to issue');
+    const graphWithIssue = await manager.readGraph();
+    const linkedEntity = graphWithIssue.entities.find(e => e.name === `${chart.chartId}_chart`);
+    assert(linkedEntity.metadata.github.issue.repo === 'Miadi', 'Issue reference persists on the chart entity');
+
+    let bareRefThrown = false;
+    let bareRefMessage = '';
+    try {
+      await manager.linkChartToGithubIssue(chart.chartId, '#36');
+    } catch (error) {
+      bareRefThrown = true;
+      bareRefMessage = error.message;
+    }
+    assert(bareRefThrown, 'Bare #number issue reference is rejected');
+    assert(bareRefMessage.includes('owner/repo#number'), 'Rejection names the required full path form');
+
+    let ownerOnlyThrown = false;
+    try {
+      await manager.linkChartToGithubIssue(chart.chartId, 'coaia-narrative#50');
+    } catch {
+      ownerOnlyThrown = true;
+    }
+    assert(ownerOnlyThrown, 'Repo-without-owner issue reference is rejected');
+
+    let missingChartThrown = false;
+    try {
+      await manager.linkChartToGithubIssue('chart_does_not_exist', 'jgwill/Miadi#36');
+    } catch {
+      missingChartThrown = true;
+    }
+    assert(missingChartThrown, 'Linking an absent chart throws');
   } finally {
     // Clean up
     try { await fs.unlink(testFile); } catch {}
@@ -435,6 +680,88 @@ async function testToolHandlers() {
     assert(!mmotResult.isError, 'perform_mmot_evaluation succeeds');
     assert(mmotResult.content[0].text.includes('MMOT'), 'MMOT response text');
 
+    // Test 10: create_wampum_belt via handler
+    const createWampumResult = await handleToolCall('create_wampum_belt', {
+      title: 'Handler Belt',
+      purpose: 'Validate non-linear narrative memory',
+      rows: 1,
+      cols: 2
+    }, manager);
+    assert(!createWampumResult.isError, 'create_wampum_belt succeeds');
+    const parsedBelt = JSON.parse(createWampumResult.content[0].text);
+
+    // Test 11: add_wampum_bead via handler
+    const addBeadResult = await handleToolCall('add_wampum_bead', {
+      beltId: parsedBelt.beltId,
+      mnemonic: 'dawn light',
+      color: 'white',
+      position: { row: 0, col: 1 },
+      reading: 'Beginnings',
+      relationalReadings: { right: 'Horizon intention' }
+    }, manager);
+    assert(!addBeadResult.isError, 'add_wampum_bead succeeds');
+
+    // Test 12: read_wampum_belt via handler
+    const readWampumResult = await handleToolCall('read_wampum_belt', {
+      beltId: parsedBelt.beltId,
+      position: { row: 0, col: 1 }
+    }, manager);
+    assert(!readWampumResult.isError, 'read_wampum_belt succeeds');
+    const parsedRead = JSON.parse(readWampumResult.content[0].text);
+    assert(parsedRead.positionalReading === 'Horizon intention', 'read_wampum_belt returns relational positional reading');
+
+    // Test 13: invalid belt dimensions are rejected
+    const invalidBeltResult = await handleToolCall('create_wampum_belt', {
+      title: 'Invalid Belt',
+      purpose: 'Should fail',
+      rows: 0,
+      cols: 2
+    }, manager);
+    assert(invalidBeltResult.isError === true, 'create_wampum_belt rejects non-positive dimensions');
+
+    // Test 13b: list_wampum_belts via handler
+    const listBeltsResult = await handleToolCall('list_wampum_belts', {}, manager);
+    assert(!listBeltsResult.isError, 'list_wampum_belts succeeds');
+    const parsedBelts = JSON.parse(listBeltsResult.content[0].text);
+    assert(Array.isArray(parsedBelts), 'list_wampum_belts returns an array');
+    assert(
+      parsedBelts.every(b => Array.isArray(b.heldCharts)),
+      'Every listed belt exposes heldCharts as an array'
+    );
+    const invalidCeremonyResult = await handleToolCall('list_wampum_belts', {
+      ceremonyType: 'gossip'
+    }, manager);
+    assert(invalidCeremonyResult.isError === true, 'list_wampum_belts rejects an unknown ceremony type');
+
+    // Test 14: link_chart_to_github_issue via handler
+    const issueChartResult = await handleToolCall('create_structural_tension_chart', {
+      desiredOutcome: 'Have each chart carry the issue it was written from',
+      currentReality: 'Chart provenance lives only in commit messages',
+      dueDate: '2026-08-15T00:00:00Z',
+      githubIssue: 'avadisabelle/coaia-narrative#50'
+    }, manager);
+    assert(!issueChartResult.isError, 'create_structural_tension_chart accepts githubIssue');
+    const issueChartId = JSON.parse(issueChartResult.content[0].text).chartId;
+
+    const linkResult = await handleToolCall('link_chart_to_github_issue', {
+      chartId: issueChartId,
+      githubIssue: 'jgwill/Miadi#36'
+    }, manager);
+    assert(!linkResult.isError, 'link_chart_to_github_issue succeeds');
+    assert(JSON.parse(linkResult.content[0].text).issue.owner === 'jgwill', 'link returns parsed issue reference');
+
+    // Test 15: bare #number is rejected at the handler boundary
+    let bareRefHandlerThrew = false;
+    try {
+      await handleToolCall('link_chart_to_github_issue', {
+        chartId: issueChartId,
+        githubIssue: '#36'
+      }, manager);
+    } catch {
+      bareRefHandlerThrew = true;
+    }
+    assert(bareRefHandlerThrew, 'link_chart_to_github_issue rejects bare #number');
+
   } finally {
     try { await fs.unlink(testFile); } catch {}
   }
@@ -459,7 +786,29 @@ async function testToolGroups() {
 
   // Test 3: All tool groups exist
   assert(TOOL_GROUPS.STC_TOOLS.length >= 14, 'STC_TOOLS has 14+ tools');
+  assert(
+    TOOL_GROUPS.STC_TOOLS.includes('link_chart_to_github_issue'),
+    'STC_TOOLS includes link_chart_to_github_issue'
+  );
   assert(TOOL_GROUPS.NARRATIVE_TOOLS.length === 3, 'NARRATIVE_TOOLS has 3 tools');
+  assert(TOOL_GROUPS.WAMPUM_TOOLS.length === 4, 'WAMPUM_TOOLS has 4 tools');
+  assert(
+    TOOL_GROUPS.WAMPUM_TOOLS.includes('list_wampum_belts'),
+    'WAMPUM_TOOLS includes list_wampum_belts'
+  );
+
+  // The cardinality of heldCharts is machine-checked, not prose-checked
+  const listBeltsDefinition = ALL_TOOL_DEFINITIONS.find(t => t.name === 'list_wampum_belts');
+  assert(listBeltsDefinition.outputSchema !== undefined, 'list_wampum_belts declares an outputSchema');
+  assert(listBeltsDefinition.outputSchema.type === 'array', 'list_wampum_belts returns an array of belts');
+  assert(
+    listBeltsDefinition.outputSchema.items.properties.heldCharts.type === 'array',
+    'outputSchema declares heldCharts as an array'
+  );
+  assert(
+    listBeltsDefinition.outputSchema.items.properties.heldBeats.type === 'array',
+    'outputSchema declares heldBeats as an array'
+  );
   assert(TOOL_GROUPS.KG_TOOLS.length === 9, 'KG_TOOLS has 9 tools');
   assert(TOOL_GROUPS.CORE_TOOLS.length === 4, 'CORE_TOOLS has 4 tools');
 
@@ -477,7 +826,7 @@ async function testToolGroups() {
   }
 
   // Test 5: Tool definitions count matches
-  assert(ALL_TOOL_DEFINITIONS.length >= 18, 'At least 18 tool definitions');
+  assert(ALL_TOOL_DEFINITIONS.length >= 21, 'At least 21 tool definitions');
 
   // Test 6: Every tool in TOOL_GROUPS has a matching definition
   const definedToolNames = new Set(ALL_TOOL_DEFINITIONS.map(t => t.name));

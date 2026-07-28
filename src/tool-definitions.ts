@@ -13,6 +13,17 @@ export interface ToolDefinition {
     properties: Record<string, unknown>;
     required?: string[];
   };
+  /**
+   * Optional result schema (MCP 2025-06-18). Where the shape of a result
+   * carries meaning a caller can get wrong — an array that must not be read as
+   * a scalar — this is what makes that machine-checked rather than prose.
+   */
+  outputSchema?: {
+    type: string;
+    properties?: Record<string, unknown>;
+    items?: unknown;
+    required?: string[];
+  };
 }
 
 export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
@@ -211,7 +222,8 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
             required: ["description", "type"]
           },
           description: "Optional Elements of Performance for MMOT evaluation — criteria the agent uses to self-assess output"
-        }
+        },
+        githubIssue: { type: "string", description: "Optional GitHub issue this chart is written from, as the FULL path 'owner/repo#number' (e.g. avadisabelle/coaia-narrative#50). A bare '#number' is rejected — charts travel between repositories, and a bare number cites the wrong project once the chart is read elsewhere." }
       },
       required: ["desiredOutcome", "currentReality", "dueDate"]
     }
@@ -522,6 +534,142 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
       properties: {
         parentChartId: { type: "string", description: "Optional: Filter by parent chart ID" }
       }
+    }
+  },
+  {
+    name: "link_chart_to_github_issue",
+    description: "Record on an existing chart the GitHub issue it was written from. The reference must be the full 'owner/repo#number' path.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        chartId: { type: "string", description: "ID of the chart to link" },
+        githubIssue: { type: "string", description: "GitHub issue as the FULL path 'owner/repo#number' (e.g. avadisabelle/coaia-narrative#50). A bare '#number' is rejected." }
+      },
+      required: ["chartId", "githubIssue"]
+    }
+  },
+  {
+    name: "create_wampum_belt",
+    description: "Create a Wampum Belt: a non-linear mnemonic grid that runs in parallel with linear narrative beats.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Name of this Wampum belt" },
+        purpose: { type: "string", description: "What this belt encodes or remembers" },
+        rows: { type: "number", description: "Grid row count (default 1)" },
+        cols: { type: "number", description: "Grid column count (default 1)" }
+      },
+      required: ["title", "purpose"]
+    }
+  },
+  {
+    name: "add_wampum_bead",
+    description: "Add a bead at a grid position with mnemonic anchor, optional relational readings, and optional ceremony/accountability links.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        beltId: { type: "string", description: "Target belt ID" },
+        mnemonic: { type: "string", description: "Short anchor phrase for this bead" },
+        color: { type: "string", enum: ["white", "purple", "black", "mixed"], description: "Bead color" },
+        position: {
+          type: "object",
+          properties: {
+            row: { type: "number" },
+            col: { type: "number" }
+          },
+          required: ["row", "col"]
+        },
+        reading: { type: "string", description: "Canonical meaning for the bead" },
+        relationalReadings: { type: "object", description: "Optional perspective-specific readings (left/center/right/row:N/col:N)" },
+        ceremonyLink: {
+          type: "object",
+          properties: {
+            ceremonyType: { type: "string", enum: ["commitment", "accountability", "witness", "renewal"] },
+            chartId: { type: "string" },
+            beatName: { type: "string" },
+            witnessNames: { type: "array", items: { type: "string" } },
+            renewalDate: { type: "string" },
+            notes: { type: "string" }
+          },
+          required: ["ceremonyType"]
+        },
+        observations: { type: "array", items: { type: "string" } }
+      },
+      required: ["beltId", "mnemonic", "color", "position", "reading"]
+    }
+  },
+  {
+    name: "list_wampum_belts",
+    description: "List Wampum Belts, optionally only those holding a given chart accountable. Use this to obtain a beltId — read_wampum_belt is a lookup and cannot discover one. heldCharts is an array: a belt may hold several charts accountable.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        chartId: { type: "string", description: "Optional: return only belts holding this chart accountable" },
+        ceremonyType: { type: "string", enum: ["commitment", "accountability", "witness", "renewal"], description: "Optional: return only belts holding a chart accountable under this ceremony type" },
+        includeBeads: { type: "boolean", description: "Include the full beads array (default false — a list call returns beadCount only, so an index view stays cheap)" }
+      }
+    },
+    outputSchema: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          beltId: { type: "string" },
+          title: { type: "string" },
+          purpose: { type: "string" },
+          rows: { type: "integer" },
+          cols: { type: "integer" },
+          beadCount: { type: "integer", description: "Number of beads placed; the beads themselves are omitted unless includeBeads is true" },
+          heldCharts: {
+            type: "array",
+            description: "Charts this belt holds accountable. ALWAYS an array — a belt may hold several charts, and one chart under more than one ceremony type, each as its own edge.",
+            items: {
+              type: "object",
+              properties: {
+                chartId: { type: "string", description: "Resolved through the entity map, not inferred from the edge target's name" },
+                ceremonyType: { type: "string", enum: ["commitment", "accountability", "witness", "renewal"] },
+                beadId: { type: "string", description: "The bead carrying this obligation. Absent on edges written before ceremony edges became subject to the bead." },
+                present: { type: "boolean", description: "False when the target chart does not exist in this graph — a dangling ceremony link, reported rather than hidden" }
+              },
+              required: ["chartId", "present"]
+            }
+          },
+          heldBeats: {
+            type: "array",
+            description: "Narrative beats this belt witnesses. Witness edges carry no ceremony context.",
+            items: {
+              type: "object",
+              properties: {
+                beatName: { type: "string" },
+                beadId: { type: "string" },
+                present: { type: "boolean" }
+              },
+              required: ["beatName", "present"]
+            }
+          },
+          beads: { type: "array", description: "Present only when includeBeads is true" }
+        },
+        required: ["beltId", "title", "purpose", "rows", "cols", "beadCount", "heldCharts", "heldBeats"]
+      }
+    }
+  },
+  {
+    name: "read_wampum_belt",
+    description: "Read a Wampum Belt in full, or read a bead by position with relational interpretation.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        beltId: { type: "string", description: "Wampum belt ID" },
+        position: {
+          type: "object",
+          properties: {
+            row: { type: "number" },
+            col: { type: "number" }
+          },
+          required: ["row", "col"]
+        }
+      },
+      required: ["beltId"]
     }
   }
 ];

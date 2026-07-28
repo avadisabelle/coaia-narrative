@@ -34,7 +34,7 @@
     },
     "tool_groups": {
       "STC_TOOLS": {
-        "description": "Structural Tension Chart tools (11 tools)",
+        "description": "Structural Tension Chart tools (13 tools)",
         "tools": [
           "create_structural_tension_chart",
           "telescope_action_step",
@@ -47,6 +47,7 @@
           "update_current_reality",
           "update_desired_outcome",
           "manage_action_step",
+          "link_chart_to_github_issue",
           "perform_mmot_evaluation"
         ]
       },
@@ -56,6 +57,15 @@
           "create_narrative_beat",
           "telescope_narrative_beat",
           "list_narrative_beats"
+        ]
+      },
+      "WAMPUM_TOOLS": {
+        "description": "Wampum Belt sequencing tools (4 tools). Opt-in: not enabled by default COAIA_TOOLS.",
+        "tools": [
+          "create_wampum_belt",
+          "add_wampum_bead",
+          "read_wampum_belt",
+          "list_wampum_belts"
         ]
       },
       "KG_TOOLS": {

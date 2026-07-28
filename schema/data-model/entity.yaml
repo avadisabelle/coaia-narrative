@@ -24,6 +24,7 @@ properties:
       - current_reality
       - action_step
       - narrative_beat
+      - wampum_belt
       - person
       - concept
       - event
@@ -355,3 +356,150 @@ properties:
           publicSummaryAllowed:
             type: boolean
             description: Whether a public summary of this session context is permitted
+      wampumBelt:
+        type: object
+        description: >-
+          Wampum Belt payload for non-linear mnemonic sequencing. Present on entities of type
+          wampum_belt. Beads are NOT separate entities — the whole belt travels inside this one
+          object, so reading the belt entity yields every bead without further lookups.
+        properties:
+          beltId:
+            type: string
+            description: Belt identifier, minted as belt_{timestamp}. The belt entity is named `{beltId}_belt`.
+          title:
+            type: string
+            description: Name of this belt
+          purpose:
+            type: string
+            description: What this belt encodes or remembers
+          rows:
+            type: integer
+            minimum: 1
+            description: >-
+              Grid row count. A belt always renders at full declared dimension; vacant positions are
+              content, not absence.
+          cols:
+            type: integer
+            minimum: 1
+            description: Grid column count
+          beads:
+            type: array
+            description: >-
+              Beads placed on the grid, in insertion order — NOT spatial order. Position is carried
+              by each bead, never by array index.
+            items:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: >-
+                    bead_{beltId}_{row}_{col} — position is fused into identity, and is the subject
+                    of this bead's ceremony relations
+                mnemonic:
+                  type: string
+                  description: Short anchor phrase; the label a viewer shows at grid scale
+                color:
+                  type: string
+                  enum:
+                    - white
+                    - purple
+                    - black
+                    - mixed
+                  description: Encoded meaning, not decoration. Reproduce it named as well as shown.
+                position:
+                  type: object
+                  description: 0-indexed grid position; one bead per cell, re-placement is rejected
+                  properties:
+                    row:
+                      type: integer
+                      minimum: 0
+                    col:
+                      type: integer
+                      minimum: 0
+                  required:
+                    - row
+                    - col
+                reading:
+                  type: string
+                  description: Canonical meaning, always present
+                relationalReadings:
+                  type: object
+                  description: >-
+                    Perspective-specific readings. Resolution order on a positional read: col:N,
+                    then row:N, then the derived edge label (left when col is 0, right when col is
+                    cols-1, otherwise center), then the canonical reading. Keys outside those forms
+                    are stored but never resolved.
+                  additionalProperties:
+                    type: string
+                ceremonyLink:
+                  type: object
+                  description: >-
+                    The obligation this bead carries. Only chartId and beatName become graph
+                    relations; witnessNames, renewalDate and notes live ONLY here, so a consumer
+                    reading the relation graph alone cannot see them.
+                  properties:
+                    ceremonyType:
+                      type: string
+                      enum:
+                        - commitment
+                        - accountability
+                        - witness
+                        - renewal
+                      description: Also written to the relation's metadata.context
+                    chartId:
+                      type: string
+                      description: >-
+                        Chart held accountable; produces a wampum_holds_accountable relation from
+                        this BEAD to `{chartId}_chart`
+                    beatName:
+                      type: string
+                      description: >-
+                        Narrative beat witnessed; produces a wampum_witnesses relation from this
+                        BEAD to the beat entity name
+                    witnessNames:
+                      type: array
+                      items:
+                        type: string
+                      description: >-
+                        People who stood present. No relation carries these — list them by name,
+                        never as a count.
+                    renewalDate:
+                      type: string
+                      description: >-
+                        Free-form; not validated on write. A date already passed means the
+                        obligation needs renewal.
+                    notes:
+                      type: string
+                  required:
+                    - ceremonyType
+                observations:
+                  type: array
+                  items:
+                    type: string
+                createdAt:
+                  type: string
+                  format: date-time
+              required:
+                - id
+                - mnemonic
+                - color
+                - position
+                - reading
+                - observations
+                - createdAt
+          createdAt:
+            type: string
+            format: date-time
+          updatedAt:
+            type: string
+            format: date-time
+            description: Advances on every bead add
+        required:
+          - beltId
+          - title
+          - purpose
+          - rows
+          - cols
+          - beads
+          - createdAt
+          - updatedAt
