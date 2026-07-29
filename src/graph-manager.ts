@@ -515,21 +515,57 @@ Current Reality: "${currentReality}"
     dueDate?: string;
   }> {
     const graph = preloadedGraph ?? await this.loadGraph();
-    const actionSteps = graph.entities.filter(e => 
-      e.entityType === 'action_step' && 
+    const actionSteps = graph.entities.filter(e =>
+      e.entityType === 'action_step' &&
       e.metadata?.chartId === chartId
     );
 
-    const completedActions = actionSteps.filter(e => e.metadata?.completionStatus === true).length;
-    const totalActions = actionSteps.length;
+    // A chart holds its work in two shapes: action_step entities on the chart itself, and
+    // telescoped child charts. Counting only the first makes a chart whose steps were
+    // telescoped report 0/0 while holding real work.
+    const childCharts = graph.entities.filter(e =>
+      e.entityType === 'structural_tension_chart' &&
+      e.metadata?.parentChart === chartId
+    );
+
+    // A child chart telescoped out of one of this chart's own steps is that same result
+    // seen closer up — it is counted through the step, not a second time.
+    const stepNames = new Set(actionSteps.map(e => e.name));
+    const telescopedChildren = childCharts.filter(c =>
+      !(c.metadata?.parentActionStep && stepNames.has(c.metadata.parentActionStep))
+    );
+
+    const units: Array<{ name: string; complete: boolean; dueDate?: string }> = [
+      ...actionSteps.map(e => ({
+        name: e.name,
+        complete: e.metadata?.completionStatus === true,
+        dueDate: e.metadata?.dueDate
+      })),
+      ...telescopedChildren.map(c => {
+        const childId = c.metadata?.chartId || c.name.replace('_chart', '');
+        // a child chart is completed through its desired outcome — that is the entity
+        // mark_action_complete writes to when a telescoped result is achieved
+        const outcome = graph.entities.find(e =>
+          e.name === `${childId}_desired_outcome` && e.entityType === 'desired_outcome'
+        );
+        return {
+          name: `${childId}_desired_outcome`,
+          complete: outcome?.metadata?.completionStatus === true,
+          dueDate: c.metadata?.dueDate
+        };
+      })
+    ];
+
+    const completedActions = units.filter(u => u.complete).length;
+    const totalActions = units.length;
     const progress = totalActions > 0 ? completedActions / totalActions : 0;
 
-    // Find next incomplete action step with earliest due date
-    const incompleteActions = actionSteps
-      .filter(e => e.metadata?.completionStatus !== true)
+    // Find next incomplete unit with earliest due date
+    const incompleteActions = units
+      .filter(u => !u.complete)
       .sort((a, b) => {
-        const dateA = new Date(a.metadata?.dueDate || '').getTime();
-        const dateB = new Date(b.metadata?.dueDate || '').getTime();
+        const dateA = new Date(a.dueDate || '').getTime();
+        const dateB = new Date(b.dueDate || '').getTime();
         return dateA - dateB;
       });
 
@@ -566,6 +602,7 @@ Current Reality: "${currentReality}"
     totalActions: number;
     level: number;
     parentChart?: string;
+    parentActionStep?: string;
     actionSteps: Array<{
       name: string;
       title: string;
@@ -607,6 +644,7 @@ Current Reality: "${currentReality}"
           totalActions: progress.totalActions,
           level: chart.metadata?.level || 0,
           parentChart: chart.metadata?.parentChart,
+          parentActionStep: chart.metadata?.parentActionStep,
           actionSteps
         };
       })

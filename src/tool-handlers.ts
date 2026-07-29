@@ -156,7 +156,13 @@ export async function handleToolCall(
         // and telescoped child charts. Render both, or a chart holding eight steps and
         // no child chart reports itself empty.
         const actions = actionCharts.filter(a => a.parentChart === master.chartId);
-        const ownSteps = master.actionSteps || [];
+        // A step that telescoped still exists as an action_step entity alongside the child
+        // chart it became. Render it once, as the chart — two lines carrying the same title
+        // read as two open results.
+        const telescopedStepNames = new Set(
+          actions.map(a => a.parentActionStep).filter((n): n is string => Boolean(n))
+        );
+        const ownSteps = (master.actionSteps || []).filter(s => !telescopedStepNames.has(s.name));
         const branchCount = actions.length + ownSteps.length;
         let branchIndex = 0;
         const connectorFor = () => (++branchIndex === branchCount ? "└── " : "├── ");
@@ -171,8 +177,9 @@ export async function handleToolCall(
         actions.forEach(action => {
           const actionProgress = action.progress > 0 ? ` (${Math.round(action.progress * 100)}%)` : "";
           const actionDue = action.dueDate ? ` [${new Date(action.dueDate).toLocaleDateString()}]` : "";
+          const from = action.parentActionStep ? ` ← ${action.parentActionStep}` : "";
           hierarchyText += `    ${connectorFor()}🎯 ${action.desiredOutcome} (Telescoped Chart)${actionProgress}${actionDue}\n`;
-          hierarchyText += `        ID: ${action.chartId}\n`;
+          hierarchyText += `        ID: ${action.chartId}${from}\n`;
         });
 
         if (branchCount === 0) {

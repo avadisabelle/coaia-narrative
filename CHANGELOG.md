@@ -5,6 +5,35 @@ All notable changes to COAIA Memory will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.1] - 2026-07-29
+
+### 🩹 A chart's own work is visible again
+
+`list_active_charts` and `get_chart_progress` each saw one half of a chart's structure and
+declared neither. A chart holds its work in two shapes — `action_step` entities on the chart
+itself, and telescoped child charts — and each tool counted only one shape.
+
+- **`list_active_charts`** built its tree from charts alone (masters at `level === 0`, children
+  at `level > 0`). `action_step` entities never entered the render, so a master with no child
+  chart printed `(No action steps yet)` however many steps it held. Measured on a 20-chart
+  store: 45 action steps across 9 charts were absent from the output.
+- **`get_chart_progress`** counted only `action_step` entities, so a chart whose work was
+  telescoped into sub-charts reported `0/0` while holding real results. Three charts in that
+  same store reported `0/0` while carrying child charts.
+
+#### Changed
+
+- `listActiveCharts()` returns each chart's own `actionSteps` and its `parentActionStep`.
+- `getChartProgress()` counts telescoped child charts as units of work alongside `action_step`
+  entities; a child chart is complete when its `desired_outcome` is. A child telescoped out of
+  one of the chart's own steps is counted **through that step**, never twice.
+- The renderer draws both shapes, marks completed steps ✅, labels child charts
+  `(Telescoped Chart)` rather than `(Action Step)` — the two were indistinguishable — and shows
+  a telescoped step once, on the chart line, with `← <originating step>` provenance.
+
+Progress figures move as a result. On the reference store one master went from a reported 38%
+to 33% — not a regression: the denominator finally includes work that was always there.
+
 ## [0.13.4] - 2026-05-26
 
 ### ✨ Asterion: Deep Research Foundations & Session Lineage Metadata
