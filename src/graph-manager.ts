@@ -566,20 +566,38 @@ Current Reality: "${currentReality}"
     totalActions: number;
     level: number;
     parentChart?: string;
+    actionSteps: Array<{
+      name: string;
+      title: string;
+      complete: boolean;
+      dueDate?: string;
+    }>;
   }>> {
     const graph = await this.loadGraph();
     const charts = graph.entities.filter(e => e.entityType === 'structural_tension_chart');
-    
+
     const chartSummaries = await Promise.all(
       charts.map(async (chart) => {
         const chartId = chart.metadata?.chartId || chart.name.replace('_chart', '');
         const progress = await this.getChartProgress(chartId, graph);
-        
+
         // Get desired outcome
-        const desiredOutcome = graph.entities.find(e => 
+        const desiredOutcome = graph.entities.find(e =>
           e.name === `${chartId}_desired_outcome` && e.entityType === 'desired_outcome'
         );
-        
+
+        // A chart holds its work in two shapes: action_step entities that live on the
+        // chart itself, and telescoped child charts. Callers rendering a hierarchy from
+        // parentChart alone see only the second and report the first as absent.
+        const actionSteps = graph.entities
+          .filter(e => e.entityType === 'action_step' && e.metadata?.chartId === chartId)
+          .map(e => ({
+            name: e.name,
+            title: e.observations[0] || 'Untitled action step',
+            complete: Boolean(e.metadata?.completionStatus),
+            dueDate: e.metadata?.dueDate as string | undefined
+          }));
+
         return {
           chartId,
           desiredOutcome: desiredOutcome?.observations[0] || 'Unknown outcome',
@@ -588,7 +606,8 @@ Current Reality: "${currentReality}"
           completedActions: progress.completedActions,
           totalActions: progress.totalActions,
           level: chart.metadata?.level || 0,
-          parentChart: chart.metadata?.parentChart
+          parentChart: chart.metadata?.parentChart,
+          actionSteps
         };
       })
     );

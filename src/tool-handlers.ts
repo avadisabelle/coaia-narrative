@@ -152,17 +152,30 @@ export async function handleToolCall(
         hierarchyText += `📋 **${master.desiredOutcome}** (Master Chart)${progress}${dueDate}\n`;
         hierarchyText += `    ID: ${master.chartId}\n`;
 
+        // A chart's work lives in two shapes: action_step entities on the chart itself,
+        // and telescoped child charts. Render both, or a chart holding eight steps and
+        // no child chart reports itself empty.
         const actions = actionCharts.filter(a => a.parentChart === master.chartId);
-        if (actions.length > 0) {
-          actions.forEach((action, index) => {
-            const isLast = index === actions.length - 1;
-            const connector = isLast ? "└── " : "├── ";
-            const actionProgress = action.progress > 0 ? ` (${Math.round(action.progress * 100)}%)` : "";
-            const actionDue = action.dueDate ? ` [${new Date(action.dueDate).toLocaleDateString()}]` : "";
-            hierarchyText += `    ${connector}🎯 ${action.desiredOutcome} (Action Step)${actionProgress}${actionDue}\n`;
-            hierarchyText += `        ID: ${action.chartId}\n`;
-          });
-        } else {
+        const ownSteps = master.actionSteps || [];
+        const branchCount = actions.length + ownSteps.length;
+        let branchIndex = 0;
+        const connectorFor = () => (++branchIndex === branchCount ? "└── " : "├── ");
+
+        ownSteps.forEach(step => {
+          const mark = step.complete ? "✅" : "🎯";
+          const stepDue = step.dueDate ? ` [${new Date(step.dueDate).toLocaleDateString()}]` : "";
+          hierarchyText += `    ${connectorFor()}${mark} ${step.title} (Action Step)${stepDue}\n`;
+          hierarchyText += `        ID: ${step.name}\n`;
+        });
+
+        actions.forEach(action => {
+          const actionProgress = action.progress > 0 ? ` (${Math.round(action.progress * 100)}%)` : "";
+          const actionDue = action.dueDate ? ` [${new Date(action.dueDate).toLocaleDateString()}]` : "";
+          hierarchyText += `    ${connectorFor()}🎯 ${action.desiredOutcome} (Telescoped Chart)${actionProgress}${actionDue}\n`;
+          hierarchyText += `        ID: ${action.chartId}\n`;
+        });
+
+        if (branchCount === 0) {
           hierarchyText += `    └── (No action steps yet)\n`;
         }
         hierarchyText += "\n";
