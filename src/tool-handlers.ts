@@ -9,6 +9,7 @@
 import type { Entity, Relation, McpToolResult, WampumCeremonyLink } from './types.js';
 import type { KnowledgeGraphManager } from './graph-manager.js';
 import { validate, ValidationSchemas } from '../validation.js';
+import { findUnparsedCallSyntaxIn, describeUnparsedCallSyntax } from './argument-hygiene.js';
 import { LLM_GUIDANCE } from '../generated-llm-guidance.js';
 
 export async function handleToolCall(
@@ -17,6 +18,17 @@ export async function handleToolCall(
   manager: KnowledgeGraphManager
 ): Promise<McpToolResult> {
   const toolArgs = args || {};
+
+  // Before any tool runs: a call whose argument tags did not parse arrives with
+  // its own raw text inside a value. Refuse it here, naming the fragment, so the
+  // caller retries — rather than persisting a closing tag as if it were prose.
+  const leak = findUnparsedCallSyntaxIn(toolArgs);
+  if (leak) {
+    return {
+      content: [{ type: "text", text: `Error: ${describeUnparsedCallSyntax(leak)}` }],
+      isError: true
+    };
+  }
 
   switch (name) {
     case "create_entities": {
@@ -284,6 +296,26 @@ export async function handleToolCall(
       if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
       await manager.updateDesiredOutcome(toolArgs.chartId as string, toolArgs.newDesiredOutcome as string);
       return { content: [{ type: "text", text: `Desired outcome updated for chart '${toolArgs.chartId as string}'` }] };
+    }
+    case "update_chart_due_date": {
+      const valResult = validate(toolArgs, {
+        chartId: ValidationSchemas.nonEmptyString(),
+        newDueDate: ValidationSchemas.isoDate(),
+        redistributeActionSteps: { type: 'boolean' }
+      });
+      if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
+      const dueDateResult = await manager.updateChartDueDate(
+        toolArgs.chartId as string,
+        toolArgs.newDueDate as string,
+        toolArgs.redistributeActionSteps === true
+      );
+      let dueDateText = `Due date for chart '${dueDateResult.chartId}' moved from ${dueDateResult.previousDueDate || 'unset'} to ${dueDateResult.newDueDate}`;
+      if (dueDateResult.actionStepsRescheduled > 0) {
+        dueDateText += `\n${dueDateResult.actionStepsRescheduled} open action step(s) redistributed between now and the new date.`;
+      } else if (dueDateResult.actionStepsPastDueDate > 0) {
+        dueDateText += `\n⚠️ ${dueDateResult.actionStepsPastDueDate} open action step(s) still fall after the new due date. Re-run with redistributeActionSteps: true to move them.`;
+      }
+      return { content: [{ type: "text", text: `${dueDateText}\n\n${JSON.stringify(dueDateResult, null, 2)}` }] };
     }
     case "perform_mmot_evaluation": {
       const valResult = validate(toolArgs, {

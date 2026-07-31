@@ -151,6 +151,20 @@ All records are backward compatible with the JSONL format, ensuring a seamless a
 
 Writer operations preserve rich JSONL metadata during chart/action/narrative updates. See [JSONL Metadata Preservation](./docs/development/jsonl-metadata-preservation.md) for the preservation contract and fixture tied to `avadisabelle/coaia-narrative#35`.
 
+### What the store refuses
+
+A call whose argument tags do not parse arrives with its own raw text inside a value. Since v0.15.0 the write boundary refuses any text body carrying plainly unparsed call syntax — `<parameter …>`, `<invoke …>`, `<function_calls>`, or a bare closing tag for one of the tools' own argument names — and names the offending fragment so the caller can retry. Nothing is written on a refusal. Ordinary angle brackets are prose and still write: `<div>`, `a < b`, `<rootDir>` all pass.
+
+For stores written before that guard existed:
+
+```bash
+npm run build
+node scripts/scrub-unparsed-call-syntax.mjs <file-or-dir>...        # report only, exits 1 on findings
+node scripts/scrub-unparsed-call-syntax.mjs <file-or-dir>... --fix  # repair, timestamped backup first
+```
+
+The report names each affected observation and shows exactly what a repair would keep before anything is written.
+
 ## Schema Documentation: Understanding the Structure
 
 Comprehensive schema documentation is available in the [`schema/`](./schema/) directory:

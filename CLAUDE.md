@@ -110,6 +110,8 @@ COAIA_TOOLS="create_structural_tension_chart,list_active_charts,mark_action_comp
 - `list_active_charts` - Overview of all active charts
 - `update_action_progress` - Track progress on actions without marking complete
 - `update_current_reality` - Add observations directly to current reality
+- `update_desired_outcome` - Change what the chart is creating
+- `update_chart_due_date` - Move the date a chart is due after it was created
 
 ### Deprecated Tools (Still Functional)
 - `telescope_action_step` ⚠️ - Use `manage_action_step` instead

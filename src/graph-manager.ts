@@ -1,5 +1,6 @@
 import { Entity, Relation, KnowledgeGraph, WampumBead, WampumBeltMetadata, WampumBeadPosition, WampumCeremonyLink, GithubIssueRef } from './types.js';
 import { readJsonlMemoryFile, writeJsonlMemoryFile } from './jsonl-preservation.js';
+import { assertNoUnparsedCallSyntax } from './argument-hygiene.js';
 import {
   createGithubProjectFieldProjection,
   type GithubProjectFieldProjection,
@@ -67,6 +68,11 @@ export class KnowledgeGraphManager {
   }
 
   async createEntities(entities: Entity[]): Promise<Entity[]> {
+    // Every chart body eventually lands here. Check before loading the graph, so a
+    // refusal leaves the store exactly as it was.
+    entities.forEach((entity, index) =>
+      assertNoUnparsedCallSyntax(entity.observations, `entities[${index}].observations`)
+    );
     const graph = await this.loadGraph();
     const newEntities = entities.filter(e => !graph.entities.some(existingEntity => existingEntity.name === e.name));
     graph.entities.push(...newEntities);
@@ -87,6 +93,11 @@ export class KnowledgeGraphManager {
   }
 
   async addObservations(observations: { entityName: string; contents: string[] }[]): Promise<{ entityName: string; addedObservations: string[] }[]> {
+    // All of them, before any of them — a batch where one body is malformed is a
+    // malformed call, and half of it must not land.
+    observations.forEach((o, index) =>
+      assertNoUnparsedCallSyntax(o.contents, `observations[${index}].contents`)
+    );
     const graph = await this.loadGraph();
     const results = observations.map(o => {
       const entity = graph.entities.find(e => e.name === o.entityName);
@@ -248,6 +259,12 @@ export class KnowledgeGraphManager {
     elementsOfPerformance?: Array<{ description: string; type: 'DESIGN' | 'EXECUTION' }>,
     githubIssue?: string
   ): Promise<{ chartId: string; entities: Entity[]; relations: Relation[] }> {
+    // A malformed call is diagnosed before its content is judged — there is no
+    // point coaching the creative orientation of a fragment of XML.
+    assertNoUnparsedCallSyntax(desiredOutcome, 'desiredOutcome');
+    assertNoUnparsedCallSyntax(currentReality, 'currentReality');
+    assertNoUnparsedCallSyntax(actionSteps, 'actionSteps');
+
     // Educational validation for creative orientation
     const problemSolvingWords = ['fix', 'solve', 'eliminate', 'prevent', 'stop', 'avoid', 'reduce', 'remove'];
     const detectedProblemWords = problemSolvingWords.filter(word => 
@@ -665,6 +682,7 @@ Current Reality: "${currentReality}"
     progressObservation: string,
     updateCurrentReality?: boolean
   ): Promise<void> {
+    assertNoUnparsedCallSyntax(progressObservation, 'progressObservation');
     const graph = await this.loadGraph();
     const actionStep = graph.entities.find(e => e.name === actionStepName && (e.entityType === 'action_step' || e.entityType === 'desired_outcome'));
     
@@ -705,6 +723,7 @@ Current Reality: "${currentReality}"
   }
 
   async updateCurrentReality(chartId: string, newObservations: string[]): Promise<void> {
+    assertNoUnparsedCallSyntax(newObservations, 'newObservations');
     const graph = await this.loadGraph();
     const currentReality = graph.entities.find(e => 
       e.name === `${chartId}_current_reality` && 
@@ -756,6 +775,7 @@ Current Reality: "${currentReality}"
   }
 
   async updateDesiredOutcome(chartId: string, newDesiredOutcome: string): Promise<void> {
+    assertNoUnparsedCallSyntax(newDesiredOutcome, 'newDesiredOutcome');
     const graph = await this.loadGraph();
     const desiredOutcomeEntity = graph.entities.find(e => 
       e.name === `${chartId}_desired_outcome` && e.entityType === 'desired_outcome'
@@ -775,6 +795,157 @@ Current Reality: "${currentReality}"
     await this.saveGraph(graph);
   }
 
+  /**
+   * Move the date a chart is due.
+   *
+   * `update_desired_outcome` and `update_current_reality` could already reach both
+   * halves of the tension; the date the tension resolves by could only be changed
+   * by hand-editing the JSONL — on a store several MCP instances write with no
+   * lock, which is how a hand-edit becomes a lost write.
+   *
+   * The chart and its desired outcome were created carrying the same date and are
+   * moved together. Action step dates are left alone unless `redistributeActionSteps`
+   * is asked for; the count still standing past the new date is reported either way,
+   * so the caller sees what the move left behind.
+   */
+  async updateChartDueDate(
+    chartId: string,
+    newDueDate: string,
+    redistributeActionSteps = false
+  ): Promise<{
+    chartId: string;
+    previousDueDate?: string;
+    newDueDate: string;
+    actionStepsRescheduled: number;
+    actionStepsPastDueDate: number;
+  }> {
+    const parsed = Date.parse(newDueDate);
+    if (Number.isNaN(parsed)) {
+      throw new Error(`Invalid due date: "${newDueDate}". Use an ISO date string, e.g. 2026-09-30T12:00:00Z`);
+    }
+    const normalizedDueDate = new Date(parsed).toISOString();
+
+    const graph = await this.loadGraph();
+    const chartEntity = graph.entities.find(e =>
+      e.name === `${chartId}_chart` && e.entityType === 'structural_tension_chart'
+    );
+    if (!chartEntity) {
+      throw new Error(`Chart ${chartId} not found`);
+    }
+
+    const timestamp = new Date().toISOString();
+    chartEntity.metadata = chartEntity.metadata || {};
+    const previousDueDate = typeof chartEntity.metadata.dueDate === 'string'
+      ? chartEntity.metadata.dueDate
+      : undefined;
+    chartEntity.metadata.dueDate = normalizedDueDate;
+    chartEntity.metadata.updatedAt = timestamp;
+
+    const desiredOutcomeEntity = graph.entities.find(e =>
+      e.name === `${chartId}_desired_outcome` && e.entityType === 'desired_outcome'
+    );
+    if (desiredOutcomeEntity) {
+      desiredOutcomeEntity.metadata = desiredOutcomeEntity.metadata || {};
+      desiredOutcomeEntity.metadata.dueDate = normalizedDueDate;
+      desiredOutcomeEntity.metadata.updatedAt = timestamp;
+    }
+
+    // The date a chart carried is part of its history. Recording the move on the
+    // chart itself keeps it readable later without touching current reality, which
+    // belongs to the work rather than to the schedule.
+    chartEntity.observations.push(
+      `Due date changed from ${previousDueDate || 'unset'} to ${normalizedDueDate} on ${timestamp}`
+    );
+
+    const units = this.collectChartWorkUnits(graph, chartId);
+    const openUnits = units.filter(u => !u.complete);
+
+    let actionStepsRescheduled = 0;
+    if (redistributeActionSteps && openUnits.length > 0) {
+      openUnits.sort((a, b) => {
+        const dateA = new Date(a.dueDate || normalizedDueDate).getTime();
+        const dateB = new Date(b.dueDate || normalizedDueDate).getTime();
+        return dateA - dateB;
+      });
+      const dates = this.distributeActionStepDates(new Date(timestamp), new Date(normalizedDueDate), openUnits.length);
+      openUnits.forEach((unit, index) => {
+        const moved = dates[index].toISOString();
+        unit.entities.forEach(entity => {
+          entity.metadata = entity.metadata || {};
+          entity.metadata.dueDate = moved;
+          entity.metadata.updatedAt = timestamp;
+        });
+        unit.dueDate = moved;
+      });
+      actionStepsRescheduled = openUnits.length;
+    }
+
+    const actionStepsPastDueDate = openUnits.filter(u =>
+      u.dueDate ? new Date(u.dueDate).getTime() > parsed : false
+    ).length;
+
+    await this.saveGraph(graph);
+
+    return {
+      chartId,
+      previousDueDate,
+      newDueDate: normalizedDueDate,
+      actionStepsRescheduled,
+      actionStepsPastDueDate
+    };
+  }
+
+  /**
+   * A chart's work in the two shapes it takes: action_step entities on the chart
+   * itself, and telescoped child charts. A child telescoped out of one of the
+   * chart's own steps is that same result seen closer up — it travels with the
+   * step rather than counting as a second unit.
+   */
+  private collectChartWorkUnits(graph: KnowledgeGraph, chartId: string): Array<{
+    entities: Entity[];
+    complete: boolean;
+    dueDate?: string;
+  }> {
+    const ownSteps = graph.entities.filter(e =>
+      e.entityType === 'action_step' && e.metadata?.chartId === chartId
+    );
+    const childCharts = graph.entities.filter(e =>
+      e.entityType === 'structural_tension_chart' && e.metadata?.parentChart === chartId
+    );
+
+    const outcomeOf = (chart: Entity): Entity | undefined => {
+      const childId = chart.metadata?.chartId || chart.name.replace('_chart', '');
+      return graph.entities.find(e =>
+        e.name === `${childId}_desired_outcome` && e.entityType === 'desired_outcome'
+      );
+    };
+
+    const stepNames = new Set(ownSteps.map(e => e.name));
+
+    const units = ownSteps.map(step => {
+      const grown = childCharts.filter(c => c.metadata?.parentActionStep === step.name);
+      const entities = [step, ...grown.flatMap(c => [c, outcomeOf(c)].filter((e): e is Entity => Boolean(e)))];
+      return {
+        entities,
+        complete: step.metadata?.completionStatus === true,
+        dueDate: typeof step.metadata?.dueDate === 'string' ? step.metadata.dueDate : undefined
+      };
+    });
+
+    childCharts
+      .filter(c => !(c.metadata?.parentActionStep && stepNames.has(c.metadata.parentActionStep)))
+      .forEach(chart => {
+        const outcome = outcomeOf(chart);
+        units.push({
+          entities: [chart, outcome].filter((e): e is Entity => Boolean(e)),
+          complete: outcome?.metadata?.completionStatus === true,
+          dueDate: typeof chart.metadata?.dueDate === 'string' ? chart.metadata.dueDate : undefined
+        });
+      });
+
+    return units;
+  }
+
   // MMOT Evaluation — autonomous self-evaluation loop on structural tension charts
   async performMmotEvaluation(
     chartId: string,
@@ -784,6 +955,8 @@ Current Reality: "${currentReality}"
     correctiveActions?: string[],
     updateReality: boolean = true
   ): Promise<{ guidance: string; evaluationStored: boolean; beatEmitted: boolean }> {
+    assertNoUnparsedCallSyntax(assessment, 'assessment');
+    assertNoUnparsedCallSyntax(correctiveActions, 'correctiveActions');
     const graph = await this.loadGraph();
     const chartEntity = graph.entities.find(e =>
       e.entityType === 'structural_tension_chart' && e.metadata?.chartId === chartId

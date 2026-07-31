@@ -5,6 +5,55 @@ All notable changes to COAIA Memory will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2026-07-31
+
+### 🛡️ A malformed call no longer becomes chart content
+
+A call whose argument tags did not parse did not fail — the raw call text arrived as the value
+and was stored verbatim as the observation body. Seven observations in one live store carried
+tails like `…landed on day-04's address.</currentReality>` followed by
+`<parameter name="dueDate">2026-07-31T12:00:00Z`: a closing tag and a parameter block, persisted
+as if they were prose, and rendered ever since by the visualizer, `list_active_charts`, the
+chronicle surface, and any agent reading the chart to decide what to do next.
+
+The check now lives at the write boundary, because anything that reaches the JSONL is already in
+every reader's render.
+
+#### Added
+
+- **`src/argument-hygiene.ts`** — refuses a text body carrying plainly unparsed call syntax:
+  tool-call machinery (`<parameter …>`, `<invoke …>`, `<function_calls>`, in any namespace), and
+  bare closing tags for argument names. The argument vocabulary is gathered from the tool schemas
+  themselves, so it cannot drift from the tools. The report names the **earliest** fragment — the
+  point where prose ended and call text began — so the caller sees where to look.
+- **`update_chart_due_date`** — the date a chart is due can now be changed after creation.
+  `update_desired_outcome` and `update_current_reality` could already reach both halves of the
+  tension; the date could only be moved by hand-editing a JSONL that several MCP instances write
+  with no lock, which is how a hand-edit becomes a lost write. The chart and its desired outcome
+  move together, the change is recorded as an observation on the chart, and open action steps keep
+  their dates unless `redistributeActionSteps` is asked for — the count still falling after the
+  new date is reported either way.
+- **`scripts/scrub-unparsed-call-syntax.mjs`** — finds observations already carrying leaked call
+  text across JSONL stores. Reports by default and exits non-zero; `--fix` truncates each body at
+  the point the prose ended and drops what is left empty, writing a timestamped backup first. It
+  imports the server's own detector, so the report and the refusal cannot disagree.
+
+#### Changed
+
+- `handleToolCall` scans every argument before any tool runs and returns `isError` naming the
+  argument path and the fragment, so the caller can retry.
+- `KnowledgeGraphManager` refuses the same bodies at `createEntities`, `addObservations`,
+  `createStructuralTensionChart`, `updateCurrentReality`, `updateActionProgress`,
+  `updateDesiredOutcome`, and `performMmotEvaluation` — before the graph is loaded, so a refusal
+  leaves the store untouched and a batch with one bad body lands none of it. Callers that reach
+  the manager directly, such as the CLI, are covered by the same rule.
+- A malformed call is diagnosed before its content is judged: no creative-orientation coaching on
+  a fragment of XML.
+
+Ordinary angle brackets still write: `<div>`, `a < b`, `<rootDir>` are prose. Prose that quotes
+tool-call syntax while describing this defect is refused along with the real thing — a deliberate
+trade, since a refusal is loud and recoverable while a silent write is neither.
+
 ## [0.14.1] - 2026-07-29
 
 ### 🩹 A chart's own work is visible again

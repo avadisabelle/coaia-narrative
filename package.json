@@ -1,6 +1,6 @@
 {
   "name": "coaia-narrative",
-  "version": "0.14.1",
+  "version": "0.15.0",
   "description": "Creative Orientation AI Agentic Memories - Narrative Beat Extension with IAIP relational integration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,7 +12,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && node test-coaia-narrative.js && node test-metadata-preservation.js",
+    "test": "npm run build && node test-coaia-narrative.js && node test-metadata-preservation.js && node test-unparsed-call-syntax.js",
     "test:preservation": "npm run build && node test-metadata-preservation.js",
     "lint": "eslint index.ts",
     "start": "node dist/index.js",

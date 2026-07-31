@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "chartId": {
+      "type": "string",
+      "description": "ID of the chart to update (works for master charts like 'chart_123' or action step charts like 'chart_456')"
+    },
+    "newDueDate": {
+      "type": "string",
+      "description": "New due date as an ISO date string (e.g. '2026-09-30T12:00:00Z')"
+    },
+    "redistributeActionSteps": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, open action steps and telescoped child charts are redistributed evenly between now and the new due date. When false (default), their dates are left as the caller set them."
+    }
+  },
+  "required": [
+    "chartId",
+    "newDueDate"
+  ]
+}

@@ -34,7 +34,7 @@
     },
     "tool_groups": {
       "STC_TOOLS": {
-        "description": "Structural Tension Chart tools (11 tools)",
+        "description": "Structural Tension Chart tools (13 tools)",
         "tools": [
           "create_structural_tension_chart",
           "telescope_action_step",
@@ -46,6 +46,7 @@
           "update_action_progress",
           "update_current_reality",
           "update_desired_outcome",
+          "update_chart_due_date",
           "manage_action_step",
           "link_chart_to_github_issue",
           "perform_mmot_evaluation"
@@ -157,6 +158,12 @@
         "json": "tools/stc/update_desired_outcome.json",
         "yaml": "tools/stc/update_desired_outcome.yaml",
         "description": "Change the desired outcome of a chart"
+      },
+      "update_chart_due_date": {
+        "category": "stc",
+        "json": "tools/stc/update_chart_due_date.json",
+        "yaml": "tools/stc/update_chart_due_date.yaml",
+        "description": "Move the date a chart is due after it was created"
       },
       "perform_mmot_evaluation": {
         "category": "stc",

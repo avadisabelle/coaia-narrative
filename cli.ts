@@ -23,6 +23,7 @@ import {
 } from './markdown-export.js';
 import { handleSkillCommand } from './src/skill.js';
 import { readJsonlMemoryFile, writeJsonlMemoryFile } from './src/jsonl-preservation.js';
+import { findUnparsedCallSyntax } from './src/argument-hygiene.js';
 import type { Entity, Relation, KnowledgeGraph } from './src/types.js';
 
 // ==================== CONFIGURATION ====================
@@ -112,6 +113,20 @@ async function loadGraph(memoryPath: string): Promise<KnowledgeGraph> {
 
 async function saveGraph(memoryPath: string, graph: KnowledgeGraph): Promise<void> {
   await writeJsonlMemoryFile(memoryPath, graph);
+}
+
+/**
+ * Refuse text carrying unparsed tool-call syntax, the same rule the MCP server
+ * applies. The CLI writes the JSONL directly rather than through the manager, so
+ * without this a body the server would refuse could still arrive by this door.
+ * Returns true when the text is safe to record.
+ */
+function acceptsText(value: string, label: string): boolean {
+  const hit = findUnparsedCallSyntax(value);
+  if (!hit) return true;
+  console.log(`\n❌ ${label} carries unparsed call syntax, not prose: ${hit.fragment}`);
+  console.log(`   That is ${hit.reason}. Nothing saved.\n`);
+  return false;
 }
 
 function formatDate(dateStr?: string): string {
@@ -830,6 +845,9 @@ async function addAction(chartId: string, memoryPath: string, interactive: boole
   const dueDateStr = await prompt.ask('📅 Due date (YYYY-MM-DD, or press Enter to skip): ');
   prompt.close();
 
+  if (!acceptsText(title.trim(), 'Action step title')) return;
+  if (!acceptsText(currentReality.trim(), 'Current reality')) return;
+
   const timestamp = new Date().toISOString();
   const actionIndex = existingActions.length + 1;
   const actionName = `${chartId}_action_${actionIndex}`;
@@ -899,6 +917,8 @@ async function addObservation(chartId: string, memoryPath: string, interactive: 
     console.log('\n❌ Empty observation, nothing saved.\n');
     return;
   }
+
+  if (!acceptsText(observation.trim(), 'Observation')) return;
 
   currentReality.observations.push(observation.trim());
   if (currentReality.metadata) {

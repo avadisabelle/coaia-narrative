@@ -409,6 +409,23 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
     }
   },
   {
+    name: "update_chart_due_date",
+    description: "Change the date a chart is due after it was created. Works for BOTH master charts AND action step charts. Moves the chart and its desired outcome together. Open action steps keep their own dates unless redistributeActionSteps is true; the count still falling after the new date is reported either way. The change is recorded as an observation on the chart.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        chartId: { type: "string", description: "ID of the chart to update (works for master charts like 'chart_123' or action step charts like 'chart_456')" },
+        newDueDate: { type: "string", description: "New due date as an ISO date string (e.g. '2026-09-30T12:00:00Z')" },
+        redistributeActionSteps: {
+          type: "boolean",
+          default: false,
+          description: "When true, open action steps and telescoped child charts are redistributed evenly between now and the new due date. When false (default), their dates are left as the caller set them."
+        }
+      },
+      required: ["chartId", "newDueDate"]
+    }
+  },
+  {
     name: "perform_mmot_evaluation",
     description: "Autonomous MMOT (Managerial Moment of Truth) self-evaluation on a structural tension chart. The agent compares produced output against defined Elements of Performance, acknowledges discrepancy, analyzes dynamics, updates the chart, and recommits or redirects. Runs the four Creator's Moment of Truth steps: acknowledge → analyze → update → recommit. Can be called from any directional perspective (South/East/West/North) for collective inquiry.",
     inputSchema: {

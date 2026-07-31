@@ -68,6 +68,12 @@ Structural tension charts organize creative work around **what you want to creat
 - **Use for:** Clarifying the outcome, pivoting direction
 - Works for both master charts and telescoped sub-charts
 
+**[update_chart_due_date.json](update_chart_due_date.json)** / **[.yaml](update_chart_due_date.yaml)**
+- Move the date a chart is due after it was created
+- **Use for:** A date that shifts once the work is underway
+- Moves the chart and its desired outcome together; records the change on the chart
+- Open action steps keep their dates unless `redistributeActionSteps` is true — the count still falling after the new date is reported either way
+
 **[get_chart_progress.json](get_chart_progress.json)** / **[.yaml](get_chart_progress.yaml)**
 - Detailed progress metrics for a specific chart
 - Shows completion percentage, remaining actions, timeline
@@ -110,8 +116,9 @@ COAIA_TOOLS="STC_TOOLS,init_llm_guidance" npx coaia-memory
 8. update_action_progress
 9. update_current_reality
 10. update_desired_outcome
-11. perform_mmot_evaluation
-12. manage_action_step ✨
+11. update_chart_due_date
+12. perform_mmot_evaluation
+13. manage_action_step ✨
 
 ## 🚀 Common Workflows
 
