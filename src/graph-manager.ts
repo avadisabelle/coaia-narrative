@@ -265,10 +265,35 @@ export class KnowledgeGraphManager {
     assertNoUnparsedCallSyntax(currentReality, 'currentReality');
     assertNoUnparsedCallSyntax(actionSteps, 'actionSteps');
 
-    // Educational validation for creative orientation
+    // Educational validation for creative orientation.
+    //
+    // MATCHED ON WORD BOUNDARIES, NOT SUBSTRINGS, and the difference is not
+    // cosmetic. This filter used `.includes()`, so it read the letters of these
+    // words wherever they fell inside a longer one:
+    //
+    //   "a fixed ladder of named rungs"          -> "fix"    -> refused
+    //   "carry one to completion or resolve it"  -> "solve"  -> refused
+    //   "unstoppable", "prevention", "removal", "avoidance", "dissolve",
+    //   "stopgap", "reducer", "solvent", "prefix", "suffix", "affix"…
+    //
+    // Both examples above are real refusals, measured 2026-07-31 17:04 and
+    // 2026-08-01 01:04, on action steps that were already written in creative
+    // orientation. The author rephrased around the error both times without
+    // asking why, which is the quiet cost: a guard that fires on innocent text
+    // teaches the caller to edit for the checker rather than for the reader.
+    //
+    // Sharper still, the organisation's own guidance prescribes the very word
+    // this filter rejected:
+    //   "GOOD EXAMPLE: Each action step resolve tension between current and
+    //    desired states."
+    // So the check refused the phrasing its own doctrine recommends.
+    //
+    // The word list is unchanged — the intent behind it is right, and a chart
+    // whose desired outcome genuinely says "eliminate" or "reduce" should still
+    // be met with the teaching below. Only the matching is corrected.
     const problemSolvingWords = ['fix', 'solve', 'eliminate', 'prevent', 'stop', 'avoid', 'reduce', 'remove'];
-    const detectedProblemWords = problemSolvingWords.filter(word => 
-      desiredOutcome.toLowerCase().includes(word)
+    const detectedProblemWords = problemSolvingWords.filter(word =>
+      new RegExp(`\\b${word}\\b`, 'i').test(desiredOutcome)
     );
     
     if (detectedProblemWords.length > 0) {
