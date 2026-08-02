@@ -1,5 +1,16 @@
 import { promises as fs } from 'fs';
+import path from 'path';
 import type { Entity, JsonlRecord, KnowledgeGraph, Relation } from './types.js';
+// Record classification lives in a pure module so the read contract can import the
+// SAME predicates rather than re-implementing them. See src/jsonl-records.ts.
+import {
+  isObject,
+  removeUndefined,
+  isEntityRecord,
+  isLegacyNarrativeBeatRecord,
+  isRelationRecord,
+  normalizeLegacyNarrativeBeat
+} from './jsonl-records.js';
 
 const ENTITY_TOP_LEVEL_KEYS = new Set(['type', 'name', 'entityType', 'observations', 'metadata']);
 const RELATION_TOP_LEVEL_KEYS = new Set(['type', 'from', 'to', 'relationType', 'metadata']);
@@ -33,10 +44,6 @@ const MUTABLE_METADATA_KEYS = new Set([
   'telescopedChartId'
 ]);
 
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
 function cloneJson<T>(value: T): T {
   return value === undefined ? value : JSON.parse(JSON.stringify(value));
 }
@@ -45,56 +52,8 @@ function deepEqual(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
-function removeUndefined<T extends Record<string, unknown>>(record: T): T {
-  for (const key of Object.keys(record)) {
-    if (record[key] === undefined) {
-      delete record[key];
-    }
-  }
-  return record;
-}
-
 function relationKey(relation: Pick<Relation, 'from' | 'to' | 'relationType'>): string {
   return `${relation.from}\u0000${relation.to}\u0000${relation.relationType}`;
-}
-
-function isEntityRecord(record: JsonlRecord): boolean {
-  return record.type === 'entity' && typeof record.name === 'string';
-}
-
-function isLegacyNarrativeBeatRecord(record: JsonlRecord): boolean {
-  return record.type === 'narrative_beat' && typeof record.name === 'string';
-}
-
-function isRelationRecord(record: JsonlRecord): boolean {
-  return record.type === 'relation' &&
-    typeof record.from === 'string' &&
-    typeof record.to === 'string' &&
-    typeof record.relationType === 'string';
-}
-
-function normalizeLegacyNarrativeBeat(record: JsonlRecord): Entity {
-  const metadata = {
-    ...(isObject(record.metadata) ? record.metadata : {}),
-    narrative: isObject(record.metadata) && record.metadata.narrative !== undefined
-      ? record.metadata.narrative
-      : record.narrative,
-    relationalAlignment: isObject(record.metadata) && record.metadata.relationalAlignment !== undefined
-      ? record.metadata.relationalAlignment
-      : record.relational_alignment,
-    fourDirections: isObject(record.metadata) && record.metadata.fourDirections !== undefined
-      ? record.metadata.fourDirections
-      : record.four_directions
-  };
-
-  return removeUndefined({
-    ...record,
-    type: 'narrative_beat',
-    name: record.name as string,
-    entityType: 'narrative_beat',
-    observations: Array.isArray(record.observations) ? record.observations as string[] : [],
-    metadata: removeUndefined(metadata)
-  }) as Entity;
 }
 
 function mergePreservedMetadata(
@@ -359,6 +318,35 @@ export async function readJsonlMemoryFile(memoryFilePath: string): Promise<Knowl
   }
 }
 
+/**
+ * Write the store atomically: full content to a sibling temp file, then rename over the
+ * target. `rename` within a directory is atomic on POSIX, so a concurrent reader sees
+ * either the entire previous store or the entire new one — never a truncated prefix and
+ * never an empty file.
+ *
+ * The previous implementation was a bare `fs.writeFile`, which truncates and then
+ * writes. A reader landing in that window got a partial store, and — worse — a
+ * SYNTACTICALLY VALID partial store, because every whole line before the cut parses
+ * fine. That is undetectable by any reader: fewer charts is not distinguishable from
+ * fewer charts existing. Six MCP servers currently point at one store file, so the
+ * window is real rather than theoretical.
+ *
+ * WHAT THIS DOES NOT FIX: two processes that both load, then both write, still lose the
+ * earlier update — last writer wins, and both report success. Atomicity removes torn
+ * READS; it does not provide compare-and-swap. That remains open.
+ *
+ * The temp file is a sibling so the rename stays on one filesystem; a rename across
+ * devices is not atomic and would fail with EXDEV.
+ */
 export async function writeJsonlMemoryFile(memoryFilePath: string, graph: KnowledgeGraph): Promise<void> {
-  await fs.writeFile(memoryFilePath, serializeJsonlMemory(graph), 'utf-8');
+  const content = serializeJsonlMemory(graph);
+  const dir = path.dirname(memoryFilePath);
+  const tmp = path.join(dir, `.${path.basename(memoryFilePath)}.tmp-${process.pid}-${Date.now()}`);
+  try {
+    await fs.writeFile(tmp, content, 'utf-8');
+    await fs.rename(tmp, memoryFilePath);
+  } catch (error) {
+    await fs.unlink(tmp).catch(() => { /* nothing to clean up */ });
+    throw error;
+  }
 }
