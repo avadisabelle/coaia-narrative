@@ -1027,13 +1027,18 @@ Current Reality: "${currentReality}"
     let evaluationStored = false;
     let beatEmitted = false;
 
-    // Store evaluation observations
-    if (assessment && updateReality) {
-      const evalObservation = `[MMOT ${phase}${directionLabel}] ${assessment}`;
-
+    // Store evaluation observations.
+    //
+    // updateReality governs ONE record — the append into current reality — which is
+    // exactly what the tool declares it to mean ("whether to write evaluation
+    // observations into current reality"). The chart's own mmotEvaluations[] trail is
+    // a separate record and is written whenever an assessment was made. Gating both on
+    // one flag meant a caller who only asked to leave current reality alone lost the
+    // evaluation entirely, while still being handed a full phase response.
+    if (assessment) {
       // Add to current reality
-      if (currentReality) {
-        currentReality.observations.push(evalObservation);
+      if (updateReality && currentReality) {
+        currentReality.observations.push(`[MMOT ${phase}${directionLabel}] ${assessment}`);
         if (currentReality.metadata) {
           currentReality.metadata.updatedAt = timestamp;
         }
