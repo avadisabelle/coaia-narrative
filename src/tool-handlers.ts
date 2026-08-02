@@ -337,7 +337,13 @@ export async function handleToolCall(
       );
       let responseText = mmotResult.guidance;
       if (mmotResult.evaluationStored) {
-        responseText += '\n\n✅ Evaluation stored in chart current reality.';
+        // Name the destination that was actually written. The evaluation always joins
+        // the chart's mmotEvaluations trail; current reality is appended only when the
+        // caller asked for it. A success line that names the wrong record is the same
+        // failure class as a success line over zero bytes.
+        responseText += toolArgs.updateReality !== false
+          ? '\n\n✅ Evaluation stored: chart MMOT trail + current reality.'
+          : '\n\n✅ Evaluation stored: chart MMOT trail (current reality left untouched, as requested).';
       }
       if (mmotResult.beatEmitted) {
         responseText += '\n📡 MMOT narrative beat emitted.';
