@@ -53,7 +53,7 @@ const knowledgeGraphManager = new KnowledgeGraphManager(MEMORY_FILE_PATH);
 // The server instance and tools exposed to AI models
 const server = new Server({
   name: "coaia-narrative",
-  version: "0.15.0",
+  version: "0.15.1",
   description: "COAIA Narrative - Structural Tension Charts with Narrative Beat Extension for multi-universe story capture. Extends coaia-memory with relational and ceremonial integration. 🚨 NEW LLM? Run 'init_llm_guidance' first."
 }, {
   capabilities: {
