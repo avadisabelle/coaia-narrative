@@ -12,6 +12,29 @@ import { validate, ValidationSchemas } from '../validation.js';
 import { findUnparsedCallSyntaxIn, describeUnparsedCallSyntax } from './argument-hygiene.js';
 import { LLM_GUIDANCE } from '../generated-llm-guidance.js';
 
+/**
+ * Say out loud which supplied arguments this tool did not know.
+ *
+ * A dropped argument is invisible from the caller's side: the call succeeds, the
+ * record is written, and the part that was ignored looks exactly like a part that
+ * was honoured. Nothing here is rejected — unknown keys have never been fatal and
+ * making them so would break callers — but the success now names what it skipped.
+ */
+function noteIgnored(result: McpToolResult, ignored?: string[]): McpToolResult {
+  if (!ignored || ignored.length === 0) return result;
+  return {
+    ...result,
+    content: [
+      ...result.content,
+      {
+        type: "text",
+        text: `⚠️ Ignored unrecognised argument(s): ${ignored.join(', ')}. ` +
+          `They were NOT applied — check the tool's inputSchema for the accepted names.`
+      }
+    ]
+  };
+}
+
 export async function handleToolCall(
   name: string,
   args: Record<string, unknown>,
@@ -113,6 +136,9 @@ export async function handleToolCall(
         currentReality: ValidationSchemas.nonEmptyString(),
         dueDate: ValidationSchemas.isoDate(),
         actionSteps: { type: 'array', items: { type: 'string' } },
+        // Declared so it is not reported as unrecognised: the handler below reads
+        // it, so the validation schema is the only place it was missing.
+        elementsOfPerformance: { type: 'array' },
         githubIssue: { type: 'string' }
       });
       if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
@@ -124,21 +150,30 @@ export async function handleToolCall(
         toolArgs.elementsOfPerformance as Array<{ description: string; type: 'DESIGN' | 'EXECUTION' }> | undefined,
         toolArgs.githubIssue as string | undefined
       );
-      return { content: [{ type: "text", text: JSON.stringify(chartResult, null, 2) }] };
+      return noteIgnored({ content: [{ type: "text", text: JSON.stringify(chartResult, null, 2) }] }, valResult.ignored);
     }
     case "telescope_action_step": {
       const valResult = validate(toolArgs, {
         actionStepName: ValidationSchemas.nonEmptyString(),
         newCurrentReality: ValidationSchemas.nonEmptyString(),
-        initialActionSteps: { type: 'array', items: { type: 'string' } }
+        initialActionSteps: { type: 'array', items: { type: 'string' } },
+        // Accepted as an alias. Its sibling create_structural_tension_chart calls
+        // the same concept `actionSteps`, so a caller that has just used that tool
+        // reaches for the same name here and its steps vanish into a success.
+        actionSteps: { type: 'array', items: { type: 'string' } }
       });
       if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
+      const initialSteps = (Array.isArray(toolArgs.initialActionSteps)
+        ? toolArgs.initialActionSteps
+        : Array.isArray(toolArgs.actionSteps)
+          ? toolArgs.actionSteps
+          : []) as string[];
       const telescopeResult = await manager.telescopeActionStep(
         toolArgs.actionStepName as string,
         toolArgs.newCurrentReality as string,
-        (Array.isArray(toolArgs.initialActionSteps) ? toolArgs.initialActionSteps : []) as string[]
+        initialSteps
       );
-      return { content: [{ type: "text", text: JSON.stringify(telescopeResult, null, 2) }] };
+      return noteIgnored({ content: [{ type: "text", text: JSON.stringify(telescopeResult, null, 2) }] }, valResult.ignored);
     }
     case "mark_action_complete": {
       const valResult = validate(toolArgs, { actionStepName: ValidationSchemas.nonEmptyString() });
@@ -277,7 +312,7 @@ export async function handleToolCall(
         toolArgs.dueDate as string | undefined,
         toolArgs.currentReality as string
       );
-      return { content: [{ type: "text", text: `Action step '${toolArgs.actionStepTitle as string}' added to chart '${toolArgs.parentChartId as string}' as telescoped chart '${addActionResult.chartId}'` }] };
+      return noteIgnored({ content: [{ type: "text", text: `Action step '${toolArgs.actionStepTitle as string}' added to chart '${toolArgs.parentChartId as string}' as telescoped chart '${addActionResult.chartId}'` }] }, valResult.ignored);
     }
     case "remove_action_step": {
       const valResult = validate(toolArgs, {
