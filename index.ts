@@ -38,6 +38,38 @@ if (argv.help || argv.h) {
 
 let memoryPath = argv['memory-path'];
 
+/**
+ * Refuse a path that still carries an unexpanded shell variable.
+ *
+ * Paid for 2026-08-11. A seat booted with `MIADI_MINO_STCBOT_TRIAGE_CHART_MEMORY_PATH`
+ * unset, so its `.mcp.json` handed this process the placeholder verbatim. The server
+ * started happily and wrote a live structural tension chart into a file literally
+ * NAMED `${MIADI_MINO_STCBOT_TRIAGE_CHART_MEMORY_PATH}` in whatever directory it
+ * happened to be launched from. Nothing failed. The seat's charts were simply
+ * somewhere nobody would ever look, and it took another seat auditing the boot to
+ * find them.
+ *
+ * The sibling failure is worse and is the reason this is fatal rather than a warning:
+ * had the variable been set to a path that does not exist, this server would have
+ * started CLEAN and EMPTY, and the seat would have reported its whole store lost.
+ * A store is the one input where "start anyway" is never the kind answer.
+ *
+ * `${` cannot appear in a legitimate path here: `$` is legal in a filename, but a
+ * caller writing `${...}` is quoting a shell they expected to have run.
+ */
+if (typeof memoryPath === 'string' && memoryPath.includes('${')) {
+  console.error(
+    `[coaia-narrative] Refusing to start: --memory-path contains an unexpanded ` +
+    `shell variable.\n` +
+    `  got: ${memoryPath}\n` +
+    `  The variable was not set in the environment that launched this process, so ` +
+    `this would create a file with that literal name and write your charts into it ` +
+    `where nothing will find them.\n` +
+    `  Fix the environment (or pass a real path) and start again — no store was touched.`
+  );
+  process.exit(1);
+}
+
 // If a custom path is provided, ensure it's absolute
 if (memoryPath && !isAbsolute(memoryPath)) {
   memoryPath = path.resolve(process.cwd(), memoryPath);
@@ -53,7 +85,7 @@ const knowledgeGraphManager = new KnowledgeGraphManager(MEMORY_FILE_PATH);
 // The server instance and tools exposed to AI models
 const server = new Server({
   name: "coaia-narrative",
-  version: "0.16.1",
+  version: "0.16.2",
   description: "COAIA Narrative - Structural Tension Charts with Narrative Beat Extension for multi-universe story capture. Extends coaia-memory with relational and ceremonial integration. 🚨 NEW LLM? Run 'init_llm_guidance' first."
 }, {
   capabilities: {
