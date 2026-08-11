@@ -231,7 +231,12 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
         initialActionSteps: {
           type: "array",
           items: { type: "string" },
-          description: "Optional list of initial action steps for the telescoped chart"
+          description: "Optional list of initial action steps for the telescoped chart. Also accepted as 'actionSteps', the name its sibling create_structural_tension_chart uses for the same concept."
+        },
+        actionSteps: {
+          type: "array",
+          items: { type: "string" },
+          description: "Alias for 'initialActionSteps'. Present because create_structural_tension_chart names this same concept 'actionSteps'; supplying either works."
         }
       },
       required: ["actionStepName", "newCurrentReality"]

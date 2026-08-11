@@ -5,6 +5,36 @@ All notable changes to COAIA Memory will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.1] - 2026-08-11
+
+### 🗣️ An argument this package does not know no longer vanishes into a success
+
+A seat telescoped a chart and passed `actionSteps` — the name its sibling
+`create_structural_tension_chart` uses for exactly that concept. The real parameter on
+`telescope_action_step` is `initialActionSteps`. The call returned success, the child chart was
+born with **zero** steps, and `get_chart_progress` then read `0/0`. Nothing said a word, so the
+next several turns were spent reporting a working package as broken — because a success that did
+less than it was asked is indistinguishable from a success that did everything.
+
+Three changes, all additive:
+
+- **`actionSteps` is accepted as an alias for `initialActionSteps`.** Two sibling tools naming
+  one concept differently is the trap; the alias closes it without renaming anything.
+- **Unknown arguments are named in the result.** They are still not fatal — they never were, and
+  making them so would break callers — but a call that ignored something now says so:
+  `⚠️ Ignored unrecognised argument(s): …`. Applied to `create_structural_tension_chart`,
+  `telescope_action_step` and `add_action_step`, the three write paths where a dropped argument
+  costs a record.
+- **`validate()` reports every problem at once.** It returned on the first one, so two missing
+  required fields meant learning the schema across three exchanges. That drip is what makes a
+  correctly-behaving tool read as broken.
+
+Also fixed: `elementsOfPerformance` was read by the `create_structural_tension_chart` handler but
+absent from its validation schema — it would have been reported as unrecognised while being
+honoured.
+
+`test-silent-argument-drop.js` holds all of it, and runs in `npm test`.
+
 ## [0.15.0] - 2026-07-31
 
 ### 🛡️ A malformed call no longer becomes chart content
