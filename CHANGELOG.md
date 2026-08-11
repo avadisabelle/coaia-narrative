@@ -5,6 +5,26 @@ All notable changes to COAIA Memory will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.2] - 2026-08-11
+
+### 🛑 A `--memory-path` carrying an unexpanded shell variable is refused
+
+A seat booted with `MIADI_MINO_STCBOT_TRIAGE_CHART_MEMORY_PATH` unset. Its `.mcp.json` handed this
+server the placeholder verbatim, and the server started happily and wrote a live structural tension
+chart into a file literally **named** `${MIADI_MINO_STCBOT_TRIAGE_CHART_MEMORY_PATH}` in whatever
+directory it was launched from. Nothing failed. The charts were simply somewhere nobody would look,
+and it took a second seat auditing the boot to find them.
+
+Fatal rather than a warning, because of the sibling case: a variable set to a path that does **not
+exist** starts this server **clean and empty**, and the seat reports its whole store lost. A store is
+the one input where "start anyway" is never the kind answer.
+
+`$` stays legal in a filename — only a literal `${` is refused, because a caller writing that is
+quoting a shell they expected to have run. `test-unexpanded-memory-path.js` holds it, including the
+assertion that matters most: **no literally-named file is created**.
+
+Same family as 0.16.1 — a surface that answers without saying what it did.
+
 ## [0.16.1] - 2026-08-11
 
 ### 🗣️ An argument this package does not know no longer vanishes into a success
