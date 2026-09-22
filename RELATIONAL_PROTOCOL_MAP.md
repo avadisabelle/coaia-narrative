@@ -3,7 +3,8 @@
 
 **Created**: 2025-12-13 (South Direction — Planning & Relationships)
 **Framework**: K'é (Kinship/Relationship), SNBH (Living in Harmony), Hózhó (Beauty/Balance)
-**Status**: Protocol Design Phase
+**Status**: I (William) dont like the use of "universe" in this context, with thime, it feels more that this is a "perspective" rather than a universe and the usage of the word 'universe' is more related to the creator itself and the universe it creates.  this should be considered in revising whatever we have in the future.
+
 
 ---
 
