@@ -31,7 +31,7 @@ Detailed "prose code" specifications for rebuilding or extending the system:
 - **[Chart Creation](rispecs/structural_tension_chart_creation.spec.md)**: Validation and distribution logic.
 - **[Hierarchy & Telescoping](rispecs/telescoping_hierarchical_advancement.spec.md)**: Nested chart management.
 - **[Progress Tracking](rispecs/advancing_pattern_tracking.spec.md)**: Momentum and completion flows.
-- **[Narrative Beats](rispecs/narrative_beat_creation.spec.md)**: Story capture across universes.
+- **[Narrative Beats](rispecs/narrative_beat_creation.spec.md)**: Story capture from three perspectives.
 - **[MMOT Evaluation](rispecs/mmot_evaluation_loop.spec.md)**: Autonomous agent self-correction.
 - **[Storage](rispecs/storage_knowledge_graph.spec.md)**: JSONL and Graph structures.
 - **[MCP Interface](rispecs/mcp_tool_interface.spec.md)**: Tool definitions and filtering.

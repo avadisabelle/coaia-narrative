@@ -11,6 +11,7 @@ import type { KnowledgeGraphManager } from './graph-manager.js';
 import { validate, ValidationSchemas } from '../validation.js';
 import { findUnparsedCallSyntaxIn, describeUnparsedCallSyntax } from './argument-hygiene.js';
 import { LLM_GUIDANCE } from '../generated-llm-guidance.js';
+import { readPerspectiveTypes } from './perspective-types.js';
 
 /**
  * Say out loud which supplied arguments this tool did not know.
@@ -391,7 +392,9 @@ export async function handleToolCall(
         title: ValidationSchemas.nonEmptyString(),
         act: { type: 'number', required: true, minValue: 1 },
         type_dramatic: ValidationSchemas.nonEmptyString(),
-        universes: { type: 'array', required: true, minLength: 1, items: { type: 'string' } },
+        perspective_types: { type: 'array', minLength: 1, items: { type: 'string' } },
+        // Deprecated alias for perspective_types, kept so callers written before 0.17 keep working.
+        universes: { type: 'array', minLength: 1, items: { type: 'string' } },
         description: ValidationSchemas.nonEmptyString(),
         prose: ValidationSchemas.nonEmptyString(),
         lessons: { type: 'array', required: true, items: { type: 'string' } },
@@ -399,14 +402,26 @@ export async function handleToolCall(
         initiateFourDirectionsInquiry: { type: 'boolean' },
         filePath: { type: 'string' }
       });
-      if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
+      // One of perspective_types or universes is required. validate() has no one-of rule.
+      const perspectiveTypes = Array.isArray(toolArgs.perspective_types)
+        ? toolArgs.perspective_types as string[]
+        : Array.isArray(toolArgs.universes)
+          ? toolArgs.universes as string[]
+          : undefined;
+      if (!valResult.valid || !perspectiveTypes) {
+        const problems = [
+          ...(perspectiveTypes ? [] : ['Missing required field: perspective_types (the deprecated alias universes is also accepted)']),
+          ...(valResult.valid ? [] : [valResult.error])
+        ];
+        return { content: [{ type: "text", text: `Error: ${problems.join('; ')}` }], isError: true };
+      }
 
       const beatResult = await manager.createNarrativeBeat(
         toolArgs.parentChartId as string,
         toolArgs.title as string,
         toolArgs.act as number,
         toolArgs.type_dramatic as string,
-        toolArgs.universes as string[],
+        perspectiveTypes,
         toolArgs.description as string,
         toolArgs.prose as string,
         toolArgs.lessons as string[],
@@ -459,12 +474,12 @@ export async function handleToolCall(
       beatsResult.forEach((beat) => {
         const act = beat.metadata?.act || '?';
         const type = beat.metadata?.type_dramatic || 'Unknown';
-        const universes = beat.metadata?.universes?.join(', ') || 'Unknown';
+        const perspectives = readPerspectiveTypes(beat.metadata).join(', ') || 'Unknown';
         const lessons = beat.metadata?.narrative?.lessons || [];
 
         beatsText += `### Act ${act}: ${type}\n`;
         beatsText += `**Name**: ${beat.name}\n`;
-        beatsText += `**Universes**: ${universes}\n`;
+        beatsText += `**Perspectives**: ${perspectives}\n`;
         beatsText += `**Description**: ${beat.metadata?.narrative?.description || 'N/A'}\n`;
         if (lessons.length > 0) {
           beatsText += `**Lessons**: ${lessons.join(', ')}\n`;

@@ -217,6 +217,12 @@ export interface EntityMetadata {
   // Narrative beat specific metadata
   act?: number;
   type_dramatic?: string;
+  /** Perspective types that read this beat: engineer, ceremony, story_engine. Read through readPerspectiveTypes(). */
+  perspective_types?: string[];
+  /**
+   * @deprecated Key written before 0.17 for the same list, with `-world` values.
+   * Old records keep it. New beats are written with `perspective_types`.
+   */
   universes?: string[];
   timestamp?: string;
   elementsOfPerformance?: Array<{

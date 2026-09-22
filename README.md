@@ -2,7 +2,7 @@
 
 **Creative Orientation AI Agentic Memories - Forging Narrative, Advancing Creation. Extended with Narrative Beat Support**
 
-A complete Model Context Protocol (MCP) server that extends **Structural Tension Charts** with **Multi-Universe Narrative Beat Capture**. This system is designed for **creative-oriented memory management**, comprehensive incident documentation, and the natural advancement of creative endeavors. It embodies Robert Fritz's Structural Tension methodology, focusing on what you want to CREATE, not what you want to fix.
+A complete Model Context Protocol (MCP) server that extends **Structural Tension Charts** with **Three-Perspective Narrative Beat Capture**. This system is designed for **creative-oriented memory management**, comprehensive incident documentation, and the natural advancement of creative endeavors. It embodies Robert Fritz's Structural Tension methodology, focusing on what you want to CREATE, not what you want to fix.
 
 ## Installation
 
@@ -67,12 +67,14 @@ Structural Tension Charts provide the **generative force** for advancing your cr
 -   **mark_action_complete**: Recognize when an Action Step has become a **new reality**. This advances the overall structural dynamic, contributing to the parent chart's Current Reality.
 -   **telescope_action_step** (DEPRECATED: Use `manage_action_step`): Break down a complex Action Step into a detailed sub-chart, inheriting due date constraints and maintaining multi-level structural tension.
 
-### Multi-Universe Narrative Beat Support: Weaving Meaning into Creation
-This extended capability documents significant moments in your creative journey, interpreting them through three archetypal **universes of meaning**:
+### Three-Perspective Narrative Beat Support: Weaving Meaning into Creation
+This extended capability documents significant moments in your creative journey, reading each one from three **perspectives**:
 
--   **Engineer-World**: Captures the technical precision, structural integrity, and logistical progression of your work.
--   **Ceremony-World**: Illuminates the relational accountability, ethical considerations, and sacred protocols embedded in your creative acts.
--   **Story-Engine-World**: Forges the dramatic arc, character revelations, and overall coherence of your unfolding narrative.
+-   **Engineer perspective** (`engineer`): Captures the technical precision, structural integrity, and logistical progression of your work.
+-   **Ceremony perspective** (`ceremony`): Illuminates the relational accountability, ethical considerations, and sacred protocols embedded in your creative acts.
+-   **Story engine perspective** (`story_engine`): Forges the dramatic arc, character revelations, and overall coherence of your unfolding narrative.
+
+Beats are stored with `metadata.perspective_types`. `create_narrative_beat` still accepts `universes`, the name used before 0.17, as a deprecated alias, and beats written before 0.17 keep that key and their `engineer-world` / `ceremony-world` / `story-engine-world` values. Readers accept both.
 
 ### Managerial Moment of Truth (MMOT): The Self-Witnessing Loop ✨ NEW
 The system now implements an autonomous self-evaluation loop based on the **Managerial Moment of Truth** framework. This enables agents to witness their own performance, acknowledge discrepancies, and self-correct without human intervention.
@@ -115,7 +117,7 @@ This system is meticulously crafted to embody Robert Fritz's core principles for
 ✅   **Advancing Patterns: Momentum Made Visible**:
     *   Each **completed Action Step** transforms into a **new aspect of Current Reality**, shifting the structural dynamic forward. This builds momentum and naturally guides towards the next action, rather than cycling without true progression.
 
-✅   **Multi-Universe Awareness: Holistic Meaning**:
+✅   **Three-Perspective Awareness: Holistic Meaning**:
     *   Integrates technical, relational, and narrative perspectives simultaneously, ensuring a rich, coherent understanding of every creative act.
 
 ## Tool Configuration: Shaping Your Creative Environment
@@ -145,7 +147,7 @@ Memory is stored as JSONL (JSON Lines), an append-only format that ensures data 
 
 -   **Entity Records**: Store components of Structural Tension Charts (Current Reality, Desired Outcomes, Action Steps) and Narrative Beats.
 -   **Relation Records**: Document the dynamic links between entities, illustrating chart hierarchy and the advancement of your creative process.
--   **Narrative Records**: Capture extended Narrative Beat entities with their rich multi-universe perspectives.
+-   **Narrative Records**: Capture extended Narrative Beat entities with the three perspectives that read them.
 
 All records are backward compatible with the JSONL format, ensuring a seamless and evolving memory of your creations.
 

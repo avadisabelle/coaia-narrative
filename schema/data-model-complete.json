@@ -104,16 +104,24 @@
               "type": "string",
               "description": "For narrative_beat entities: Dramatic type (e.g., 'inciting_incident', 'midpoint', 'climax')"
             },
+            "perspective_types": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "For narrative_beat entities: the perspectives that read this beat (engineer, ceremony, story_engine)"
+            },
             "universes": {
               "type": "array",
               "items": {
                 "type": "string"
               },
-              "description": "For narrative_beat entities: Array of universe/timeline identifiers this beat belongs to"
+              "deprecated": true,
+              "description": "For narrative_beat entities written before 0.17: the same list as perspective_types, with the values engineer-world, ceremony-world, story-engine-world. Old records keep it. Readers map the values to engineer, ceremony, story_engine"
             },
             "timestamp": {
               "type": "string",
-              "description": "For narrative_beat entities: In-universe timestamp or date reference"
+              "description": "For narrative_beat entities: when the beat was recorded (ISO 8601)"
             },
             "relationalAlignment": {
               "type": "object",

@@ -1,14 +1,14 @@
 # Narrative Beat Creation Component
-## RISE Specification for Story Architecture in Multiverse Contexts
+## RISE Specification for Story Architecture Read from Three Perspectives
 
-**Component Purpose**: Enable users to compose dramatic narrative beats within structural tension charts, creating stories that honor three-universe perspective (Engineer World, Ceremony World, Story Engine World) while tracking creative advancement through dramatic acts and relational alignment.
+**Component Purpose**: Enable users to compose dramatic narrative beats within structural tension charts, creating stories that honor three perspectives (engineer, ceremony, story_engine) while tracking creative advancement through dramatic acts and relational alignment.
 
 ---
 
 ## 🎯 What This Component Enables Users to Create
 
 - **Dramatic Story Arcs**: Multi-act narrative structures that chronicle creative advancement
-- **Multiverse Narratives**: Stories told simultaneously from engineering, ceremonial, and narrative perspectives
+- **Three-Perspective Narratives**: Stories told simultaneously from engineering, ceremonial, and narrative perspectives
 - **Relational Accountability**: Stories that honor relationships and sacred dimensions of creative work
 - **Telescoped Drama**: Breaking down complex narrative moments into detailed sub-beats
 - **Creative Wisdom**: Extracting lessons from each dramatic moment for continued advancement
@@ -18,21 +18,21 @@
 
 ## 🎭 Narrative Beat Dynamics
 
-### The Three Universe Perspective
+### The Three Perspectives
 
-1. **Engineer World** (Logic & Systems)
+1. **Engineer perspective** (`engineer`, Logic & Systems)
    - Technical implementation stories
    - Process workflows and dependencies
    - Structural problem-solving narratives
    - Tools, methodologies, measurable results
 
-2. **Ceremony World** (Relational & Sacred)
+2. **Ceremony perspective** (`ceremony`, Relational & Sacred)
    - Relational accountability in creative work
    - Honoring boundaries and sacred spaces
    - Two-eyed seeing (Indigenous + Western knowledge)
    - Ceremonial acknowledgment of transitions
 
-3. **Story Engine World** (Creative & Character)
+3. **Story engine perspective** (`story_engine`, Creative & Character)
    - Character development through challenges
    - Narrative transformation and growth
    - Mythic patterns and archetypal journeys
@@ -76,8 +76,8 @@ Each narrative beat exists within one of three acts:
 **User Intent**: "Document this moment in the story where we discovered the boundary violation"
 
 **System Response**:
-1. Accept dramatic parameters: title, act number, dramatic type, universes involved
-2. Create structured narrative with three-universe perspective
+1. Accept dramatic parameters: title, act number, dramatic type, perspective types involved
+2. Create structured narrative read from the three perspectives
 3. Extract lessons from the dramatic moment
 4. Link to parent structural tension chart for continuity
 5. Store for later telescoping or analysis
@@ -87,7 +87,7 @@ Each narrative beat exists within one of three acts:
 Title: "Boundary Discovery - Sacred Space Violation"
 Act: 2
 Type: "Discovery/Learning"
-Universes: ["Engineer World", "Ceremony World", "Story Engine World"]
+Perspective types: ["engineer", "ceremony", "story_engine"]
 
 Description: The moment when the transgression was revealed
 Prose: The character-level narrative of what happened
@@ -125,7 +125,7 @@ Sub-beats:
 **System Response**:
 1. Retrieve all beats for specified chart
 2. Display in act/dramatic sequence
-3. Show three-universe perspective summary
+3. Show a summary of the three perspectives
 4. Enable drilling into specific beats
 
 ---
@@ -143,7 +143,8 @@ Narrative Beat {
     chartId: "parent_structural_tension_chart_id"
     act: 1|2|3
     type_dramatic: "Exposition|Rising Action|Climax|Resolution|etc"
-    universes: ["Engineer World", "Ceremony World", "Story Engine World"]
+    perspective_types: ["engineer", "ceremony", "story_engine"]
+    // Beats written before 0.17 hold the same list as universes: ["engineer-world", ...]. Readers accept both.
     timestamp: ISO8601
     createdAt: ISO8601
   }
@@ -188,12 +189,12 @@ Narrative Beat {
    - What's the dramatic type?
 
 2. **Capture Three Perspectives**
-   - Engineer World: What systems/processes are involved?
-   - Ceremony World: What relational accountability exists?
-   - Story Engine World: What's the character development?
+   - Engineer perspective: What systems/processes are involved?
+   - Ceremony perspective: What relational accountability exists?
+   - Story engine perspective: What's the character development?
 
 3. **Extract Wisdom**
-   - What did each universe learn?
+   - What did each perspective learn?
    - What principles were discovered?
    - What patterns emerged?
 
@@ -238,7 +239,7 @@ Each beat should yield actionable wisdom:
 A narrative beat is well-formed when:
 
 - [ ] The dramatic moment is clearly identified and described
-- [ ] All three universes have perspective on the event
+- [ ] All three perspectives have read the event
 - [ ] Specific lessons are extracted (not vague generalizations)
 - [ ] Relational dimensions are honored
 - [ ] The prose captures character/system transformation

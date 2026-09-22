@@ -124,7 +124,7 @@ const COAIA_NARRATIVE_SKILL_MD = [
   '',
   '5. Use `perform_mmot_evaluation` when output and expected performance diverge, or when a chart needs a truth-based review.',
   '',
-  '6. Create a narrative beat when the work produced a significant learning moment across engineer-world, ceremony-world, and story-engine-world.',
+  '6. Create a narrative beat when the work produced a significant learning moment that the engineer, ceremony, and story_engine perspectives each read.',
   '',
   '## Tool Map',
   '',
@@ -139,7 +139,7 @@ const COAIA_NARRATIVE_SKILL_MD = [
   '| `update_current_reality` | Add factual observations to current reality |',
   '| `mark_action_complete` | Complete an action and flow it into current reality |',
   '| `perform_mmot_evaluation` | Run acknowledge, analyze, update, recommit review |',
-  '| `create_narrative_beat` | Archive significant multi-universe learning |',
+  '| `create_narrative_beat` | Archive significant learning, read from three perspectives |',
   '| `list_narrative_beats` | Review narrative archive for a chart |',
   '',
   '## References',
@@ -222,11 +222,11 @@ const NARRATIVE_BEATS_MD = [
   '',
   'Create a beat when a moment matters across multiple perspectives:',
   '',
-  '- engineer-world: technical structure and consequences',
-  '- ceremony-world: relational protocol and accountability',
-  '- story-engine-world: narrative progression and meaning',
+  '- engineer: technical structure and consequences',
+  '- ceremony: relational protocol and accountability',
+  '- story_engine: narrative progression and meaning',
   '',
-  'A useful beat includes title, act, dramatic type, universes, description, prose, and lessons. Use beats after a real transition, discovery, crisis, MMOT, or integration moment.',
+  'A useful beat includes title, act, dramatic type, perspective_types, description, prose, and lessons. Use beats after a real transition, discovery, crisis, MMOT, or integration moment.',
 ].join('\n') + '\n';
 
 const MCP_TOOLS_MD = [

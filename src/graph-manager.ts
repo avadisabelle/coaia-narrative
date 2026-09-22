@@ -1,6 +1,7 @@
 import { Entity, Relation, KnowledgeGraph, WampumBead, WampumBeltMetadata, WampumBeadPosition, WampumCeremonyLink, GithubIssueRef } from './types.js';
 import { readJsonlMemoryFile, writeJsonlMemoryFile } from './jsonl-preservation.js';
 import { assertNoUnparsedCallSyntax } from './argument-hygiene.js';
+import { normalizePerspectiveTypes, readPerspectiveTypes } from './perspective-types.js';
 import {
   createGithubProjectFieldProjection,
   type GithubProjectFieldProjection,
@@ -1128,7 +1129,7 @@ Current Reality: "${currentReality}"
     title: string,
     act: number,
     type_dramatic: string,
-    universes: string[],
+    perspectiveTypes: string[],
     description: string,
     prose: string,
     lessons: string[],
@@ -1138,6 +1139,8 @@ Current Reality: "${currentReality}"
   ): Promise<{ entity: Entity; beatName: string }> {
     const timestamp = Date.now();
     const beatName = `${parentChartId}_beat_${timestamp}`;
+    // Stored bare (engineer, ceremony, story_engine). Legacy `-world` values are mapped.
+    const perspective_types = normalizePerspectiveTypes(perspectiveTypes);
     
     // Create narrative beat entity
     const entity: Entity = {
@@ -1146,13 +1149,13 @@ Current Reality: "${currentReality}"
       observations: [
         `Act ${act} ${type_dramatic}`,
         `Timestamp: ${new Date().toISOString()}`,
-        `Universe: ${universes.join(', ')}`
+        `Perspectives: ${perspective_types.join(', ')}`
       ],
       metadata: {
         chartId: parentChartId,
         act,
         type_dramatic,
-        universes,
+        perspective_types,
         timestamp: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         narrative: {
@@ -1237,6 +1240,8 @@ Current Reality: "${currentReality}"
 
     // Create sub-beats if provided
     if (initialSubBeats && initialSubBeats.length > 0) {
+      const parentPerspectiveTypes = readPerspectiveTypes(parentBeat.metadata);
+      const inheritedPerspectiveTypes = parentPerspectiveTypes.length > 0 ? parentPerspectiveTypes : ['engineer'];
       for (let i = 0; i < initialSubBeats.length; i++) {
         const subBeat = initialSubBeats[i];
         
@@ -1245,7 +1250,7 @@ Current Reality: "${currentReality}"
           subBeat.title,
           i + 1, // Sequential act numbers
           subBeat.type_dramatic,
-          parentBeat.metadata?.universes || ['engineer-world'],
+          inheritedPerspectiveTypes,
           subBeat.description,
           subBeat.prose,
           subBeat.lessons

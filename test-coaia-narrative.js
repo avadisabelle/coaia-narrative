@@ -336,13 +336,49 @@ async function testGraphManager() {
     // Test 15: Narrative beats
     const beat = await manager.createNarrativeBeat(
       chart.chartId, 'Test Beat', 1, 'Setup',
-      ['engineer-world'], 'A test narrative beat',
+      ['engineer'], 'A test narrative beat',
       'Once upon a time...', ['Testing works']
     );
     assert(beat.beatName.includes('beat_'), 'Narrative beat created');
 
     const beats = await manager.listNarrativeBeats(chart.chartId);
     assert(beats.length >= 1, 'Narrative beats listed');
+
+    // Test 15b: perspective_types, the deprecated universes alias, and pre-0.17 records
+    const beatArgs = {
+      parentChartId: chart.chartId, title: 'Alias Beat', act: 2, type_dramatic: 'Setup',
+      description: 'Written through the deprecated alias', prose: 'An older caller sends universes.',
+      lessons: ['Old callers keep working']
+    };
+    const aliasBeat = await handleToolCall('create_narrative_beat', {
+      ...beatArgs, universes: ['engineer-world', 'ceremony-world', 'story-engine-world']
+    }, manager);
+    const aliasMetadata = aliasBeat.isError ? {} : JSON.parse(aliasBeat.content[0].text).entity.metadata;
+    assert(
+      JSON.stringify(aliasMetadata.perspective_types) === JSON.stringify(['engineer', 'ceremony', 'story_engine']),
+      'universes alias is stored as perspective_types with bare values'
+    );
+    assert(!('universes' in aliasMetadata), 'new beats are written without the universes key');
+
+    const newBeat = await handleToolCall('create_narrative_beat', {
+      ...beatArgs, title: 'New Beat', perspective_types: ['ceremony']
+    }, manager);
+    assert(!newBeat.isError && JSON.parse(newBeat.content[0].text).entity.metadata.perspective_types[0] === 'ceremony',
+      'perspective_types is accepted and stored');
+
+    const noPerspectives = await handleToolCall('create_narrative_beat', beatArgs, manager);
+    assert(noPerspectives.isError && noPerspectives.content[0].text.includes('perspective_types'),
+      'a beat with neither perspective_types nor universes is refused');
+
+    await manager.createEntities([{
+      name: `${chart.chartId}_beat_legacy`,
+      entityType: 'narrative_beat',
+      observations: ['Universe: engineer-world, ceremony-world'],
+      metadata: { chartId: chart.chartId, act: 9, type_dramatic: 'Setup', universes: ['engineer-world', 'ceremony-world'] }
+    }]);
+    const listedBeats = await handleToolCall('list_narrative_beats', { parentChartId: chart.chartId }, manager);
+    assert(listedBeats.content[0].text.includes('**Perspectives**: engineer, ceremony\n'),
+      'a pre-0.17 beat stored with universes is read with bare perspective values');
 
     // Test 16: manage_action_step (unified interface)
     const manageResult = await manager.manageActionStep(

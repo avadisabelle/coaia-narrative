@@ -197,7 +197,8 @@ export interface EntityMetadata {
   updatedAt?: string;
   act?: number;
   type_dramatic?: string;
-  universes?: string[];
+  perspective_types?: string[];
+  universes?: string[];      // deprecated: pre-0.17 records only
   timestamp?: string;
   elementsOfPerformance?: Array<{
     description: string;

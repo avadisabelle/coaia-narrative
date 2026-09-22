@@ -19,7 +19,7 @@ This is a fork of the excellent **[mcp-knowledge-graph](https://github.com/shane
 - Telescoping hierarchies (relations enable nested charts)
 - Advancing patterns (observations accumulate in current reality)
 - Creative orientation (metadata tracks creative phases)
-- Narrative beats (multi-universe storytelling)
+- Narrative beats (three-perspective storytelling)
 
 The knowledge graph tools remain fully functional and are essential for any custom entity/relation work beyond the specialized STC and Narrative abstractions.
 

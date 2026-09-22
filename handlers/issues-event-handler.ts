@@ -14,8 +14,8 @@
  * 4. Story of resolution and growth
  */
 
-import type { CeremonyWorldAssessment } from './ceremony-world-assessment.js';
-import type { NarrativeBeat } from './story-engine-world-generator.js';
+import type { CeremonyPerspectiveAssessment } from './ceremony-perspective-assessment.js';
+import type { NarrativeBeat } from './story-engine-perspective-generator.js';
 
 export interface IssueEvent {
   eventType: 'issues';
@@ -56,8 +56,8 @@ export interface IssueEvent {
 }
 
 export interface UnifiedIssueResponse {
-  ceremonyWorld: CeremonyWorldAssessment;
-  storyEngineWorld: NarrativeBeat;
+  ceremonyPerspective: CeremonyPerspectiveAssessment;
+  storyEnginePerspective: NarrativeBeat;
   relationalProtocols: {
     protocolsApplied: string[];
     honorableAcknowledgment: string;
@@ -80,8 +80,8 @@ export interface UnifiedIssueResponse {
 export async function handleIssueEvent(
   event: IssueEvent,
   parentChartId: string,
-  ceremonyAssessmentFn: (evt: any) => Promise<CeremonyWorldAssessment>,
-  narrativeGeneratorFn: (evt: IssueEvent, parentId: string, ceremony: CeremonyWorldAssessment) => Promise<NarrativeBeat>,
+  ceremonyAssessmentFn: (evt: any) => Promise<CeremonyPerspectiveAssessment>,
+  narrativeGeneratorFn: (evt: IssueEvent, parentId: string, ceremony: CeremonyPerspectiveAssessment) => Promise<NarrativeBeat>,
   persistFunction?: (response: UnifiedIssueResponse) => Promise<void>
 ): Promise<UnifiedIssueResponse> {
   const eventId = `issue_${event.payload.repository.full_name}_${event.payload.issue.number}_${event.action}`;
@@ -93,11 +93,11 @@ export async function handleIssueEvent(
   console.log(`Title: ${event.payload.issue.title}\n`);
 
   // ════════════════════════════════════════════════════════════════════════════
-  // PHASE 1: CEREMONY WORLD - Relational Assessment
+  // PHASE 1: CEREMONY PERSPECTIVE - Relational Assessment
   // ════════════════════════════════════════════════════════════════════════════
 
-  console.log('🕊️ CEREMONY-WORLD ASSESSMENT (PRIMARY FOR ISSUES)...');
-  let ceremonyResult: CeremonyWorldAssessment;
+  console.log('🕊️ CEREMONY PERSPECTIVE ASSESSMENT (PRIMARY FOR ISSUES)...');
+  let ceremonyResult: CeremonyPerspectiveAssessment;
 
   try {
     // For issues, ceremony assessment is critical
@@ -116,10 +116,10 @@ export async function handleIssueEvent(
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  // PHASE 2: STORY-ENGINE WORLD - Conflict Recognition
+  // PHASE 2: STORY ENGINE PERSPECTIVE - Conflict Recognition
   // ════════════════════════════════════════════════════════════════════════════
 
-  console.log('📖 STORY-ENGINE-WORLD GENERATION...');
+  console.log('📖 STORY ENGINE PERSPECTIVE GENERATION...');
   let narrativeResult: NarrativeBeat;
 
   try {
@@ -145,8 +145,8 @@ export async function handleIssueEvent(
   const unifiedArtifact = createIssueUnifiedArtifact(event, ceremonyResult, narrativeResult, relationalProtocols);
 
   const response: UnifiedIssueResponse = {
-    ceremonyWorld: ceremonyResult,
-    storyEngineWorld: narrativeResult,
+    ceremonyPerspective: ceremonyResult,
+    storyEnginePerspective: narrativeResult,
     relationalProtocols,
     unifiedArtifact
   };
@@ -179,7 +179,7 @@ export async function handleIssueEvent(
  */
 function applyIssueRelationalProtocols(
   event: IssueEvent,
-  ceremonyResult: CeremonyWorldAssessment
+  ceremonyResult: CeremonyPerspectiveAssessment
 ): {
   protocolsApplied: string[];
   honorableAcknowledgment: string;
@@ -188,9 +188,9 @@ function applyIssueRelationalProtocols(
 } {
   const protocols: string[] = [];
 
-  // K'é protocols (Newcomer/Reporter Recognition)
-  protocols.push('K\'é_Issue_Reporter_Welcome');
-  protocols.push('K\'é_Community_Kinship_Acknowledgment');
+  // Relationship protocols (Newcomer/Reporter Recognition)
+  protocols.push('Relationship_Issue_Reporter_Welcome');
+  protocols.push('Relationship_Community_Acknowledgment');
 
   // Issue-specific protocols
   if (event.action === 'opened') {
@@ -258,8 +258,6 @@ function generateHonorableAcknowledgment(event: IssueEvent, reporter: string, co
     ${context === 'Bug report - something we built is broken' ? 'Thank you for helping us discover and repair what is broken.' : ''}
     ${context.includes('Feature request') ? 'Thank you for imagining what could be, and trusting us with your vision.' : ''}
     ${context.includes('Documentation') ? 'Thank you for revealing where our knowledge has not yet been shared.' : ''}
-
-    This is K'é in action—the kinship obligation to speak truth and receive it with honor.
   `;
 }
 
@@ -268,7 +266,7 @@ function generateHonorableAcknowledgment(event: IssueEvent, reporter: string, co
  */
 function createIssueUnifiedArtifact(
   event: IssueEvent,
-  ceremonyResult: CeremonyWorldAssessment,
+  ceremonyResult: CeremonyPerspectiveAssessment,
   narrativeResult: NarrativeBeat,
   relationalProtocols: any
 ): {
@@ -294,7 +292,7 @@ function createIssueUnifiedArtifact(
 /**
  * Default ceremony assessment for issues
  */
-function createDefaultIssueCeremonyAssessment(event: IssueEvent, eventId: string): CeremonyWorldAssessment {
+function createDefaultIssueCeremonyAssessment(event: IssueEvent, eventId: string): CeremonyPerspectiveAssessment {
   return {
     eventId,
     relationalAlignment: {
@@ -313,7 +311,7 @@ function createDefaultIssueCeremonyAssessment(event: IssueEvent, eventId: string
       required: true,
       reason: 'Issue events always warrant sacred pause - they represent moments of relationship being tested'
     },
-    protocolsApplied: ['K\'é_Issue_Reporter_Welcome', 'Protocol_Conflict_Acknowledgment'],
+    protocolsApplied: ['Relationship_Issue_Reporter_Welcome', 'Protocol_Conflict_Acknowledgment'],
     accountabilityRecord: {
       timestamp: new Date().toISOString(),
       relationalCommitment: 'This issue is received as a gift - the reporter trusts us enough to speak what is wrong',
@@ -332,7 +330,7 @@ function createDefaultIssueNarrativeBeat(event: IssueEvent, parentChartId: strin
     title: `S1E1: Crisis/Conflict - Issue #${event.payload.issue.number} "${event.payload.issue.title}"`,
     act: 1,
     type_dramatic: 'Crisis/Antagonist Force - Conflict Emerges',
-    universes: ['engineer-world', 'ceremony-world', 'story-engine-world'],
+    perspective_types: ['engineer', 'ceremony', 'story_engine'],
     description: `An issue has emerged in ${event.payload.repository.full_name}. This represents a moment where the system is called to respond with integrity and care.`,
     prose: `
       In the shared space of ${event.payload.repository.full_name}, a conflict has emerged.
@@ -385,10 +383,10 @@ export function formatIssueResponse(response: UnifiedIssueResponse): string {
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🕊️ CEREMONY-WORLD ASSESSMENT (PRIMARY)
-  Relational Alignment: ${response.ceremonyWorld.relationalAlignment.score?.toFixed(2) || 'N/A'}/1.0
-  Sacred Pause: ${response.ceremonyWorld.sacredPause.required ? '⏸️ REQUIRED' : '✅ NOT REQUIRED'}
-  Reason: ${response.ceremonyWorld.sacredPause.reason}
+🕊️ CEREMONY PERSPECTIVE ASSESSMENT (PRIMARY)
+  Relational Alignment: ${response.ceremonyPerspective.relationalAlignment.score?.toFixed(2) || 'N/A'}/1.0
+  Sacred Pause: ${response.ceremonyPerspective.sacredPause.required ? '⏸️ REQUIRED' : '✅ NOT REQUIRED'}
+  Reason: ${response.ceremonyPerspective.sacredPause.reason}
 
 🤝 RELATIONAL PROTOCOLS APPLIED
 ${response.relationalProtocols.protocolsApplied.map(p => `  • ${p}`).join('\n')}
@@ -402,8 +400,8 @@ ${response.relationalProtocols.honorableAcknowledgment.trim().split('\n').map(l 
 ${response.relationalProtocols.relationshipCommitment.trim().split('\n').map(l => `    ${l}`).join('\n')}
 
 📖 STORY-ENGINE NARRATIVE
-  Title: ${response.storyEngineWorld.title}
-  Arc: ${response.storyEngineWorld.episodeContext.arcType}
+  Title: ${response.storyEnginePerspective.title}
+  Arc: ${response.storyEnginePerspective.episodeContext.arcType}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

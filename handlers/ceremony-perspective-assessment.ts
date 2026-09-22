@@ -1,10 +1,10 @@
 /**
- * 🕊️ CEREMONY WORLD ASSESSMENT HANDLER
+ * 🕊️ CEREMONY PERSPECTIVE ASSESSMENT HANDLER
  *
- * Evaluates webhook events through Indigenous relational protocols
+ * Evaluates webhook events through relational checks
  * Integrates IAIP-MCP for assess_relational_alignment & get_direction_guidance
  *
- * Protocol: K'é (Kinship), SNBH (Living in Harmony), Hózhó (Beauty/Balance)
+ * Checks: relationship, proportion, coherence
  */
 
 interface WebhookEvent {
@@ -16,7 +16,7 @@ interface WebhookEvent {
   [key: string]: unknown;
 }
 
-interface CeremonyWorldAssessment {
+interface CeremonyPerspectiveAssessment {
   eventId: string;
   relationalAlignment: {
     assessed: boolean;
@@ -43,18 +43,18 @@ interface CeremonyWorldAssessment {
 }
 
 /**
- * Main assessment function - evaluates event through ceremony-world lens
+ * Main assessment function - evaluates event from the ceremony perspective
  *
  * @param event - GitHub webhook event
  * @param assessRelationalAlignmentFn - IAIP-MCP assess_relational_alignment function
  * @param getDirectionGuidanceFn - IAIP-MCP get_direction_guidance function
- * @returns CeremonyWorldAssessment with relational protocols applied
+ * @returns CeremonyPerspectiveAssessment with relational protocols applied
  */
-export async function assessCeremonyWorld(
+export async function assessCeremonyPerspective(
   event: WebhookEvent,
   assessRelationalAlignmentFn: (description: string) => Promise<{ score: number; principles: string[]; analysis: string }>,
   getDirectionGuidanceFn: (direction: string, inquiry: string) => Promise<{ guidance: string; teachings: string[]; practices: string[] }>
-): Promise<CeremonyWorldAssessment> {
+): Promise<CeremonyPerspectiveAssessment> {
   const eventId = `${event.eventType}_${event.timestamp}_${event.actor}`;
 
   // Step 1: Assess relational alignment using IAIP-MCP
@@ -66,9 +66,9 @@ export async function assessCeremonyWorld(
     - Context: ${event.eventType === 'issues' ? 'Issue created or modified' : event.eventType === 'push' ? 'Code pushed to repository' : 'Event processed'}
 
     This event triggers an automated response. How well does this honor:
-    - K'é (Kinship/Relationship): Are we honoring connections with the developer and community?
-    - SNBH (Living in Harmony): Is the response balanced and proportionate?
-    - Hózhó (Beauty/Balance): Does this action create coherence or disruption?
+    - Relationship: Are we honoring connections with the developer and community?
+    - Proportion: Is the response balanced and proportionate?
+    - Coherence: Does this action create coherence or disruption?
   `;
 
   let relationalAlignment = {
@@ -137,19 +137,19 @@ export async function assessCeremonyWorld(
   // Step 4: Apply relevant protocols
   const protocolsApplied = selectProtocols(event.eventType, relationalAlignment.principles);
 
-  // Step 5: Create accountability record (deferral to Engineer-World & Story-World)
+  // Step 5: Create accountability record (deferral to the engineer and story_engine perspectives)
   const accountabilityRecord = {
     timestamp: new Date().toISOString(),
     relationalCommitment: `
       "I honor this ${event.eventType} event as sacred information requiring full relational attention.
-      I assess its impact through K'é, SNBH, and Hózhó principles.
-      I defer technical execution to Engineer-World with this relational context.
-      I await Story-World's narrative integration of this moment."
+      I assess its impact on relationship, proportion and coherence.
+      I defer technical execution to the engineer perspective with this relational context.
+      I await the story_engine perspective's narrative integration of this moment."
     `,
     deferralNotes: `
-      Engineer-World: Execute with technical precision. The relational score of ${relationalAlignment.score}
+      Engineer perspective: Execute with technical precision. The relational score of ${relationalAlignment.score}
       indicates the need for ${sacredPause.required ? 'ceremonial acknowledgment before proceeding' : 'standard processing'}.
-      Story-World: This moment carries ${relationalAlignment.principles.length} relational principles.
+      Story engine perspective: This moment carries ${relationalAlignment.principles.length} relational principles.
       Thread this into our narrative arc with care for the relationships it honors.
     `
   };
@@ -204,27 +204,27 @@ function generateSacredPauseReason(event: WebhookEvent, alignmentScore: number |
 }
 
 /**
- * Selects which Indigenous protocols apply to this event
+ * Selects which relational protocols apply to this event
  */
 function selectProtocols(eventType: string, principles: string[]): string[] {
   const protocols: string[] = [];
 
-  // K'é protocols (Kinship/Relationship)
+  // Relationship protocols
   if (principles.includes('kinship') || eventType === 'issues') {
-    protocols.push('K\'é_Newcomer_Welcome');
-    protocols.push('K\'é_Contributor_Recognition');
+    protocols.push('Relationship_Newcomer_Welcome');
+    protocols.push('Relationship_Contributor_Recognition');
   }
 
-  // SNBH protocols (Living in Harmony)
+  // Proportion protocols
   if (principles.includes('harmony') || eventType === 'push') {
-    protocols.push('SNBH_Balanced_Response');
-    protocols.push('SNBH_Proportional_Action');
+    protocols.push('Proportion_Balanced_Response');
+    protocols.push('Proportion_Scaled_Action');
   }
 
-  // Hózhó protocols (Beauty/Balance)
+  // Coherence protocols
   if (principles.includes('beauty') || eventType === 'pull_request') {
-    protocols.push('Hózhó_Narrative_Coherence');
-    protocols.push('Hózhó_Balanced_Review');
+    protocols.push('Coherence_Narrative');
+    protocols.push('Coherence_Balanced_Review');
   }
 
   // Universal protocols
@@ -237,9 +237,9 @@ function selectProtocols(eventType: string, principles: string[]): string[] {
 /**
  * Helper: Format assessment for logging/documentation
  */
-export function formatCeremonyAssessment(assessment: CeremonyWorldAssessment): string {
+export function formatCeremonyAssessment(assessment: CeremonyPerspectiveAssessment): string {
   return `
-🕊️ CEREMONY WORLD ASSESSMENT
+🕊️ CEREMONY PERSPECTIVE ASSESSMENT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Event ID: ${assessment.eventId}

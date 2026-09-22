@@ -1,15 +1,13 @@
 # Narrative Beat Tools
 
-This directory contains tools for capturing and organizing narrative beats across multiple universes and timelines - perfect for multi-layered storytelling and complex narrative structures.
+This directory contains tools for capturing and organizing narrative beats: story moments that three perspectives read at once (engineer, ceremony, story_engine).
 
 ## 🎭 Purpose
 
-Narrative beats are story moments that can exist across different universes, timelines, or narrative layers. They complement structural tension charts by providing a framework for capturing the **story** of creative work, not just the structure.
+A narrative beat records one event as the engineer, ceremony and story_engine perspectives read it. Beats complement structural tension charts by providing a framework for capturing the **story** of creative work, not just the structure.
 
 **Use Cases:**
-- Multi-universe fiction writing
-- Parallel timeline tracking
-- Remixed narrative contexts (same story, different worlds)
+- Reading one event from three perspectives
 - Capturing lessons and insights from creative journeys
 - Documenting the "story behind the work"
 
@@ -19,18 +17,18 @@ Narrative beats are story moments that can exist across different universes, tim
 - Create a narrative moment/beat
 - Specify act (1, 2, or 3 in three-act structure)
 - Tag with dramatic type (inciting_incident, midpoint, climax, etc.)
-- Associate with one or more universes
+- Name the perspectives that read it (`perspective_types`)
 - Include prose, description, and lessons
 
 **[telescope_narrative_beat.json](telescope_narrative_beat.json)** / **[.yaml](telescope_narrative_beat.yaml)**
 - Expand a beat into a detailed sub-story
 - Break down complex moments into finer beats
-- Maintain universe context
+- Sub-beats inherit the parent beat's perspectives
 - Create nested narrative structures
 
 **[list_narrative_beats.json](list_narrative_beats.json)** / **[.yaml](list_narrative_beats.yaml)**
 - List all narrative beats
-- Filter by act, universe, or dramatic type
+- Filter by act or dramatic type
 - See beat hierarchy (telescoped beats)
 - Overview of story structure
 
@@ -73,29 +71,29 @@ Narrative beats follow the classical three-act structure:
 - Resolution
 - Denouement
 
-## 🌍 Multi-Universe Support
+## 👁️ Three Perspectives
 
-Beats can exist in multiple universes simultaneously:
+Each beat names the perspectives that read it:
 
 ```javascript
 {
   "beatDescription": "The moment of realization",
   "act": 2,
   "type_dramatic": "midpoint",
-  "universes": [
-    "primary_timeline",
-    "alternate_universe_a",
-    "dream_sequence"
+  "perspective_types": [
+    "engineer",
+    "ceremony",
+    "story_engine"
   ],
-  "prose": "In every world, at this precise moment, the truth became clear..."
+  "prose": "Each perspective reads the same moment: the structure that changed, the relationships it touches, the arc it turns."
 }
 ```
 
-**Use Cases:**
-- Parallel timelines in sci-fi
-- Alternate POVs in same story
-- Different narrative framings
-- Remixed contexts (literary, mythic, technical)
+- `engineer`: technical structure and consequences
+- `ceremony`: relational protocol and accountability
+- `story_engine`: narrative progression and meaning
+
+Beats written before 0.17 carry the same list under `universes`, with the values `engineer-world`, `ceremony-world` and `story-engine-world`. Readers accept both keys and map the old values to the bare ones. `create_narrative_beat` still accepts `universes` as a deprecated alias of `perspective_types`.
 
 ## 📊 Data Structure
 
@@ -111,7 +109,7 @@ Beats can exist in multiple universes simultaneously:
   "metadata": {
     "act": 2,
     "type_dramatic": "midpoint",
-    "universes": ["main_timeline", "flashback_sequence"],
+    "perspective_types": ["engineer", "story_engine"],
     "timestamp": "2026-02-13",
     "narrative": {
       "description": "Critical revelation scene",
@@ -172,8 +170,7 @@ Beats can exist in multiple universes simultaneously:
   "beatDescription": "First encounter with the mystery",
   "act": 1,
   "type_dramatic": "inciting_incident",
-  "universes": ["main_timeline"],
-  "timestamp": "Day 1",
+  "perspective_types": ["story_engine"],
   "prose": "It started with a question that shouldn't have been asked...",
   "lessons": ["Curiosity opens doors", "Questions have power"]
 }
@@ -197,7 +194,7 @@ Beats can exist in multiple universes simultaneously:
 }
 
 // Creates 4 sub-beats under beat_123
-// Maintains act and universe context
+// Sub-beats inherit the parent beat's perspectives
 ```
 
 ### Filtering Narrative View
@@ -206,11 +203,6 @@ Beats can exist in multiple universes simultaneously:
 // See all Act 2 beats
 {
   "filterByAct": 2
-}
-
-// See beats in specific universe
-{
-  "filterByUniverse": "alternate_timeline_a"
 }
 
 // See all midpoint beats
@@ -288,19 +280,19 @@ Each beat can capture insights:
 - Building wisdom library
 - Teaching others
 
-### Cross-Universe Patterns
+### Cross-Perspective Patterns
 
-Track how the same beat manifests across universes:
+Record how each perspective reads the same moment:
 
 ```javascript
 {
   "beatDescription": "The moment of choice",
-  "universes": [
-    "technical_implementation",  // Code architecture decision
-    "narrative_layer",           // Character choosing path
-    "mythic_context"             // Hero accepting quest
+  "perspective_types": [
+    "engineer",      // Code architecture decision
+    "ceremony",      // Who the decision obligates
+    "story_engine"   // Character choosing a path
   ],
-  "prose": "The pattern appears in every context: commitment creates clarity."
+  "prose": "The pattern appears in every perspective: commitment creates clarity."
 }
 ```
 

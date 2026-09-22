@@ -17,10 +17,10 @@ This directory contains example payloads and resulting data structures for commo
 - Illustrates multi-level telescoping
 
 **[narrative-beat.json](narrative-beat.json)**
-- Creating a narrative beat with multi-universe context
+- Creating a narrative beat read from three perspectives
 - Shows dramatic structure (three-act)
 - Demonstrates prose and lessons capture
-- Illustrates universe tagging
+- Illustrates perspective tagging
 
 **[knowledge-graph.json](knowledge-graph.json)**
 - Traditional entity/relation operations
@@ -134,7 +134,7 @@ Each example file contains:
   "beatDescription": "The moment of realization",
   "act": 2,
   "type_dramatic": "midpoint",
-  "universes": ["main_timeline", "alternate_universe"],
+  "perspective_types": ["engineer", "ceremony", "story_engine"],
   "prose": "Everything changed in that instant...",
   "lessons": ["Truth emerges when resistance stops"]
 }

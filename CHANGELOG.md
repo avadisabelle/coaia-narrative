@@ -5,6 +5,25 @@ All notable changes to COAIA Memory will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 👁️ Narrative beats name perspectives, not universes
+
+The engineer, ceremony and story_engine readings of a beat are perspectives on one event
+(avadisabelle/coaia-narrative#56).
+
+- `create_narrative_beat` takes `perspective_types`. `universes` is still accepted as a deprecated
+  alias. One of the two is required.
+- New beats are written with `metadata.perspective_types` and the values `engineer`, `ceremony`,
+  `story_engine`. The observation line reads `Perspectives: …`.
+- Beats written before this release keep `metadata.universes` and their `-world` values. The
+  preservation check still protects that key. Every reader (`list_narrative_beats`, the CLI, the
+  Markdown export, beat telescoping) reads `perspective_types` first, falls back to `universes`, and
+  maps `engineer-world` / `ceremony-world` / `story-engine-world` to the bare values.
+- Tool descriptions, `init_llm_guidance`, the installed skill, the README and the shipped schemas say
+  "perspective". The data-model schemas add `perspective_types`, mark `universes` deprecated, and
+  describe `timestamp` as the time the beat was recorded.
+
 ## [0.16.2] - 2026-08-11
 
 ### 🛑 A `--memory-path` carrying an unexpanded shell variable is refused

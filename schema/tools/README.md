@@ -63,7 +63,7 @@ COAIA_TOOLS="STC_TOOLS,NARRATIVE_TOOLS,init_llm_guidance" npx coaia-memory
 | Category | Tools | Purpose |
 |----------|-------|---------|
 | STC | 11 | Create and manage structural tension charts |
-| Narrative | 3 | Capture multi-universe story beats |
+| Narrative | 3 | Capture three-perspective story beats |
 | Knowledge Graph | 9 | Traditional entity/relation operations |
 | System | 1 | LLM configuration and guidance |
 | **Total** | **24** | Complete MCP tool set |
@@ -89,7 +89,7 @@ COAIA_TOOLS="STC_TOOLS,NARRATIVE_TOOLS,init_llm_guidance" npx coaia-memory
 ### Capturing Narrative
 
 1. **Create beat** - `create_narrative_beat` ([narrative/create_narrative_beat.json](narrative/create_narrative_beat.json))
-2. **Add context** - Include prose, lessons, universes
+2. **Add context** - Include prose, lessons, perspective_types
 3. **Expand beat** - `telescope_narrative_beat` ([narrative/telescope_narrative_beat.json](narrative/telescope_narrative_beat.json))
 4. **View story** - `list_narrative_beats` ([narrative/list_narrative_beats.json](narrative/list_narrative_beats.json))
 
@@ -226,7 +226,7 @@ See main documentation for complete configuration options.
 
 **Narrative Tools** build on KG:
 - Create narrative_beat entities
-- Support multi-universe tagging
+- Support three-perspective tagging
 - Track dramatic structure
 
 ### Meta Layer

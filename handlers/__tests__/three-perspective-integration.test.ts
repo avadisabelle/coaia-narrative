@@ -1,12 +1,12 @@
 /**
- * 🧪 THREE-UNIVERSE INTEGRATION TESTS
+ * 🧪 THREE-PERSPECTIVE INTEGRATION TESTS
  *
- * Validates that webhook events flow through all three universes
+ * Validates that webhook events are read by all three perspectives
  * and produce unified, coherent responses
  *
  * Test Strategy:
  * 1. Mock event inputs (push, issues)
- * 2. Verify each universe processes correctly
+ * 2. Verify each perspective processes correctly
  * 3. Validate unified artifact coherence
  * 4. Ensure relational protocols are applied
  */
@@ -16,8 +16,8 @@ import { handlePushEvent } from '../push-event-handler';
 import { handleIssueEvent } from '../issues-event-handler';
 import type { PushEvent } from '../push-event-handler';
 import type { IssueEvent } from '../issues-event-handler';
-import type { CeremonyWorldAssessment } from '../ceremony-world-assessment';
-import type { NarrativeBeat } from '../story-engine-world-generator';
+import type { CeremonyPerspectiveAssessment } from '../ceremony-perspective-assessment';
+import type { NarrativeBeat } from '../story-engine-perspective-generator';
 
 // ════════════════════════════════════════════════════════════════════════════
 // TEST FIXTURES & MOCKS
@@ -46,7 +46,7 @@ const mockPushEvent: PushEvent = {
     commits: [
       {
         id: 'def456',
-        message: 'Implement three-universe coordination',
+        message: 'Implement three-perspective coordination',
         author: {
           name: 'Test User',
           email: 'test@example.com'
@@ -60,7 +60,7 @@ const mockPushEvent: PushEvent = {
     ],
     head_commit: {
       id: 'def456',
-      message: 'Implement three-universe coordination',
+      message: 'Implement three-perspective coordination',
       timestamp: new Date().toISOString(),
       url: 'https://github.com/test-repo/test-project/commit/def456'
     }
@@ -79,7 +79,7 @@ const mockIssueEvent: IssueEvent = {
       id: 12345,
       number: 1,
       title: 'Sacred pause should be honored in webhook processing',
-      body: 'When ceremony-world determines a sacred pause is needed, engineer-world should respect this.',
+      body: 'When the ceremony perspective determines a sacred pause is needed, the engineer perspective should respect this.',
       user: {
         login: 'community-member',
         id: 99999,
@@ -87,7 +87,7 @@ const mockIssueEvent: IssueEvent = {
       },
       labels: [
         { id: 1, name: 'relational-protocol', color: 'ff00ff' },
-        { id: 2, name: 'ceremony-world', color: '00ffff' }
+        { id: 2, name: 'ceremony-perspective', color: '00ffff' }
       ],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -104,7 +104,7 @@ const mockIssueEvent: IssueEvent = {
 };
 
 // Mock MCP functions
-const mockCeremonyAssessment = async (event: any): Promise<CeremonyWorldAssessment> => ({
+const mockCeremonyAssessment = async (event: any): Promise<CeremonyPerspectiveAssessment> => ({
   eventId: `mock_${Date.now()}`,
   relationalAlignment: {
     assessed: true,
@@ -116,35 +116,35 @@ const mockCeremonyAssessment = async (event: any): Promise<CeremonyWorldAssessme
     north_reflection: 'This event brings clarity about our process',
     east_thinking: 'We should prioritize relational awareness',
     south_relationships: 'Community trust is strengthened through transparency',
-    west_action: 'Document and share our three-universe approach'
+    west_action: 'Document and share our three-perspective approach'
   },
   sacredPause: {
     required: event.eventType === 'issues',
     reason: event.eventType === 'issues' ? 'Issue events require relational pause' : 'No pause needed'
   },
-  protocolsApplied: ['K\'é_Kinship', 'SNBH_Harmony', 'Hózhó_Beauty'],
+  protocolsApplied: ['Relationship_Newcomer_Welcome', 'Proportion_Balanced_Response', 'Coherence_Narrative'],
   accountabilityRecord: {
     timestamp: new Date().toISOString(),
     relationalCommitment: 'We honor this event as a relational moment',
-    deferralNotes: 'Engineer and Story worlds await ceremony guidance'
+    deferralNotes: 'Engineer and story_engine perspectives await ceremony guidance'
   }
 });
 
 const mockNarrativeGenerator = async (
   event: any,
   parentChartId: string,
-  ceremony: CeremonyWorldAssessment
+  ceremony: CeremonyPerspectiveAssessment
 ): Promise<NarrativeBeat> => ({
   beatName: `beat_${parentChartId}_${Date.now()}`,
   parentChartId,
-  title: `S1E1: ${event.eventType.toUpperCase()} - Three Universe Test`,
+  title: `S1E1: ${event.eventType.toUpperCase()} - Three Perspective Test`,
   act: 1,
   type_dramatic: 'Integration Test',
-  universes: ['engineer-world', 'ceremony-world', 'story-engine-world'],
+  perspective_types: ['engineer', 'ceremony', 'story_engine'],
   description: `Test beat for ${event.eventType} event`,
-  prose: 'This narrative beat was generated as part of three-universe integration testing.',
+  prose: 'This narrative beat was generated as part of three-perspective integration testing.',
   lessons: [
-    'All three universes can process events coherently',
+    'All three perspectives can process events coherently',
     'Relational protocols enhance rather than impede processing',
     'Sacred pause creates space for wisdom'
   ],
@@ -171,14 +171,14 @@ const mockNarrativeGenerator = async (
 // PUSH EVENT TESTS
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('Push Event Handler - Three Universe Integration', () => {
+describe('Push Event Handler - Three Perspective Integration', () => {
   let persistSpy: any;
 
   beforeEach(() => {
     persistSpy = vi.fn().mockResolvedValue(undefined);
   });
 
-  it('should process push event through all three universes', async () => {
+  it('should process push event through all three perspectives', async () => {
     const response = await handlePushEvent(
       mockPushEvent,
       'test-chart-123',
@@ -188,13 +188,13 @@ describe('Push Event Handler - Three Universe Integration', () => {
     );
 
     // Verify response structure
-    expect(response).toHaveProperty('engineerWorld');
-    expect(response).toHaveProperty('ceremonyWorld');
-    expect(response).toHaveProperty('storyEngineWorld');
+    expect(response).toHaveProperty('engineerPerspective');
+    expect(response).toHaveProperty('ceremonyPerspective');
+    expect(response).toHaveProperty('storyEnginePerspective');
     expect(response).toHaveProperty('unifiedArtifact');
   });
 
-  it('Engineer-World should validate push event correctly', async () => {
+  it('Engineer perspective should validate push event correctly', async () => {
     const response = await handlePushEvent(
       mockPushEvent,
       'test-chart-123',
@@ -203,13 +203,13 @@ describe('Push Event Handler - Three Universe Integration', () => {
       persistSpy
     );
 
-    const engineer = response.engineerWorld;
+    const engineer = response.engineerPerspective;
     expect(engineer.status).toBe('success');
     expect(engineer.validationPassed).toBe(true);
     expect(engineer.routedTo).toBeDefined();
   });
 
-  it('Ceremony-World should assess relational alignment', async () => {
+  it('Ceremony perspective should assess relational alignment', async () => {
     const response = await handlePushEvent(
       mockPushEvent,
       'test-chart-123',
@@ -218,7 +218,7 @@ describe('Push Event Handler - Three Universe Integration', () => {
       persistSpy
     );
 
-    const ceremony = response.ceremonyWorld;
+    const ceremony = response.ceremonyPerspective;
     expect(ceremony.relationalAlignment.assessed).toBe(true);
     expect(ceremony.relationalAlignment.score).toBeDefined();
     expect(ceremony.fourDirections).toBeDefined();
@@ -233,11 +233,11 @@ describe('Push Event Handler - Three Universe Integration', () => {
       persistSpy
     );
 
-    const narrative = response.storyEngineWorld;
+    const narrative = response.storyEnginePerspective;
     expect(narrative.title).toBeDefined();
-    expect(narrative.universes).toContain('engineer-world');
-    expect(narrative.universes).toContain('ceremony-world');
-    expect(narrative.universes).toContain('story-engine-world');
+    expect(narrative.perspective_types).toContain('engineer');
+    expect(narrative.perspective_types).toContain('ceremony');
+    expect(narrative.perspective_types).toContain('story_engine');
   });
 
   it('Unified artifact should contain all perspectives', async () => {
@@ -250,9 +250,9 @@ describe('Push Event Handler - Three Universe Integration', () => {
     );
 
     const artifact = response.unifiedArtifact;
-    expect(artifact.summary).toContain('Engineer-World');
-    expect(artifact.summary).toContain('Ceremony-World');
-    expect(artifact.summary).toContain('Story-Engine');
+    expect(artifact.summary).toContain('Engineer');
+    expect(artifact.summary).toContain('Ceremony');
+    expect(artifact.summary).toContain('Story engine');
     expect(artifact.nextSteps.length).toBeGreaterThan(0);
   });
 
@@ -277,7 +277,7 @@ describe('Push Event Handler - Three Universe Integration', () => {
       persistSpy
     );
 
-    expect(response.ceremonyWorld.sacredPause.required).toBe(false);
+    expect(response.ceremonyPerspective.sacredPause.required).toBe(false);
   });
 });
 
@@ -292,7 +292,7 @@ describe('Issue Event Handler - Relational Protocol Enforcement', () => {
     persistSpy = vi.fn().mockResolvedValue(undefined);
   });
 
-  it('should process issue event through all three universes', async () => {
+  it('should process issue event through all three perspectives', async () => {
     const response = await handleIssueEvent(
       mockIssueEvent,
       'test-chart-123',
@@ -301,13 +301,13 @@ describe('Issue Event Handler - Relational Protocol Enforcement', () => {
       persistSpy
     );
 
-    expect(response).toHaveProperty('ceremonyWorld');
-    expect(response).toHaveProperty('storyEngineWorld');
+    expect(response).toHaveProperty('ceremonyPerspective');
+    expect(response).toHaveProperty('storyEnginePerspective');
     expect(response).toHaveProperty('relationalProtocols');
     expect(response).toHaveProperty('unifiedArtifact');
   });
 
-  it('Ceremony-World should require sacred pause for new issues', async () => {
+  it('Ceremony perspective should require sacred pause for new issues', async () => {
     const response = await handleIssueEvent(
       mockIssueEvent,
       'test-chart-123',
@@ -316,7 +316,7 @@ describe('Issue Event Handler - Relational Protocol Enforcement', () => {
       persistSpy
     );
 
-    expect(response.ceremonyWorld.sacredPause.required).toBe(true);
+    expect(response.ceremonyPerspective.sacredPause.required).toBe(true);
   });
 
   it('should apply relational protocols for issues', async () => {
@@ -330,7 +330,7 @@ describe('Issue Event Handler - Relational Protocol Enforcement', () => {
 
     const protocols = response.relationalProtocols.protocolsApplied;
     expect(protocols.length).toBeGreaterThan(0);
-    expect(protocols.some(p => p.includes('K\'é'))).toBe(true);
+    expect(protocols.some(p => p.startsWith('Relationship_'))).toBe(true);
   });
 
   it('should generate honorable acknowledgment for issue reporter', async () => {
@@ -356,7 +356,7 @@ describe('Issue Event Handler - Relational Protocol Enforcement', () => {
       persistSpy
     );
 
-    const narrative = response.storyEngineWorld;
+    const narrative = response.storyEnginePerspective;
     expect(narrative.episodeContext.arcType).toBe('conflict');
   });
 
@@ -388,11 +388,11 @@ describe('Issue Event Handler - Relational Protocol Enforcement', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-// CROSS-UNIVERSE COHERENCE TESTS
+// CROSS-PERSPECTIVE COHERENCE TESTS
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('Cross-Universe Coherence', () => {
-  it('push event should show all three universes in agreement', async () => {
+describe('Cross-Perspective Coherence', () => {
+  it('push event should show all three perspectives in agreement', async () => {
     const response = await handlePushEvent(
       mockPushEvent,
       'test-chart-123',
@@ -402,11 +402,11 @@ describe('Cross-Universe Coherence', () => {
     );
 
     // Engineer validates ✓
-    expect(response.engineerWorld.validationPassed).toBe(true);
+    expect(response.engineerPerspective.validationPassed).toBe(true);
     // Ceremony assesses ✓
-    expect(response.ceremonyWorld.relationalAlignment.assessed).toBe(true);
+    expect(response.ceremonyPerspective.relationalAlignment.assessed).toBe(true);
     // Story weaves ✓
-    expect(response.storyEngineWorld.beatName).toBeDefined();
+    expect(response.storyEnginePerspective.beatName).toBeDefined();
     // All three in unified response ✓
     expect(response.unifiedArtifact.nextSteps.length).toBeGreaterThan(0);
   });
@@ -421,11 +421,11 @@ describe('Cross-Universe Coherence', () => {
     );
 
     // Ceremony provides wisdom (sacred pause) ✓
-    expect(response.ceremonyWorld.sacredPause.required).toBe(true);
+    expect(response.ceremonyPerspective.sacredPause.required).toBe(true);
     // Engineer respects this ✓
     expect(response.unifiedArtifact.nextAction).toContain('⏸️');
     // Story recognizes conflict ✓
-    expect(response.storyEngineWorld.episodeContext.arcType).toBe('conflict');
+    expect(response.storyEnginePerspective.episodeContext.arcType).toBe('conflict');
     // All three honored in artifact ✓
     expect(response.relationalProtocols.honorableAcknowledgment).toBeDefined();
   });
@@ -439,7 +439,7 @@ describe('Cross-Universe Coherence', () => {
       vi.fn()
     );
 
-    const narrative = response.storyEngineWorld;
+    const narrative = response.storyEnginePerspective;
     // Builder character revealed ✓
     expect(narrative.characterTracking.builder_revealed.length).toBeGreaterThan(0);
     // Keeper character revealed ✓
@@ -453,7 +453,7 @@ describe('Cross-Universe Coherence', () => {
 // ERROR HANDLING & RESILIENCE TESTS
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('Three-Universe Resilience', () => {
+describe('Three-Perspective Resilience', () => {
   it('should continue if ceremony assessment fails', async () => {
     const failingCeremony = async () => {
       throw new Error('Ceremony assessment failed');
@@ -470,7 +470,7 @@ describe('Three-Universe Resilience', () => {
     // Should still have response
     expect(response).toBeDefined();
     // Should create default ceremony assessment
-    expect(response.ceremonyWorld).toBeDefined();
+    expect(response.ceremonyPerspective).toBeDefined();
   });
 
   it('should continue if narrative generation fails', async () => {
@@ -489,7 +489,7 @@ describe('Three-Universe Resilience', () => {
     // Should still have response
     expect(response).toBeDefined();
     // Should create default narrative beat
-    expect(response.storyEngineWorld).toBeDefined();
+    expect(response.storyEnginePerspective).toBeDefined();
   });
 
   it('should handle invalid push event gracefully', async () => {
@@ -510,7 +510,7 @@ describe('Three-Universe Resilience', () => {
     );
 
     // Engineer should fail validation
-    expect(response.engineerWorld.validationPassed).toBe(false);
+    expect(response.engineerPerspective.validationPassed).toBe(false);
     // But we should still have a response structure
     expect(response.unifiedArtifact).toBeDefined();
   });

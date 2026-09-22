@@ -10,6 +10,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import type { Entity, Relation, KnowledgeGraph } from './src/types.js';
+import { readPerspectiveTypes } from './src/perspective-types.js';
 
 interface MarkdownOptions {
   includeMetadata?: boolean;
@@ -185,12 +186,12 @@ export async function exportChartToMarkdown(
     narrativeBeats.forEach((beat, idx) => {
       const act = beat.metadata?.act || '?';
       const type = beat.metadata?.type_dramatic || 'Unknown';
-      const universes = beat.metadata?.universes || [];
+      const perspectives = readPerspectiveTypes(beat.metadata);
       
       md += `### Act ${act}: ${escapeMarkdown(type)}\n\n`;
       
-      if (universes.length > 0) {
-        md += `- **Universes**: ${universes.join(', ')}\n`;
+      if (perspectives.length > 0) {
+        md += `- **Perspectives**: ${perspectives.join(', ')}\n`;
       }
       if (beat.metadata?.timestamp) {
         const timestamp = new Date(beat.metadata.timestamp).toLocaleString();

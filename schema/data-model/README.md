@@ -69,7 +69,7 @@ Entities are the **nodes** in the knowledge graph. Each entity represents a dist
 | `desired_outcome` | What you want to create | Single clear statement of result |
 | `current_reality` | Where you are now | Accumulates observations as actions complete |
 | `action_step` | Strategic intermediary action | Has dueDate and completionStatus |
-| `narrative_beat` | Story moment across universes | Multi-timeline narrative capture |
+| `narrative_beat` | Story moment read from three perspectives | Engineer, ceremony and story_engine readings of one event |
 | `person` | Individual or character | Traditional knowledge graph |
 | `concept` | Abstract idea or principle | Traditional knowledge graph |
 | `event` | Occurrence or happening | Traditional knowledge graph |
@@ -147,8 +147,9 @@ Relations are the **edges** connecting entities. They define typed, directional 
 **Narrative:**
 - `act` - Act number (1, 2, or 3) for three-act structure
 - `type_dramatic` - Dramatic beat type (e.g., "inciting_incident", "climax")
-- `universes` - Array of universe/timeline identifiers
-- `timestamp` - In-universe date/time reference
+- `perspective_types` - Perspectives that read the beat: engineer, ceremony, story_engine
+- `universes` - Deprecated. Beats written before 0.17 hold the same list here, with `-world` values
+- `timestamp` - When the beat was recorded (ISO 8601)
 - `narrative.description` - Brief narrative description
 - `narrative.prose` - Full prose text
 - `narrative.lessons` - Array of lessons learned

@@ -24,6 +24,7 @@ import {
 import { handleSkillCommand } from './src/skill.js';
 import { readJsonlMemoryFile, writeJsonlMemoryFile } from './src/jsonl-preservation.js';
 import { findUnparsedCallSyntax } from './src/argument-hygiene.js';
+import { readPerspectiveTypes } from './src/perspective-types.js';
 import type { Entity, Relation, KnowledgeGraph } from './src/types.js';
 
 // ==================== CONFIGURATION ====================
@@ -418,13 +419,13 @@ async function viewChart(chartId: string, memoryPath: string): Promise<void> {
     narrativeBeats.forEach((beat, idx) => {
       const act = beat.metadata?.act || '?';
       const type = beat.metadata?.type_dramatic || 'Unknown';
-      const universes = beat.metadata?.universes || [];
+      const perspectives = readPerspectiveTypes(beat.metadata);
       const timestamp = beat.metadata?.timestamp 
         ? new Date(beat.metadata.timestamp).toLocaleString()
         : 'Unknown';
       
       console.log(`  ${idx + 1}. Act ${act}: ${type}`);
-      console.log(`     🌍 Universes: ${universes.join(', ')}`);
+      console.log(`     🔭 Perspectives: ${perspectives.join(', ')}`);
       console.log(`     🕒 Timestamp: ${timestamp}`);
       
       if (beat.metadata?.narrative?.description) {

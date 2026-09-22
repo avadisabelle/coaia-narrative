@@ -33,6 +33,8 @@ const MUTABLE_METADATA_KEYS = new Set([
   'updatedAt',
   'act',
   'type_dramatic',
+  'perspective_types',
+  // Pre-0.17 key for perspective_types. Old records keep it.
   'universes',
   'timestamp',
   'elementsOfPerformance',

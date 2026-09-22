@@ -31,7 +31,7 @@ Detailed "prose code" specifications for rebuilding or extending the system:
 - **[Chart Creation](rispecs/structural_tension_chart_creation.spec.md)**: Validation and distribution logic.
 - **[Hierarchy & Telescoping](rispecs/telescoping_hierarchical_advancement.spec.md)**: Nested chart management.
 - **[Progress Tracking](rispecs/advancing_pattern_tracking.spec.md)**: Momentum and completion flows.
-- **[Narrative Beats](rispecs/narrative_beat_creation.spec.md)**: Story capture across universes.
+- **[Narrative Beats](rispecs/narrative_beat_creation.spec.md)**: Story capture from three perspectives.
 - **[MMOT Evaluation](rispecs/mmot_evaluation_loop.spec.md)**: Autonomous agent self-correction.
 - **[Storage](rispecs/storage_knowledge_graph.spec.md)**: JSONL and Graph structures.
 - **[MCP Interface](rispecs/mcp_tool_interface.spec.md)**: Tool definitions and filtering.
@@ -1551,11 +1551,17 @@ All MCP tools follow this definition pattern:
       "enum": ["Exposition", "Rising Action", "Climax", "Resolution", "Discovery", "Crisis", "Integration"],
       "description": "Dramatic type"
     },
+    "perspective_types": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Perspectives that read this beat: engineer, ceremony, story_engine"
+    },
     "universes": {
       "type": "array",
       "items": { "type": "string" },
       "minItems": 1,
-      "description": "Perspectives: Engineer World, Ceremony World, Story Engine World"
+      "description": "Deprecated alias for perspective_types (pre-0.17 name). engineer-world, ceremony-world, story-engine-world are stored as engineer, ceremony, story_engine"
     },
     "description": {
       "type": "string",
@@ -1577,7 +1583,8 @@ All MCP tools follow this definition pattern:
       "description": "Whether to assess relational alignment"
     }
   },
-  "required": ["parentChartId", "title", "act", "type_dramatic", "universes", "description", "prose", "lessons"]
+  "required": ["parentChartId", "title", "act", "type_dramatic", "description", "prose", "lessons"],
+  "$comment": "One of perspective_types or universes is also required. The handler enforces it."
 }
 ```
 
@@ -1819,14 +1826,15 @@ All MCP tools follow this definition pattern:
   entityType: "narrative_beat"
   observations: [
     "Act X [Type]",
-    "Universe: ...",
+    "Perspectives: ...",
     "Timestamp: ISO8601"
   ]
   metadata: {
     chartId: string
     act: 1|2|3
     type_dramatic: string
-    universes: string[]
+    perspective_types: string[]   // engineer | ceremony | story_engine
+    universes?: string[]          // pre-0.17 records only, with -world values; readers map them
     timestamp: ISO8601
     narrative: {
       description: string
@@ -2630,7 +2638,7 @@ PERFORM_MMOT_EVALUATION(chartId, phase, assessment, direction, correctiveActions
 
 ### Narrative Integration
 - ✅ Every evaluation emits an observable narrative beat.
-- ✅ Multi-universe perspectives are honored in beat metadata.
+- ✅ The three perspectives (engineer, ceremony, story_engine) are honored in beat metadata.
 - ✅ The "Turning Point" of correction is clear in the story arc.
 
 ### Structural Integrity
@@ -2643,7 +2651,7 @@ PERFORM_MMOT_EVALUATION(chartId, phase, assessment, direction, correctiveActions
 ## 🔗 Related Components
 
 - **Structural Tension Chart Creation**: Where Elements of Performance are defined.
-- **Multi-Universe Narrative Beats**: The medium through which evaluation is witnessed.
+- **Three-Perspective Narrative Beats**: The medium through which evaluation is witnessed.
 - **MCP Tool Interface**: The `perform_mmot_evaluation` tool specification.
 - **Educational Guidance**: Teaching the difference between blame and MMOT.
 
@@ -2657,16 +2665,16 @@ PERFORM_MMOT_EVALUATION(chartId, phase, assessment, direction, correctiveActions
 ## File: rispecs/narrative_beat_creation.spec.md
 
 # Narrative Beat Creation Component
-## RISE Specification for Story Architecture in Multiverse Contexts
+## RISE Specification for Story Architecture Read from Three Perspectives
 
-**Component Purpose**: Enable users to compose dramatic narrative beats within structural tension charts, creating stories that honor three-universe perspective (Engineer World, Ceremony World, Story Engine World) while tracking creative advancement through dramatic acts and relational alignment.
+**Component Purpose**: Enable users to compose dramatic narrative beats within structural tension charts, creating stories that honor three perspectives (engineer, ceremony, story_engine) while tracking creative advancement through dramatic acts and relational alignment.
 
 ---
 
 ## 🎯 What This Component Enables Users to Create
 
 - **Dramatic Story Arcs**: Multi-act narrative structures that chronicle creative advancement
-- **Multiverse Narratives**: Stories told simultaneously from engineering, ceremonial, and narrative perspectives
+- **Three-Perspective Narratives**: Stories told simultaneously from engineering, ceremonial, and narrative perspectives
 - **Relational Accountability**: Stories that honor relationships and sacred dimensions of creative work
 - **Telescoped Drama**: Breaking down complex narrative moments into detailed sub-beats
 - **Creative Wisdom**: Extracting lessons from each dramatic moment for continued advancement
@@ -2676,21 +2684,21 @@ PERFORM_MMOT_EVALUATION(chartId, phase, assessment, direction, correctiveActions
 
 ## 🎭 Narrative Beat Dynamics
 
-### The Three Universe Perspective
+### The Three Perspectives
 
-1. **Engineer World** (Logic & Systems)
+1. **Engineer perspective** (`engineer`, Logic & Systems)
    - Technical implementation stories
    - Process workflows and dependencies
    - Structural problem-solving narratives
    - Tools, methodologies, measurable results
 
-2. **Ceremony World** (Relational & Sacred)
+2. **Ceremony perspective** (`ceremony`, Relational & Sacred)
    - Relational accountability in creative work
    - Honoring boundaries and sacred spaces
    - Two-eyed seeing (Indigenous + Western knowledge)
    - Ceremonial acknowledgment of transitions
 
-3. **Story Engine World** (Creative & Character)
+3. **Story engine perspective** (`story_engine`, Creative & Character)
    - Character development through challenges
    - Narrative transformation and growth
    - Mythic patterns and archetypal journeys
@@ -2734,8 +2742,8 @@ Each narrative beat exists within one of three acts:
 **User Intent**: "Document this moment in the story where we discovered the boundary violation"
 
 **System Response**:
-1. Accept dramatic parameters: title, act number, dramatic type, universes involved
-2. Create structured narrative with three-universe perspective
+1. Accept dramatic parameters: title, act number, dramatic type, perspective types involved
+2. Create structured narrative read from the three perspectives
 3. Extract lessons from the dramatic moment
 4. Link to parent structural tension chart for continuity
 5. Store for later telescoping or analysis
@@ -2745,7 +2753,7 @@ Each narrative beat exists within one of three acts:
 Title: "Boundary Discovery - Sacred Space Violation"
 Act: 2
 Type: "Discovery/Learning"
-Universes: ["Engineer World", "Ceremony World", "Story Engine World"]
+Perspective types: ["engineer", "ceremony", "story_engine"]
 
 Description: The moment when the transgression was revealed
 Prose: The character-level narrative of what happened
@@ -2783,7 +2791,7 @@ Sub-beats:
 **System Response**:
 1. Retrieve all beats for specified chart
 2. Display in act/dramatic sequence
-3. Show three-universe perspective summary
+3. Show a summary of the three perspectives
 4. Enable drilling into specific beats
 
 ---
@@ -2801,7 +2809,8 @@ Narrative Beat {
     chartId: "parent_structural_tension_chart_id"
     act: 1|2|3
     type_dramatic: "Exposition|Rising Action|Climax|Resolution|etc"
-    universes: ["Engineer World", "Ceremony World", "Story Engine World"]
+    perspective_types: ["engineer", "ceremony", "story_engine"]
+    // Beats written before 0.17 hold the same list as universes: ["engineer-world", ...]. Readers accept both.
     timestamp: ISO8601
     createdAt: ISO8601
   }
@@ -2846,12 +2855,12 @@ Narrative Beat {
    - What's the dramatic type?
 
 2. **Capture Three Perspectives**
-   - Engineer World: What systems/processes are involved?
-   - Ceremony World: What relational accountability exists?
-   - Story Engine World: What's the character development?
+   - Engineer perspective: What systems/processes are involved?
+   - Ceremony perspective: What relational accountability exists?
+   - Story engine perspective: What's the character development?
 
 3. **Extract Wisdom**
-   - What did each universe learn?
+   - What did each perspective learn?
    - What principles were discovered?
    - What patterns emerged?
 
@@ -2896,7 +2905,7 @@ Each beat should yield actionable wisdom:
 A narrative beat is well-formed when:
 
 - [ ] The dramatic moment is clearly identified and described
-- [ ] All three universes have perspective on the event
+- [ ] All three perspectives have read the event
 - [ ] Specific lessons are extracted (not vague generalizations)
 - [ ] Relational dimensions are honored
 - [ ] The prose captures character/system transformation
@@ -4054,16 +4063,24 @@ Master Chart: "Build mobile game"
               "type": "string",
               "description": "For narrative_beat entities: Dramatic type (e.g., 'inciting_incident', 'midpoint', 'climax')"
             },
+            "perspective_types": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "For narrative_beat entities: the perspectives that read this beat (engineer, ceremony, story_engine)"
+            },
             "universes": {
               "type": "array",
               "items": {
                 "type": "string"
               },
-              "description": "For narrative_beat entities: Array of universe/timeline identifiers this beat belongs to"
+              "deprecated": true,
+              "description": "For narrative_beat entities written before 0.17: the same list as perspective_types, with the values engineer-world, ceremony-world, story-engine-world. Old records keep it. Readers map the values to engineer, ceremony, story_engine"
             },
             "timestamp": {
               "type": "string",
-              "description": "For narrative_beat entities: In-universe timestamp or date reference"
+              "description": "For narrative_beat entities: when the beat was recorded (ISO 8601)"
             },
             "relationalAlignment": {
               "type": "object",
@@ -4327,6 +4344,12 @@ export interface EntityMetadata {
   // Narrative beat specific metadata
   act?: number;
   type_dramatic?: string;
+  /** Perspective types that read this beat: engineer, ceremony, story_engine. Read through readPerspectiveTypes(). */
+  perspective_types?: string[];
+  /**
+   * @deprecated Key written before 0.17 for the same list, with `-world` values.
+   * Old records keep it. New beats are written with `perspective_types`.
+   */
   universes?: string[];
   timestamp?: string;
   elementsOfPerformance?: Array<{
@@ -4847,7 +4870,7 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "create_narrative_beat",
-    description: "Create a new narrative beat with multi-universe perspective and optional IAIP integration. Documents story progression across three archetypal universes (engineer-world, ceremony-world, story-engine-world).",
+    description: "Create a new narrative beat with optional IAIP integration. Documents one story event as three perspectives read it (engineer, ceremony, story_engine).",
     inputSchema: {
       type: "object",
       properties: {
@@ -4855,10 +4878,15 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
         title: { type: "string", description: "Title of the narrative beat" },
         act: { type: "number", description: "Act number in the narrative sequence" },
         type_dramatic: { type: "string", description: "Dramatic type (e.g. 'Crisis/Antagonist Force', 'Setup', 'Turning Point')" },
+        perspective_types: {
+          type: "array",
+          items: { type: "string" },
+          description: "Perspectives that read this beat: engineer, ceremony, story_engine. Supply this or the deprecated 'universes'."
+        },
         universes: {
           type: "array",
           items: { type: "string" },
-          description: "Universe perspectives (engineer-world, ceremony-world, story-engine-world)"
+          description: "Deprecated alias for 'perspective_types', kept for callers written before 0.17. The older values engineer-world, ceremony-world and story-engine-world are stored as engineer, ceremony and story_engine."
         },
         description: { type: "string", description: "Detailed description of the narrative beat" },
         prose: { type: "string", description: "Prose narrative of the beat" },
@@ -4871,7 +4899,8 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
         initiateFourDirectionsInquiry: { type: "boolean", description: "Whether to call iaip-mcp get_direction_guidance" },
         filePath: { type: "string", description: "Path to narrative JSONL file (optional)" }
       },
-      required: ["parentChartId", "title", "act", "type_dramatic", "universes", "description", "prose", "lessons"]
+      // perspective_types is required too, as one of perspective_types or universes. The handler enforces it.
+      required: ["parentChartId", "title", "act", "type_dramatic", "description", "prose", "lessons"]
     }
   },
   {
@@ -4903,7 +4932,7 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "list_narrative_beats",
-    description: "List all narrative beats, optionally filtered by parent chart ID. Shows multi-universe story progression.",
+    description: "List all narrative beats, optionally filtered by parent chart ID. Shows story progression and the perspectives that read each beat.",
     inputSchema: {
       type: "object",
       properties: {
@@ -5444,13 +5473,13 @@ async function viewChart(chartId: string, memoryPath: string): Promise<void> {
     narrativeBeats.forEach((beat, idx) => {
       const act = beat.metadata?.act || '?';
       const type = beat.metadata?.type_dramatic || 'Unknown';
-      const universes = beat.metadata?.universes || [];
+      const perspectives = readPerspectiveTypes(beat.metadata);
       const timestamp = beat.metadata?.timestamp 
         ? new Date(beat.metadata.timestamp).toLocaleString()
         : 'Unknown';
       
       console.log(`  ${idx + 1}. Act ${act}: ${type}`);
-      console.log(`     🌍 Universes: ${universes.join(', ')}`);
+      console.log(`     🔭 Perspectives: ${perspectives.join(', ')}`);
       console.log(`     🕒 Timestamp: ${timestamp}`);
       
       if (beat.metadata?.narrative?.description) {
@@ -6552,7 +6581,7 @@ const knowledgeGraphManager = new KnowledgeGraphManager(MEMORY_FILE_PATH);
 const server = new Server({
   name: "coaia-narrative",
   version: "0.12.0",
-  description: "COAIA Narrative - Structural Tension Charts with Narrative Beat Extension for multi-universe story capture. Extends coaia-memory with relational and ceremonial integration. 🚨 NEW LLM? Run 'init_llm_guidance' first."
+  description: "COAIA Narrative - Structural Tension Charts with Narrative Beat Extension that records each story event from three perspectives (engineer, ceremony, story_engine). Extends coaia-memory with relational and ceremonial integration. 🚨 NEW LLM? Run 'init_llm_guidance' first."
 }, {
   capabilities: {
     tools: {},

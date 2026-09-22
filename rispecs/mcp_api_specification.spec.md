@@ -396,11 +396,17 @@ All MCP tools follow this definition pattern:
       "enum": ["Exposition", "Rising Action", "Climax", "Resolution", "Discovery", "Crisis", "Integration"],
       "description": "Dramatic type"
     },
+    "perspective_types": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Perspectives that read this beat: engineer, ceremony, story_engine"
+    },
     "universes": {
       "type": "array",
       "items": { "type": "string" },
       "minItems": 1,
-      "description": "Perspectives: Engineer World, Ceremony World, Story Engine World"
+      "description": "Deprecated alias for perspective_types (pre-0.17 name). engineer-world, ceremony-world, story-engine-world are stored as engineer, ceremony, story_engine"
     },
     "description": {
       "type": "string",
@@ -422,7 +428,8 @@ All MCP tools follow this definition pattern:
       "description": "Whether to assess relational alignment"
     }
   },
-  "required": ["parentChartId", "title", "act", "type_dramatic", "universes", "description", "prose", "lessons"]
+  "required": ["parentChartId", "title", "act", "type_dramatic", "description", "prose", "lessons"],
+  "$comment": "One of perspective_types or universes is also required. The handler enforces it."
 }
 ```
 
@@ -664,14 +671,15 @@ All MCP tools follow this definition pattern:
   entityType: "narrative_beat"
   observations: [
     "Act X [Type]",
-    "Universe: ...",
+    "Perspectives: ...",
     "Timestamp: ISO8601"
   ]
   metadata: {
     chartId: string
     act: 1|2|3
     type_dramatic: string
-    universes: string[]
+    perspective_types: string[]   // engineer | ceremony | story_engine
+    universes?: string[]          // pre-0.17 records only, with -world values; readers map them
     timestamp: ISO8601
     narrative: {
       description: string

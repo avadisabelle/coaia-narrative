@@ -1,5 +1,5 @@
 /**
- * 📖 STORY ENGINE WORLD NARRATIVE GENERATOR
+ * 📖 STORY ENGINE PERSPECTIVE NARRATIVE GENERATOR
  *
  * Transforms webhook events into narrative beats
  * Threads beats into episode arcs and season narratives
@@ -26,7 +26,7 @@ export interface NarrativeBeat {
   title: string;
   act: number;
   type_dramatic: string;
-  universes: string[];
+  perspective_types: string[];
   description: string;
   prose: string;
   lessons: string[];
@@ -56,8 +56,8 @@ export interface NarrativeBeat {
 export async function generateNarrativeBeat(
   event: WebhookEventBeat,
   parentChartId: string,
-  ceremonyAssessment: any, // CeremonyWorldAssessment
-  engineerResult: any // Engineer-World result
+  ceremonyAssessment: any, // CeremonyPerspectiveAssessment
+  engineerResult: any // Engineer perspective result
 ): Promise<NarrativeBeat> {
   // Step 1: Determine episode context
   const episodeContext = determineEpisodeContext(event);
@@ -94,7 +94,7 @@ export async function generateNarrativeBeat(
     title,
     act: episodeContext.beatNumber,
     type_dramatic: dramatiType,
-    universes: ['engineer-world', 'ceremony-world', 'story-engine-world'],
+    perspective_types: ['engineer', 'ceremony', 'story_engine'],
     description,
     prose,
     lessons,
@@ -202,7 +202,7 @@ In Episode ${episodeContext.episode} of Season 1, a moment emerges in the ongoin
 
 ${actor} arrives at the repository ${repo}, bearing a ${eventType} event of type "${action}". This is no ordinary technical notification—it is a **moment in the larger story**, a beat in the symphony of creation and relationship.
 
-The Engineer receives this event and processes it with technical precision. The Ceremony World acknowledges it through the lens of K'é, SNBH, and Hózhó, pausing to ask: "What relational obligations does this moment carry?"
+The Engineer receives this event and processes it with technical precision. The ceremony perspective acknowledges it, pausing to ask: "What relational obligations does this moment carry?"
 
 And now, the Story Weaver recognizes what is happening: **This very moment—the code change, the issue creation, the pull request—is itself a narrative act.** The ${actor} who commits this code is a character in an unfolding story. The repository is our shared narrative space. The event is a plot point.
 
@@ -230,7 +230,7 @@ function trackCharacterRevelations(
   const keeper_revealed: string[] = [];
   const weaver_revealed: string[] = [];
 
-  // Builder revelations (from Engineer-World)
+  // Builder revelations (from the engineer perspective)
   if (engineerResult?.executionSuccess) {
     builder_revealed.push('Precision in execution');
     builder_revealed.push('Reliable infrastructure');
@@ -239,7 +239,7 @@ function trackCharacterRevelations(
     builder_revealed.push('Manifest action in the world');
   }
 
-  // Keeper revelations (from Ceremony-World)
+  // Keeper revelations (from the ceremony perspective)
   if (ceremonyAssessment?.sacredPause?.required) {
     keeper_revealed.push('Awareness of relational impact');
     keeper_revealed.push('Willingness to pause before action');

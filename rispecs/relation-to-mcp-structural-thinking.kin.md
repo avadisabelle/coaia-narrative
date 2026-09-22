@@ -13,7 +13,7 @@ mcp-structural-thinking (create_chart_with_pde)
     │   ├── current_reality
     │   ├── action_steps[]
     │   ├── pde_validation (questions)
-    │   └── three_universe_consensus
+    │   └── three_perspective_consensus
     ▼
 coaia-narrative (Entity/Relation JSONL)
     │ Entities: structural_tension_chart, desired_outcome, current_reality, action_step
@@ -26,11 +26,11 @@ Persistent, queryable structural tension data
 
 - **Entity/Relation schema** — the canonical format that `create_chart_with_pde` output should be compatible with
 - **Storage persistence** — mcp-structural-thinking is stateless; coaia-narrative provides the persistence layer
-- **MMOT evaluation** — the Managerial Moment of Truth loop can use three-universe validation scores as input
+- **MMOT evaluation** — the Managerial Moment of Truth loop can use three-perspective validation scores as input
 
 ## What mcp-structural-thinking Offers to coaia-narrative
 
-- **Quality gate before storage** — charts validated through three-universe consensus before entering the JSONL store
+- **Quality gate before storage** — charts validated through three-perspective consensus before entering the JSONL store
 - **Reactive language detection** — prevents problem-solving framed charts from polluting the narrative
 - **PDE validation metadata** — enriches stored entities with question history and validation scores
 - **Behavioral pattern detection** — flags oscillating patterns before they become stored chart patterns
@@ -45,7 +45,7 @@ Persistent, queryable structural tension data
 | `current_reality` | Entity `current_reality` |
 | `action_steps[]` | Entity `action_step` (one per) |
 | (wrapper) | Entity `structural_tension_chart` |
-| `three_universe_consensus` | Stored as entity metadata |
+| `three_perspective_consensus` | Stored as entity metadata |
 | `pde_validation` | Stored as entity metadata |
 | `validation` | Stored as entity metadata |
 
@@ -55,7 +55,7 @@ Persistent, queryable structural tension data
 2. Agent calls `mcp-structural-thinking.create_chart_with_pde(...)` → gets validated chart with questions
 3. If consensus is FALSE → agent asks user to refine, re-validates
 4. If consensus is TRUE → agent stores chart via coaia-narrative MCP tools
-5. Three-universe scores and PDE questions are preserved as entity metadata for future MMOT evaluation
+5. Three-perspective scores and PDE questions are preserved as entity metadata for future MMOT evaluation
 
 ## Accountability
 

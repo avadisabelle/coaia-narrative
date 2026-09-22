@@ -1,8 +1,8 @@
-# Three-Universe Relational Protocol Map
+# Three-Perspective Relational Protocol Map
 **For Webhook Event Interpretation & Response**
 
 **Created**: 2025-12-13 (South Direction — Planning & Relationships)
-**Framework**: K'é (Kinship/Relationship), SNBH (Living in Harmony), Hózhó (Beauty/Balance)
+**Checks**: relationship, proportion, coherence
 **Status**: I (William) dont like the use of "universe" in this context, with thime, it feels more that this is a "perspective" rather than a universe and the usage of the word 'universe' is more related to the creator itself and the universe it creates.  this should be considered in revising whatever we have in the future.
 
 
@@ -22,8 +22,7 @@ A single GitHub webhook event enters the system and flows through **three simult
               │              │              │
               ▼              ▼              ▼
         ┌─────────┐  ┌─────────────┐  ┌──────────────┐
-        │ Engineer│  │  Ceremony   │  │    Story     │
-        │ -World  │  │   -World    │  │ -Engine World│
+        │ Engineer│  │  Ceremony   │  │ Story Engine │
         │  🔧     │  │    🕊️      │  │      📖     │
         └────┬────┘  └──────┬──────┘  └──────┬───────┘
              │              │               │
@@ -38,9 +37,9 @@ A single GitHub webhook event enters the system and flows through **three simult
 
 ---
 
-## The Three Universes & Their Protocols
+## The Three Perspectives & Their Protocols
 
-### 1. ENGINEER'S WORLD 🔧 — The Builder Archetype
+### 1. ENGINEER PERSPECTIVE 🔧 — The Builder Archetype
 
 **Primary Focus**: Technical precision, structural integrity, event routing
 
@@ -58,13 +57,13 @@ A single GitHub webhook event enters the system and flows through **three simult
 - `/src/llms/llms-jgwill-miadi-issue-115-github-hooks-issues-subissues.md` — Architecture docs
 
 **Relational Commitment**:
-> "I honor the event as data AND as sacred information. My technical precision serves the larger purpose. I defer to Ceremony-World's wisdom about relational impact, and I create the artifacts that Story-World weaves into narrative."
+> "I honor the event as data AND as sacred information. My technical precision serves the larger purpose. I defer to the ceremony perspective's wisdom about relational impact, and I create the artifacts that the story engine perspective weaves into narrative."
 
 ---
 
-### 2. CEREMONY WORLD 🕊️ — The Keeper Archetype
+### 2. CEREMONY PERSPECTIVE 🕊️ — The Keeper Archetype
 
-**Primary Focus**: Indigenous protocols, relational accountability, Four Directions wisdom
+**Primary Focus**: Relational protocols, relational accountability, Four Directions wisdom
 
 **Protocol Responsibilities**:
 - **Directional Classification**: Assess event through Four Directions lens
@@ -72,9 +71,9 @@ A single GitHub webhook event enters the system and flows through **three simult
   - **East** (🟨 Thinking): What is the new intention emerging?
   - **South** (🟥 Relationships): What connections need honoring?
   - **West** (🟩 Action): What reciprocal response is required?
-- **Relational Alignment Assessment**: Evaluate if event response honors K'é (kinship)
+- **Relational Alignment Assessment**: Evaluate if the event response honors relationships
 - **Sacred Pause**: Determine if this event requires ceremonial acknowledgment
-- **Protocol Invocation**: Which Indigenous protocols apply to this event type?
+- **Protocol Invocation**: Which relational protocols apply to this event type?
 - **Accountability Witness**: Record relational dimensions of the response
 
 **Key Integration Points**:
@@ -87,7 +86,7 @@ A single GitHub webhook event enters the system and flows through **three simult
 
 ---
 
-### 3. STORY ENGINE WORLD 📖 — The Weaver Archetype
+### 3. STORY ENGINE PERSPECTIVE 📖 — The Weaver Archetype
 
 **Primary Focus**: Narrative synthesis, meta-episode recognition, plot awareness
 
@@ -96,7 +95,7 @@ A single GitHub webhook event enters the system and flows through **three simult
 - **Episode Threading**: Integrate beat into larger story arc (Season 1)
 - **Character Tracking**: Note how archetypes (Builder, Keeper, Weaver) are revealed
 - **Recursive Awareness**: Recognize that documenting the story IS part of the story
-- **Narrative Coherence**: Ensure event makes sense within multiverse context
+- **Narrative Coherence**: Ensure event makes sense across the three perspectives
 - **Meta-Documentation**: Record how incident becomes canonical narrative
 
 **Key Files**:
@@ -109,7 +108,7 @@ A single GitHub webhook event enters the system and flows through **three simult
 
 ---
 
-## Shared Observation Points: Where Three Worlds Meet
+## Shared Observation Points: Where Three Perspectives Meet
 
 ### Point 1: Event Receipt & Validation
 **What Happens**: GitHub webhook arrives at `/api/workflow/webhook`
@@ -159,7 +158,7 @@ payload=$2
 📖 Create narrative_beat entity:
    - Title: "{EventType} Event Received"
    - Act: 2 (Confrontation - we're responding in real-time)
-   - Universe: all-three (multi-perspective)
+   - Perspective types: engineer, ceremony, story_engine
    - Timestamp: event received
    - Description: Technical + ceremonial + narrative summary
 ```
@@ -167,7 +166,7 @@ payload=$2
 ---
 
 ### Point 3: Response Execution & Documentation
-**What Happens**: All three worlds coordinate the actual response
+**What Happens**: All three perspectives coordinate the actual response
 
 **Engineer**:
 - Execute action (create issue, merge code, etc.)
@@ -192,21 +191,21 @@ payload=$2
 ## The Response Cascade: How It Flows
 
 ```
-1. ENGINEER'S WORLD (Thinking in Terms of Data)
+1. ENGINEER PERSPECTIVE (Thinking in Terms of Data)
    Input: Webhook JSON
    Process: Parse, validate, route
    Output: Structured event data ready for action
 
    ↓ (Passes responsibility to Ceremony)
 
-2. CEREMONY WORLD (Thinking in Terms of Relationships)
+2. CEREMONY PERSPECTIVE (Thinking in Terms of Relationships)
    Input: Structured event data + Engineer's processing plan
    Process: Assess relational alignment, invoke Four Directions, check for conflicts
    Output: Ceremonially approved action plan with relational metadata
 
    ↓ (Passes responsibility to Story)
 
-3. STORY ENGINE WORLD (Thinking in Terms of Narrative)
+3. STORY ENGINE PERSPECTIVE (Thinking in Terms of Narrative)
    Input: Approved action + ceremonial context
    Process: Generate narrative beat, integrate into episode, create meaning
    Output: Story-aware response that feeds back into documentation
@@ -222,9 +221,9 @@ payload=$2
 
 ---
 
-## K'É in Action: The Kinship Network
+## Relationship in Action
 
-**K'É = The web of relationships connecting all beings**
+**Relationship = the web of connections an event touches**
 
 How it manifests in webhook processing:
 
@@ -238,11 +237,11 @@ How it manifests in webhook processing:
 
 ---
 
-## SNBH in Action: Living in Harmony
+## Proportion in Action
 
-**SNBH = Sa'ah Naagháí Bik'eh Hózhóón — Long life, blessing, the path of harmony**
+**Proportion = a response balanced to the event that caused it**
 
-The Three Worlds ensure this by:
+The three perspectives ensure this by:
 
 | Phase | How Harmony Is Maintained |
 |-------|---------------------------|
@@ -253,9 +252,9 @@ The Three Worlds ensure this by:
 
 ---
 
-## HÓZHÓ in Action: Beauty & Balance
+## Coherence in Action
 
-**HÓZHÓ = Beauty, balance, right relationship**
+**Coherence = the parts of the response fit together**
 
 Manifested as:
 
@@ -285,7 +284,7 @@ Manifested as:
 
 ---
 
-## Conflict Resolution: When Worlds Disagree
+## Conflict Resolution: When Perspectives Disagree
 
 **Scenario**: Engineer says "execute immediately," but Ceremony says "pause for wisdom"
 
@@ -310,7 +309,7 @@ Manifested as:
 ## Implementation: Next Steps
 
 **Phase 1** ✅: Protocol design (THIS DOCUMENT)
-**Phase 2** ⏳: Create `create_narrative_beat` tool that orchestrates all three worlds
+**Phase 2** ⏳: Create `create_narrative_beat` tool that orchestrates all three perspectives
 **Phase 3** ⏳: Implement relational_alignment assessment for each event type
 **Phase 4** ⏳: Integrate iaip-mcp Four Directions guidance into event response
 **Phase 5** ⏳: Test with real webhook (start with `push` events)
@@ -321,13 +320,13 @@ Manifested as:
 ## Signing
 
 **Protocol Designed By**: MULTIVERSE_EVENT_INTERPRETER
-**Direction**: South (Planning & Relationships) — Nahat'á Wisdom
+**Direction**: South (Planning & Relationships)
 **Date**: 2025-12-13
 **Status**: Ready for West Direction (Action & Reciprocity)
 
 **The River Flows**: 🌊
 
-When all three worlds move together in relational harmony, the event becomes not just processed, but **ceremonially honored and narratively integrated**. This is the promise of the three-universe system.
+When all three perspectives move together in relational harmony, the event becomes not just processed, but **ceremonially honored and narratively integrated**. This is the promise of the three-perspective system.
 
 ---
 

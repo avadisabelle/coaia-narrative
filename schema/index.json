@@ -181,7 +181,7 @@
         "category": "narrative",
         "json": "tools/narrative/create_narrative_beat.json",
         "yaml": "tools/narrative/create_narrative_beat.yaml",
-        "description": "Capture story moments across multiple universes"
+        "description": "Capture story moments read from three perspectives"
       },
       "telescope_narrative_beat": {
         "category": "narrative",

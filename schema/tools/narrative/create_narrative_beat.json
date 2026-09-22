@@ -17,12 +17,20 @@
       "type": "string",
       "description": "Dramatic type (e.g. 'Crisis/Antagonist Force', 'Setup', 'Turning Point')"
     },
+    "perspective_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Perspectives that read this beat: engineer, ceremony, story_engine. Supply this or the deprecated 'universes'."
+    },
     "universes": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "Universe perspectives (engineer-world, ceremony-world, story-engine-world)"
+      "deprecated": true,
+      "description": "Deprecated alias for 'perspective_types', kept for callers written before 0.17. The older values engineer-world, ceremony-world and story-engine-world are stored as engineer, ceremony and story_engine."
     },
     "description": {
       "type": "string",
@@ -52,12 +60,12 @@
       "description": "Path to narrative JSONL file (optional)"
     }
   },
+  "$comment": "One of perspective_types or universes is also required. The server enforces it.",
   "required": [
     "parentChartId",
     "title",
     "act",
     "type_dramatic",
-    "universes",
     "description",
     "prose",
     "lessons"

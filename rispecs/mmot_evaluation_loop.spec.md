@@ -134,7 +134,7 @@ PERFORM_MMOT_EVALUATION(chartId, phase, assessment, direction, correctiveActions
 
 ### Narrative Integration
 - ✅ Every evaluation emits an observable narrative beat.
-- ✅ Multi-universe perspectives are honored in beat metadata.
+- ✅ The three perspectives (engineer, ceremony, story_engine) are honored in beat metadata.
 - ✅ The "Turning Point" of correction is clear in the story arc.
 
 ### Structural Integrity
@@ -147,7 +147,7 @@ PERFORM_MMOT_EVALUATION(chartId, phase, assessment, direction, correctiveActions
 ## 🔗 Related Components
 
 - **Structural Tension Chart Creation**: Where Elements of Performance are defined.
-- **Multi-Universe Narrative Beats**: The medium through which evaluation is witnessed.
+- **Three-Perspective Narrative Beats**: The medium through which evaluation is witnessed.
 - **MCP Tool Interface**: The `perform_mmot_evaluation` tool specification.
 - **Educational Guidance**: Teaching the difference between blame and MMOT.
 

@@ -483,7 +483,7 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "create_narrative_beat",
-    description: "Create a new narrative beat with multi-universe perspective and optional IAIP integration. Documents story progression across three archetypal universes (engineer-world, ceremony-world, story-engine-world).",
+    description: "Create a new narrative beat with optional IAIP integration. Documents one story event as three perspectives read it (engineer, ceremony, story_engine).",
     inputSchema: {
       type: "object",
       properties: {
@@ -491,10 +491,15 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
         title: { type: "string", description: "Title of the narrative beat" },
         act: { type: "number", description: "Act number in the narrative sequence" },
         type_dramatic: { type: "string", description: "Dramatic type (e.g. 'Crisis/Antagonist Force', 'Setup', 'Turning Point')" },
+        perspective_types: {
+          type: "array",
+          items: { type: "string" },
+          description: "Perspectives that read this beat: engineer, ceremony, story_engine. Supply this or the deprecated 'universes'."
+        },
         universes: {
           type: "array",
           items: { type: "string" },
-          description: "Universe perspectives (engineer-world, ceremony-world, story-engine-world)"
+          description: "Deprecated alias for 'perspective_types', kept for callers written before 0.17. The older values engineer-world, ceremony-world and story-engine-world are stored as engineer, ceremony and story_engine."
         },
         description: { type: "string", description: "Detailed description of the narrative beat" },
         prose: { type: "string", description: "Prose narrative of the beat" },
@@ -507,7 +512,8 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
         initiateFourDirectionsInquiry: { type: "boolean", description: "Whether to call iaip-mcp get_direction_guidance" },
         filePath: { type: "string", description: "Path to narrative JSONL file (optional)" }
       },
-      required: ["parentChartId", "title", "act", "type_dramatic", "universes", "description", "prose", "lessons"]
+      // perspective_types is required too, as one of perspective_types or universes. The handler enforces it.
+      required: ["parentChartId", "title", "act", "type_dramatic", "description", "prose", "lessons"]
     }
   },
   {
@@ -539,7 +545,7 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "list_narrative_beats",
-    description: "List all narrative beats, optionally filtered by parent chart ID. Shows multi-universe story progression.",
+    description: "List all narrative beats, optionally filtered by parent chart ID. Shows story progression and the perspectives that read each beat.",
     inputSchema: {
       type: "object",
       properties: {

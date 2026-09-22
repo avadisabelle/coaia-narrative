@@ -113,8 +113,8 @@ See [tools/stc/README.md](tools/stc/README.md) for details.
 
 ### Narrative Beat Tools (NARRATIVE_TOOLS)
 
-Multi-universe storytelling support:
-- `create_narrative_beat` - Capture story moments across universes
+Three-perspective storytelling support:
+- `create_narrative_beat` - Capture story moments read from three perspectives (engineer, ceremony, story_engine)
 - `telescope_narrative_beat` - Expand beats into detailed sub-stories
 - `list_narrative_beats` - View all beats with filtering
 

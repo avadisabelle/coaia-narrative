@@ -1,18 +1,18 @@
 /**
  * 🚀 PUSH EVENT HANDLER
- * Complete three-universe coordination example
+ * Complete three-perspective coordination example
  *
  * When code is pushed to repository:
- * 1. Engineer-World: Validates, routes, logs with precision
- * 2. Ceremony-World: Assesses relational impact, honors K'é
- * 3. Story-Engine-World: Threads into narrative arc
+ * 1. Engineer perspective: Validates, routes, logs with precision
+ * 2. Ceremony perspective: Assesses relational impact
+ * 3. Story engine perspective: Threads into narrative arc
  *
  * All three execute in parallel, creating unified response artifact
  */
 
-import type { WebhookEvent } from './ceremony-world-assessment.js';
-import type { CeremonyWorldAssessment } from './ceremony-world-assessment.js';
-import type { NarrativeBeat } from './story-engine-world-generator.js';
+import type { WebhookEvent } from './ceremony-perspective-assessment.js';
+import type { CeremonyPerspectiveAssessment } from './ceremony-perspective-assessment.js';
+import type { NarrativeBeat } from './story-engine-perspective-generator.js';
 
 export interface PushEvent extends WebhookEvent {
   eventType: 'push';
@@ -54,15 +54,15 @@ export interface PushEvent extends WebhookEvent {
 }
 
 export interface UnifiedPushResponse {
-  engineerWorld: {
+  engineerPerspective: {
     status: 'success' | 'failure';
     validationPassed: boolean;
     routedTo: string;
     logEntry: string;
     errors?: string[];
   };
-  ceremonyWorld: CeremonyWorldAssessment;
-  storyEngineWorld: NarrativeBeat;
+  ceremonyPerspective: CeremonyPerspectiveAssessment;
+  storyEnginePerspective: NarrativeBeat;
   unifiedArtifact: {
     timestamp: string;
     eventId: string;
@@ -73,14 +73,14 @@ export interface UnifiedPushResponse {
 }
 
 /**
- * Main push event handler - orchestrates three-universe response
+ * Main push event handler - orchestrates three-perspective response
  */
 export async function handlePushEvent(
   event: PushEvent,
   parentChartId: string,
-  // MCP assessment functions (from respective universes)
-  ceremonyAssessmentFn: (evt: WebhookEvent) => Promise<CeremonyWorldAssessment>,
-  narrativeGeneratorFn: (evt: PushEvent, parentId: string, ceremony: CeremonyWorldAssessment) => Promise<NarrativeBeat>,
+  // MCP assessment functions (from respective perspectives)
+  ceremonyAssessmentFn: (evt: WebhookEvent) => Promise<CeremonyPerspectiveAssessment>,
+  narrativeGeneratorFn: (evt: PushEvent, parentId: string, ceremony: CeremonyPerspectiveAssessment) => Promise<NarrativeBeat>,
   // Optional: logging and persistence functions
   persistFunction?: (response: UnifiedPushResponse) => Promise<void>
 ): Promise<UnifiedPushResponse> {
@@ -89,22 +89,22 @@ export async function handlePushEvent(
   console.log(`\n🚀 PUSH EVENT HANDLER INITIATED\nEvent ID: ${eventId}\n`);
 
   // ════════════════════════════════════════════════════════════════════════════
-  // PHASE 1: ENGINEER WORLD - Technical Processing
+  // PHASE 1: ENGINEER PERSPECTIVE - Technical Processing
   // ════════════════════════════════════════════════════════════════════════════
 
-  console.log('🔧 ENGINEER-WORLD PROCESSING...');
-  const engineerResult = processEngineerWorld(event, eventId);
+  console.log('🔧 ENGINEER PERSPECTIVE PROCESSING...');
+  const engineerResult = processEngineerPerspective(event, eventId);
 
   if (!engineerResult.validationPassed) {
-    console.error('❌ Engineer validation failed. Aborting three-universe coordination.');
+    console.error('❌ Engineer validation failed. Aborting three-perspective coordination.');
     return {
-      engineerWorld: engineerResult,
-      ceremonyWorld: {} as CeremonyWorldAssessment,
-      storyEngineWorld: {} as NarrativeBeat,
+      engineerPerspective: engineerResult,
+      ceremonyPerspective: {} as CeremonyPerspectiveAssessment,
+      storyEnginePerspective: {} as NarrativeBeat,
       unifiedArtifact: {
         timestamp: new Date().toISOString(),
         eventId,
-        summary: 'Push event validation failed. No three-universe coordination performed.',
+        summary: 'Push event validation failed. No three-perspective coordination performed.',
         reciprocalAction: 'Log error and defer to operator review',
         nextSteps: ['Review validation errors', 'Contact pusher if needed', 'Document incident']
       }
@@ -114,11 +114,11 @@ export async function handlePushEvent(
   console.log(`✅ Engineer validation passed. Routed to: ${engineerResult.routedTo}`);
 
   // ════════════════════════════════════════════════════════════════════════════
-  // PHASE 2: CEREMONY WORLD - Relational Assessment (in parallel with Phase 3)
+  // PHASE 2: CEREMONY PERSPECTIVE - Relational Assessment (in parallel with Phase 3)
   // ════════════════════════════════════════════════════════════════════════════
 
-  console.log('🕊️ CEREMONY-WORLD ASSESSMENT...');
-  let ceremonyResult: CeremonyWorldAssessment;
+  console.log('🕊️ CEREMONY PERSPECTIVE ASSESSMENT...');
+  let ceremonyResult: CeremonyPerspectiveAssessment;
   try {
     ceremonyResult = await ceremonyAssessmentFn(event);
     console.log(`✅ Relational alignment score: ${ceremonyResult.relationalAlignment.score}`);
@@ -131,10 +131,10 @@ export async function handlePushEvent(
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  // PHASE 3: STORY-ENGINE WORLD - Narrative Threading (in parallel with Phase 2)
+  // PHASE 3: STORY ENGINE PERSPECTIVE - Narrative Threading (in parallel with Phase 2)
   // ════════════════════════════════════════════════════════════════════════════
 
-  console.log('📖 STORY-ENGINE-WORLD GENERATION...');
+  console.log('📖 STORY ENGINE PERSPECTIVE GENERATION...');
   let narrativeResult: NarrativeBeat;
   try {
     narrativeResult = await narrativeGeneratorFn(event, parentChartId, ceremonyResult);
@@ -152,9 +152,9 @@ export async function handlePushEvent(
   const unifiedArtifact = createUnifiedArtifact(event, engineerResult, ceremonyResult, narrativeResult);
 
   const response: UnifiedPushResponse = {
-    engineerWorld: engineerResult,
-    ceremonyWorld: ceremonyResult,
-    storyEngineWorld: narrativeResult,
+    engineerPerspective: engineerResult,
+    ceremonyPerspective: ceremonyResult,
+    storyEnginePerspective: narrativeResult,
     unifiedArtifact
   };
 
@@ -176,16 +176,16 @@ export async function handlePushEvent(
   // FINAL OUTPUT
   // ════════════════════════════════════════════════════════════════════════════
 
-  console.log(`\n✅ THREE-UNIVERSE COORDINATION COMPLETE\n`);
+  console.log(`\n✅ THREE-PERSPECTIVE COORDINATION COMPLETE\n`);
   console.log(formatUnifiedResponse(response));
 
   return response;
 }
 
 /**
- * Engineer-World processing: Technical validation and routing
+ * Engineer perspective processing: Technical validation and routing
  */
-function processEngineerWorld(
+function processEngineerPerspective(
   event: PushEvent,
   eventId: string
 ): {
@@ -249,7 +249,7 @@ function processEngineerWorld(
 /**
  * Creates default ceremony assessment if actual assessment fails
  */
-function createDefaultCeremonyAssessment(eventId: string): CeremonyWorldAssessment {
+function createDefaultCeremonyAssessment(eventId: string): CeremonyPerspectiveAssessment {
   return {
     eventId,
     relationalAlignment: {
@@ -287,7 +287,7 @@ function createDefaultNarrativeBeat(event: PushEvent, parentChartId: string): Na
     title: `S1E1: Code pushed to ${event.payload.repository.name}`,
     act: 1,
     type_dramatic: 'Advancement / Progress Made',
-    universes: ['engineer-world', 'ceremony-world', 'story-engine-world'],
+    perspective_types: ['engineer', 'ceremony', 'story_engine'],
     description: `A push event representing code advancement in ${event.payload.repository.full_name}`,
     prose: `Code has been pushed to ${event.payload.repository.full_name} by ${event.payload.pusher.name}. This represents a moment of manifest action—the Builder archetype expressing itself in the world.`,
     lessons: [
@@ -316,12 +316,12 @@ function createDefaultNarrativeBeat(event: PushEvent, parentChartId: string): Na
 }
 
 /**
- * Creates the unified artifact that combines all three universes
+ * Creates the unified artifact that combines all three perspectives
  */
 function createUnifiedArtifact(
   event: PushEvent,
   engineerResult: any,
-  ceremonyResult: CeremonyWorldAssessment,
+  ceremonyResult: CeremonyPerspectiveAssessment,
   narrativeResult: NarrativeBeat
 ): {
   timestamp: string;
@@ -336,11 +336,11 @@ function createUnifiedArtifact(
 
   // Build summary combining all three perspectives
   const summary = `
-    Push event to ${repo} (${commits} commits) received and processed through three universes:
+    Push event to ${repo} (${commits} commits) received and read from three perspectives:
 
-    Engineer-World ✅: Validated, routed to ${engineerResult.routedTo}
-    Ceremony-World: Relational score ${ceremonyResult.relationalAlignment.score}${ceremonyResult.sacredPause.required ? ' ⏸️ SACRED PAUSE' : ''}
-    Story-Engine: Narrative beat "${narrativeResult.title}" created
+    Engineer ✅: Validated, routed to ${engineerResult.routedTo}
+    Ceremony: Relational score ${ceremonyResult.relationalAlignment.score}${ceremonyResult.sacredPause.required ? ' ⏸️ SACRED PAUSE' : ''}
+    Story engine: Narrative beat "${narrativeResult.title}" created
   `;
 
   // Determine reciprocal action based on all three assessments
@@ -378,7 +378,7 @@ function createUnifiedArtifact(
 export function formatUnifiedResponse(response: UnifiedPushResponse): string {
   return `
 ╔════════════════════════════════════════════════════════════════════════════╗
-║                   THREE-UNIVERSE UNIFIED RESPONSE                         ║
+║                  THREE-PERSPECTIVE UNIFIED RESPONSE                        ║
 ╚════════════════════════════════════════════════════════════════════════════╝
 
 📅 Timestamp: ${response.unifiedArtifact.timestamp}
@@ -386,24 +386,24 @@ export function formatUnifiedResponse(response: UnifiedPushResponse): string {
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🔧 ENGINEER-WORLD RESULT
-  Status: ${response.engineerWorld.status.toUpperCase()}
-  Validation: ${response.engineerWorld.validationPassed ? '✅ PASSED' : '❌ FAILED'}
-  Routed To: ${response.engineerWorld.routedTo}
-  ${response.engineerWorld.errors ? `Errors: ${response.engineerWorld.errors.join(', ')}` : ''}
+🔧 ENGINEER PERSPECTIVE RESULT
+  Status: ${response.engineerPerspective.status.toUpperCase()}
+  Validation: ${response.engineerPerspective.validationPassed ? '✅ PASSED' : '❌ FAILED'}
+  Routed To: ${response.engineerPerspective.routedTo}
+  ${response.engineerPerspective.errors ? `Errors: ${response.engineerPerspective.errors.join(', ')}` : ''}
 
-🕊️ CEREMONY-WORLD RESULT
-  Relational Alignment: ${response.ceremonyWorld.relationalAlignment.score?.toFixed(2) || 'N/A'}/1.0
-  Sacred Pause: ${response.ceremonyWorld.sacredPause.required ? '⏸️ REQUIRED' : '✅ NOT REQUIRED'}
-  Protocols Applied: ${response.ceremonyWorld.protocolsApplied.join(', ')}
+🕊️ CEREMONY PERSPECTIVE RESULT
+  Relational Alignment: ${response.ceremonyPerspective.relationalAlignment.score?.toFixed(2) || 'N/A'}/1.0
+  Sacred Pause: ${response.ceremonyPerspective.sacredPause.required ? '⏸️ REQUIRED' : '✅ NOT REQUIRED'}
+  Protocols Applied: ${response.ceremonyPerspective.protocolsApplied.join(', ')}
 
-📖 STORY-ENGINE-WORLD RESULT
-  Beat Title: ${response.storyEngineWorld.title}
-  Arc Position: ${response.storyEngineWorld.episodeContext.arcType}
+📖 STORY ENGINE PERSPECTIVE RESULT
+  Beat Title: ${response.storyEnginePerspective.title}
+  Arc Position: ${response.storyEnginePerspective.episodeContext.arcType}
   Character Revelations:
-    • Builder: ${response.storyEngineWorld.characterTracking.builder_revealed.join(', ') || 'None'}
-    • Keeper: ${response.storyEngineWorld.characterTracking.keeper_revealed.join(', ') || 'None'}
-    • Weaver: ${response.storyEngineWorld.characterTracking.weaver_revealed.join(', ') || 'None'}
+    • Builder: ${response.storyEnginePerspective.characterTracking.builder_revealed.join(', ') || 'None'}
+    • Keeper: ${response.storyEnginePerspective.characterTracking.keeper_revealed.join(', ') || 'None'}
+    • Weaver: ${response.storyEnginePerspective.characterTracking.weaver_revealed.join(', ') || 'None'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

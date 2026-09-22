@@ -265,10 +265,10 @@ When user wants to review progress:
 
 ## When to Use Narrative Beats
 
-**Narrative beats** document complex stories across three archetypal universes simultaneously:
-- **Engineer-world**: Technical/analytical perspective
-- **Ceremony-world**: Relational/spiritual protocol awareness
-- **Story-engine-world**: Narrative/creative progression
+**Narrative beats** document complex stories from three perspectives at once:
+- **engineer**: Technical/analytical perspective
+- **ceremony**: Relational/spiritual protocol awareness
+- **story_engine**: Narrative/creative progression
 
 Use narrative beats when you need to capture **how a story unfolds across multiple dimensions**—not just what happened technically, but what it means relationally and narratively.
 
@@ -277,7 +277,7 @@ Use narrative beats when you need to capture **how a story unfolds across multip
 | Aspect | Chart | Narrative Beat |
 |--------|-------|-----------------|
 | **Purpose** | Create a desired outcome from current reality | Document how a complex story unfolds |
-| **Structure** | Outcome + Reality + Actions | Act + Prose + Universes + Lessons |
+| **Structure** | Outcome + Reality + Actions | Act + Prose + Perspectives + Lessons |
 | **Scope** | Individual goal/strategy | Incident/milestone across all dimensions |
 | **When to use** | Building toward something | Making sense of what happened |
 | **Output** | Action steps toward goal | Integrated understanding of story |
@@ -301,21 +301,22 @@ Use narrative beats when you need to capture **how a story unfolds across multip
 
 ### 1. \`create_narrative_beat\`
 
-Creates a new narrative beat documenting a story event across the three universes.
+Creates a new narrative beat documenting a story event from the three perspectives.
 
-**When to use**: When a significant moment (learning, transgression, discovery, integration) needs multi-universe documentation.
+**When to use**: When a significant moment (learning, transgression, discovery, integration) needs documentation from all three perspectives.
 
 **Parameters**:
 - \`parentChartId\`: The chart this beat belongs to (required)
 - \`title\`: Short name of the beat (e.g., "The Sacred Object Violation")
 - \`act\`: Which act in the narrative sequence (1, 2, 3, 4, 5...)
 - \`type_dramatic\`: Story function—Crisis/Antagonist Force, Discovery/Learning, Resolution Beginning, New Awareness, Character Development
-- \`universes\`: List of which archetypal universes this beat involves
-  - "engineer-world" — technical/analytical view
-  - "ceremony-world" — relational/spiritual view
-  - "story-engine-world" — narrative/creative view
+- \`perspective_types\`: List of which perspectives read this beat
+  - "engineer" — technical/analytical view
+  - "ceremony" — relational/spiritual view
+  - "story_engine" — narrative/creative view
+  - \`universes\` is still accepted as a deprecated alias (older values such as "engineer-world" are stored as "engineer")
 - \`description\`: Factual summary of what happened (visible in list)
-- \`prose\`: Full narrative prose showing how all three universes experienced this moment
+- \`prose\`: Full narrative prose showing how all three perspectives read this moment
 - \`lessons\`: Key insights or learnings from this beat
 - \`assessRelationalAlignment\` (optional): Boolean—invoke iaip-mcp to assess relational science alignment
 - \`initiateFourDirectionsInquiry\` (optional): Boolean—invoke iaip-mcp for Four Directions guidance
@@ -324,9 +325,9 @@ Creates a new narrative beat documenting a story event across the three universe
 \`\`\`
 Create a narrative beat titled "The Sacred Object Violation"
 Act 2, Crisis/Antagonist Force
-Engineer-world: Technical boundary crossed (direct file editing)
-Ceremony-world: Sacred artifact dishonored
-Story-engine-world: Character reveals flaw through action
+Engineer: Technical boundary crossed (direct file editing)
+Ceremony: Sacred artifact dishonored
+Story engine: Character reveals flaw through action
 \`\`\`
 
 **Result**: Beat created with:
@@ -368,7 +369,7 @@ Lists all narrative beats, optionally filtered by parent chart.
 
 **Result**: Shows all beats with:
 - Title and act number
-- Dramatic type and universes involved
+- Dramatic type and perspectives involved
 - Full description and prose
 - Explicit lessons
 - Relational alignment assessments (if invoked)
@@ -417,8 +418,8 @@ Begins a structured four-direction exploration of the beat's themes.
 - Beats document what happened; charts create what you want
 - Don't use beats to establish goals
 
-❌ **Ignoring the three universes**
-- A beat with only "engineer-world" perspective isn't complete
+❌ **Ignoring the three perspectives**
+- A beat with only the "engineer" perspective isn't complete
 - Each significant beat should engage all three or explicitly explain why only some apply
 
 ❌ **Creating too many beats**
@@ -439,7 +440,7 @@ Begins a structured four-direction exploration of the beat's themes.
 2. **Add action steps** as strategic intermediaries
 3. **Complete action steps** as you work
 4. **Recognize significant learning** from an action
-5. **Create narrative beat** documenting that learning across three universes
+5. **Create narrative beat** documenting that learning from the three perspectives
 6. **Telescope the beat** to show sub-moments if needed
 7. **Use list_narrative_beats** to view your narrative arc
 
@@ -497,4 +498,4 @@ This ensures you remember these principles throughout our conversation.
 *Generated by consolidate-guidance.js - Updated: 2025-12-13T21:09:52.671Z*
 `;
 
-export const GUIDANCE_VERSION = "2025-12-13T21:09:52.672Z";
+export const GUIDANCE_VERSION = "2026-09-22T11:49:52.000Z";
