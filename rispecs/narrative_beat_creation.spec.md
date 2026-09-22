@@ -29,7 +29,6 @@
 2. **Ceremony perspective** (`ceremony`, Relational & Sacred)
    - Relational accountability in creative work
    - Honoring boundaries and sacred spaces
-   - Two-eyed seeing (Indigenous + Western knowledge)
    - Ceremonial acknowledgment of transitions
 
 3. **Story engine perspective** (`story_engine`, Creative & Character)
