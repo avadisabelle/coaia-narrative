@@ -69,7 +69,7 @@ npx coaia-memory --memory-path ./my-charts.jsonl
 Selectively enable/disable MCP tools using environment variables:
 
 **COAIA_TOOLS** - Comma/space separated list of tool groups or individual tool names
-- Default: `"STC_TOOLS,init_llm_guidance"`
+- Default: `"STC_TOOLS,NARRATIVE_TOOLS,init_llm_guidance"` (`src/tool-groups.ts`)
 
 **COAIA_DISABLED_TOOLS** - Comma/space separated list of tools to exclude (applied after COAIA_TOOLS)
 

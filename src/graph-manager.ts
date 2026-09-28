@@ -1,6 +1,7 @@
 import { Entity, Relation, KnowledgeGraph, WampumBead, WampumBeltMetadata, WampumBeadPosition, WampumCeremonyLink, GithubIssueRef } from './types.js';
 import { readJsonlMemoryFile, writeJsonlMemoryFile } from './jsonl-preservation.js';
 import { assertNoUnparsedCallSyntax } from './argument-hygiene.js';
+import { createAsterionNotifier, readAsterionConfig, type AsterionNotifier } from './asterion-bridge.js';
 import { normalizePerspectiveTypes, readPerspectiveTypes } from './perspective-types.js';
 import {
   createGithubProjectFieldProjection,
@@ -33,9 +34,19 @@ export function parseGithubIssueSpec(spec: string): GithubIssueRef {
 
 export class KnowledgeGraphManager {
   private memoryFilePath: string;
+  /** Set when COAIA_ASTERION_* ask for each save to reach Asterion (src/asterion-bridge.ts). */
+  private asterion: AsterionNotifier | null = null;
 
   constructor(memoryFilePath: string) {
     this.memoryFilePath = memoryFilePath;
+    const { config, problem } = readAsterionConfig();
+    if (problem) console.error(`coaia-narrative: ${problem}`);
+    if (config) this.asterion = createAsterionNotifier(memoryFilePath, config);
+  }
+
+  /** Resolves when every save so far has been offered to Asterion. A no-op when the bridge is off. */
+  async asterionIdle(): Promise<void> {
+    await this.asterion?.idle();
   }
 
   private async loadGraph(): Promise<KnowledgeGraph> {
@@ -66,6 +77,8 @@ export class KnowledgeGraphManager {
 
   private async saveGraph(graph: KnowledgeGraph): Promise<void> {
     await writeJsonlMemoryFile(this.memoryFilePath, graph);
+    // The file is the record and is already written. The post is not awaited and never throws.
+    void this.asterion?.notify();
   }
 
   async createEntities(entities: Entity[]): Promise<Entity[]> {

@@ -141,6 +141,28 @@ COAIA_TOOLS="STC_TOOLS" COAIA_DISABLED_TOOLS="delete_entities,delete_relations" 
 COAIA_TOOLS="create_structural_tension_chart list_active_charts mark_action_complete" npx coaia-narrative
 ```
 
+## Sending each save to Asterion
+
+[Asterion](https://github.com/miadisabelle/asterion) renders charts, action steps, beats and their
+graph on the web. Set three names and every save also posts the memory file to Asterion's ingest
+door, so a chart written here is on the site before the next tool call:
+
+```bash
+COAIA_ASTERION_URL="http://127.0.0.1:3336"   # Asterion's base URL
+COAIA_ASTERION_TOKEN="…"                    # the door's token (ASTERION_INGEST_TOKEN on Asterion)
+COAIA_ASTERION_PROJECT="ep060"              # the project this memory file is registered as
+COAIA_ASTERION_ACTOR="mia"                  # optional: who is writing, shown on Asterion's event log
+```
+
+The file is written first and stays the record. A door that is down, slow or refusing costs a line
+on stderr, never a chart. None of the names set means no network at all. Some but not all set means
+the bridge stays off and the server says why when it starts, on stderr. Plain `http` is accepted for
+loopback only. Saves made with the `cnarrative` CLI are not posted; the next MCP save carries them.
+
+On the Asterion side the project must be registered to be fed by its writer:
+`node scripts/coaia-sync.mjs register ep060 --name "…" --writer`. A memory file that lives in a git
+repository can instead be registered by path and carried by Asterion's registry sync.
+
 ## Memory Format: The Chronicle of Creation
 
 Memory is stored as JSONL (JSON Lines), an append-only format that ensures data integrity and preserves the chronicle of your creative journey:

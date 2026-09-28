@@ -5,6 +5,37 @@ All notable changes to COAIA Memory will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] - 2026-09-28
+
+### 🌉 A save can also reach Asterion
+
+Every chart write made through the MCP server funnels through one save. With `COAIA_ASTERION_URL`,
+`COAIA_ASTERION_TOKEN` and `COAIA_ASTERION_PROJECT` set, each of those saves is followed by one POST
+of the memory file to Asterion's ingest door (`POST /api/ingest/coaia-narrative`), so a chart an
+agent writes appears on the Asterion site without anyone running an importer
+(miadisabelle/asterion#9). The `cnarrative` CLI writes the file directly and does not post.
+
+- The file is written first and stays the record. The post is not awaited by the tool call and never
+  raises: a failure is one line on stderr.
+- Posts do not overlap. Saves made while one is in flight collapse into a single follow-up carrying
+  the latest file, so a burst of writes sends at most two requests and the last is current.
+- None of the three names set: no network at all, exactly as before. Some set: off, and says which
+  are missing when the server starts. A value carrying an unexpanded shell variable, a URL carrying
+  a user or password, plain http to any host but loopback, or a project key Asterion would refuse
+  also keeps it off.
+- A post waits up to 60 s (`COAIA_ASTERION_TIMEOUT_MS`), the door's own limit, and never follows a
+  redirect.
+- `npm test` now runs with the four `COAIA_ASTERION_*` names removed, so a shell configured for the
+  bridge never posts test charts to a real Asterion.
+- `test-asterion-bridge.js` covers all of it against a local door, including a refusing door and an
+  unreachable one, and joins `npm test`.
+
+### 📝 Documentation
+
+- `CLAUDE.md` gave the `COAIA_TOOLS` default as `STC_TOOLS,init_llm_guidance`. The code's default,
+  `src/tool-groups.ts`, also enables `NARRATIVE_TOOLS`. A config copied from the old line silently
+  lost `create_narrative_beat`.
+
 ## [0.17.0] - 2026-09-22
 
 ### 👁️ Narrative beats name perspectives, not universes
