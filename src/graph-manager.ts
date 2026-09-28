@@ -562,8 +562,25 @@ Current Reality: "${currentReality}"
       actionStep.metadata.updatedAt = new Date().toISOString();
     }
 
-    // Also mark the parent chart entity as complete
     const chartEntity = graph.entities.find(e => e.name === `${chartId}_chart`);
+    const completionMessage = `Completed: ${actionStep.observations[0]}`;
+
+    // A flat step is one step of its chart. Completing it completes the step, not the
+    // chart: until 0.19.1 this marked the chart itself complete, so checking one item of
+    // a three-item task list made the whole chart read as done. It flows into its own
+    // chart's current reality instead.
+    if (actionStep.entityType === 'action_step') {
+      const ownReality = graph.entities.find(e => e.name === `${chartId}_current_reality` && e.entityType === 'current_reality');
+      if (ownReality && !ownReality.observations.includes(completionMessage)) {
+        ownReality.observations.push(completionMessage);
+        if (ownReality.metadata) ownReality.metadata.updatedAt = new Date().toISOString();
+      }
+      await this.saveGraph(graph);
+      return;
+    }
+
+    // A telescoped step is a whole sub-chart, named by its desired outcome: completing it
+    // completes that chart.
     if (chartEntity && chartEntity.metadata) {
       chartEntity.metadata.completionStatus = true;
       chartEntity.metadata.updatedAt = new Date().toISOString();
@@ -579,7 +596,6 @@ Current Reality: "${currentReality}"
       );
 
       if (parentCurrentReality) {
-        const completionMessage = `Completed: ${actionStep.observations[0]}`;
         if (!parentCurrentReality.observations.includes(completionMessage)) {
           parentCurrentReality.observations.push(completionMessage);
           if (parentCurrentReality.metadata) {

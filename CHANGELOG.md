@@ -5,6 +5,17 @@ All notable changes to COAIA Memory will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.1] - 2026-09-28
+
+### ✅ Completing a flat action step no longer completes its chart
+
+`markActionStepComplete` marked the step's chart complete too. That is right for a telescoped
+step, which is a whole sub-chart, and wrong for a flat step, which is one step of its chart:
+checking one item of a three-item GitHub task list made the issue's chart read as done. Found on
+the first real issue the webhook recorded (jgwill/dummass#31). A flat step now completes itself
+and flows into its own chart's current reality as `Completed: …`; a telescoped step behaves as
+before.
+
 ## [0.19.0] - 2026-09-28
 
 ### ✍️ `coaia-narrative/writer`: other services write through this package

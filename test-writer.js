@@ -53,6 +53,8 @@ try {
   const steps = getFlatActionSteps(s, r1.chartId);
   check('three task-list items are three action steps, in order', steps.map((x) => x.observations[0]).join('|') === 'Write the README|Choose the name|Publish 0.1.0', steps.map((x) => x.observations[0]).join('|'));
   check('the checked item is already complete', steps.filter((x) => x.metadata?.completionStatus === true).map((x) => x.observations[0]).join() === 'Choose the name');
+  check('one checked item does not complete the whole chart', chart?.metadata?.completionStatus !== true, JSON.stringify(chart?.metadata));
+  check('the completed step flows into its own chart\'s current reality', getCurrentReality(s, r1.chartId)?.observations.includes('Completed: Choose the name'));
   check('current reality says who opened it and when', /jgwill\/dummass#7 was opened by @jgwill on 2026-09-28/.test(getCurrentReality(s, r1.chartId)?.observations.join(' ') ?? ''));
   check('the store reads cleanly through the contract', s.skipped === 0);
 
