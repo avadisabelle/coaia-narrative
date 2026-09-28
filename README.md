@@ -159,6 +159,13 @@ on stderr, never a chart. None of the names set means no network at all. Some bu
 the bridge stays off and the server says why when it starts, on stderr. Plain `http` is accepted for
 loopback only. Saves made with the `cnarrative` CLI are not posted; the next MCP save carries them.
 
+Starting the server from inside a checkout of this repository: `npx coaia-narrative@<version>` sees
+the checkout's own package.json, takes the version as already installed, and runs whichever
+`coaia-narrative` is first on PATH, usually an older global. Measured 2026-09-28: a config pinned to
+0.18.0 ran the global 0.16.0, so the bridge never started. Keep the global current
+(`npm i -g coaia-narrative@latest`) or start the server from another directory, and confirm with the
+version the server reports on `initialize`.
+
 On the Asterion side the project must be registered to be fed by its writer:
 `node scripts/coaia-sync.mjs register ep060 --name "…" --writer`. A memory file that lives in a git
 repository can instead be registered by path and carried by Asterion's registry sync.
