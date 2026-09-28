@@ -5,6 +5,31 @@ All notable changes to COAIA Memory will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0] - 2026-09-28
+
+### ✍️ `coaia-narrative/writer`: other services write through this package
+
+Services that needed to write a chart store wrote the JSONL by hand, because the only writer was
+the MCP server and importing the package started it. Miadi's GitHub webhook was one: it appended a
+line per issue event to one chart per repository, and the files drifted from what this package reads.
+
+- New export `coaia-narrative/writer`: `KnowledgeGraphManager` without a server, plus
+  `recordGithubIssueEvent`, `githubIssueEventFromPayload` (GitHub's payload or Miadi's flattened
+  one) and `parseTaskList`. One issue is one chart, found by `metadata.github.issue`; its task list
+  is the action steps; close resolves, reopen reactivates; comments are credited to their author
+  and their text is never copied.
+- `createStructuralTensionChart` takes `{ orientation: 'flag' }` to keep a problem-framed outcome a
+  person wrote elsewhere, marked with `metadata.orientation`, instead of refusing it. The default is
+  unchanged: a chart written by hand is still refused and taught.
+- New manager methods: `findChartByGithubIssue`, `updateChartMetadata` (status, orientation) and
+  `appendActionStep` (a plain step shaped like the ones written at creation).
+- Chart ids no longer collide when several charts are made in one millisecond; `createEntities`
+  skipped the second name silently and merged them.
+- `coaia-narrative/contract` gains `checkStore`: whether a file follows this package's shape, and
+  which charts hold an event log instead of an assessment.
+- The entity schema describes `metadata.status` and `metadata.orientation`.
+- `test-writer.js`, 27 checks, joins `npm test`.
+
 ## [0.18.0] - 2026-09-28
 
 ### 🌉 A save can also reach Asterion

@@ -376,3 +376,43 @@ export function revisionOf(entities: Array<StoreEntity | undefined>): string {
   }
   return revision;
 }
+
+// ---------------------------------------------------------------------------
+// Conformance
+// ---------------------------------------------------------------------------
+
+export interface StoreCheck {
+  /** Every line is a record this package reads, there is at least one chart, and every chart has its desired outcome and current reality. */
+  conforms: boolean;
+  charts: number;
+  skipped: number;
+  /** Charts whose current reality reads like an event log (50+ lines, mostly timestamps or bot triggers) rather than an assessment. */
+  logShaped: string[];
+  /** What keeps the store from conforming, first 20. */
+  problems: string[];
+}
+
+const LOG_LINE = /^\[?\d{4}-\d{2}-\d{2}T\d{2}:\d{2}|triggered:/;
+
+/**
+ * Say whether a store written by anything follows this package's shape, so a file can
+ * be told apart from one that only looks like a chart store before anything projects it.
+ * Pure, like parseStore.
+ */
+export function checkStore(raw: string): StoreCheck {
+  const s = parseStore(raw);
+  const problems: string[] = [];
+  if (s.skipped) problems.push(`${s.skipped} line(s) are not records this package reads`);
+  const chartEntities = [...s.entities.values()].filter((e) => e.entityType === ENTITY_TYPES.chart);
+  if (!chartEntities.length) problems.push('no structural tension chart');
+  const logShaped: string[] = [];
+  for (const chart of chartEntities) {
+    const chartId = metaString(chart, 'chartId') ?? chart.name.replace(/_chart$/, '');
+    if (!getDesiredOutcome(s, chartId)) problems.push(`${chartId} has no desired outcome`);
+    const reality = getCurrentReality(s, chartId);
+    if (!reality) problems.push(`${chartId} has no current reality`);
+    const lines = reality?.observations ?? [];
+    if (lines.length >= 50 && lines.filter((l) => LOG_LINE.test(l)).length / lines.length >= 0.8) logShaped.push(chartId);
+  }
+  return { conforms: problems.length === 0, charts: chartEntities.length, skipped: s.skipped, logShaped, problems: problems.slice(0, 20) };
+}

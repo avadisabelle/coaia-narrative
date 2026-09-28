@@ -1,6 +1,6 @@
 {
   "name": "coaia-narrative",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "description": "Creative Orientation AI Agentic Memories - Narrative Beat Extension with IAIP relational integration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -14,6 +14,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./writer": {
+      "types": "./dist/src/writer.d.ts",
+      "default": "./dist/src/writer.js"
     },
     "./contract": {
       "types": "./dist/src/contract.d.ts",
@@ -29,7 +33,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && env -u COAIA_ASTERION_URL -u COAIA_ASTERION_TOKEN -u COAIA_ASTERION_PROJECT -u COAIA_ASTERION_ACTOR sh -c 'node test-coaia-narrative.js && node test-metadata-preservation.js && node test-unparsed-call-syntax.js && node test-contract.js && node test-silent-argument-drop.js && node test-unexpanded-memory-path.js && node test-asterion-bridge.js'",
+    "test": "npm run build && env -u COAIA_ASTERION_URL -u COAIA_ASTERION_TOKEN -u COAIA_ASTERION_PROJECT -u COAIA_ASTERION_ACTOR sh -c 'node test-coaia-narrative.js && node test-metadata-preservation.js && node test-unparsed-call-syntax.js && node test-contract.js && node test-silent-argument-drop.js && node test-unexpanded-memory-path.js && node test-asterion-bridge.js && node test-writer.js'",
     "test:preservation": "npm run build && node test-metadata-preservation.js",
     "lint": "eslint index.ts",
     "start": "node dist/index.js",

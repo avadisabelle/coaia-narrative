@@ -514,3 +514,32 @@ properties:
           - beads
           - createdAt
           - updatedAt
+      status:
+        type: string
+        enum:
+          - active
+          - paused
+          - resolved
+          - archived
+        description: >-
+          A chart's lifecycle status. Written by updateChartMetadata; a GitHub issue chart is
+          'resolved' when its issue closes and 'active' when it reopens (coaia-narrative/writer,
+          0.19.0).
+      orientation:
+        type: object
+        description: >-
+          Present when a chart's desired outcome was kept as a person wrote it although it uses
+          problem-solving language (for example a GitHub issue title). Cleared when the outcome is
+          reframed. Written by coaia-narrative/writer, 0.19.0.
+        properties:
+          framing:
+            type: string
+            enum:
+              - problem-solving
+          words:
+            type: array
+            items:
+              type: string
+        required:
+          - framing
+          - words

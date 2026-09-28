@@ -141,6 +141,34 @@ COAIA_TOOLS="STC_TOOLS" COAIA_DISABLED_TOOLS="delete_entities,delete_relations" 
 COAIA_TOOLS="create_structural_tension_chart list_active_charts mark_action_complete" npx coaia-narrative
 ```
 
+## Writing charts from another service
+
+The MCP server is one writer. A service that needs to write a chart store (a webhook, a
+scheduler, another app) imports the same writer instead of producing the JSONL itself, and
+reads through the contract:
+
+```js
+import { KnowledgeGraphManager, recordGithubIssueEvent, githubIssueEventFromPayload } from 'coaia-narrative/writer';
+import { parseStore, checkStore } from 'coaia-narrative/contract';
+
+const manager = new KnowledgeGraphManager('/path/to/owner-repo.jsonl');
+await recordGithubIssueEvent(manager, githubIssueEventFromPayload(githubWebhookPayload));
+```
+
+Importing `coaia-narrative/writer` starts nothing; the package's main entry is the MCP server.
+
+**One GitHub issue is one chart,** found again by the issue it records (`metadata.github.issue`):
+the title is the desired outcome, the issue's task list (`- [ ] …`) is the action steps and a
+checked item is complete, an edit carries a new title and new or newly checked items, closing
+resolves the chart and reopening makes it active, and any other event is a dated line in current
+reality naming who did what. A comment is noted by its author, never by its text. A title framed
+as a problem ("fix …") is kept as written and marked with `metadata.orientation` rather than
+refused, so a webhook never fails on wording and the framing stays visible to reframe.
+
+`checkStore(text)` says whether a file follows this package's shape and names charts whose
+current reality reads like an event log. Callers writing one file from several places at once
+serialise their writes to it.
+
 ## Sending each save to Asterion
 
 [Asterion](https://github.com/miadisabelle/asterion) renders charts, action steps, beats and their

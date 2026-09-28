@@ -32,6 +32,19 @@ export function parseGithubIssueSpec(spec: string): GithubIssueRef {
   };
 }
 
+/** Words that frame a desired outcome as something to remove rather than something to create. */
+export const PROBLEM_SOLVING_WORDS = ['fix', 'solve', 'eliminate', 'prevent', 'stop', 'avoid', 'reduce', 'remove'] as const;
+
+/**
+ * The problem-solving words a desired outcome uses, matched on word boundaries so
+ * "prefix" or "resolve" never count. Empty when the outcome is framed as a creation.
+ */
+export function detectProblemFraming(desiredOutcome: string): string[] {
+  return PROBLEM_SOLVING_WORDS.filter(word => new RegExp(`\\b${word}\\b`, 'i').test(desiredOutcome));
+}
+
+export type ChartStatus = 'active' | 'paused' | 'resolved' | 'archived';
+
 export class KnowledgeGraphManager {
   private memoryFilePath: string;
   /** Set when COAIA_ASTERION_* ask for each save to reach Asterion (src/asterion-bridge.ts). */
@@ -271,7 +284,15 @@ export class KnowledgeGraphManager {
     dueDate: string,
     actionSteps?: string[],
     elementsOfPerformance?: Array<{ description: string; type: 'DESIGN' | 'EXECUTION' }>,
-    githubIssue?: string
+    githubIssue?: string,
+    options: {
+      /**
+       * 'refuse' (the default) teaches by refusing a problem-framed outcome.
+       * 'flag' records the chart as written and marks it, for outcomes a person
+       * wrote elsewhere (a GitHub issue title) that no caller can reframe for them.
+       */
+      orientation?: 'refuse' | 'flag';
+    } = {}
   ): Promise<{ chartId: string; entities: Entity[]; relations: Relation[] }> {
     // A malformed call is diagnosed before its content is judged — there is no
     // point coaching the creative orientation of a fragment of XML.
@@ -305,12 +326,10 @@ export class KnowledgeGraphManager {
     // The word list is unchanged — the intent behind it is right, and a chart
     // whose desired outcome genuinely says "eliminate" or "reduce" should still
     // be met with the teaching below. Only the matching is corrected.
-    const problemSolvingWords = ['fix', 'solve', 'eliminate', 'prevent', 'stop', 'avoid', 'reduce', 'remove'];
-    const detectedProblemWords = problemSolvingWords.filter(word =>
-      new RegExp(`\\b${word}\\b`, 'i').test(desiredOutcome)
-    );
-    
-    if (detectedProblemWords.length > 0) {
+    const detectedProblemWords = detectProblemFraming(desiredOutcome);
+    const flagFraming = detectedProblemWords.length > 0 && options.orientation === 'flag';
+
+    if (detectedProblemWords.length > 0 && !flagFraming) {
       throw new Error(`🌊 CREATIVE ORIENTATION REQUIRED
 
 Desired Outcome: "${desiredOutcome}"
@@ -361,7 +380,12 @@ Current Reality: "${currentReality}"
 💡 **Tip**: Run 'init_llm_guidance' for complete methodology overview.`);
     }
 
-    const chartId = `chart_${Date.now()}`;
+    // Ids come from the clock; two charts made in one millisecond must not share one,
+    // because createEntities skips a name that exists and would merge them silently.
+    const existingNames = new Set((await this.loadGraph()).entities.map(e => e.name));
+    let stamp = Date.now();
+    while (existingNames.has(`chart_${stamp}_chart`)) stamp++;
+    const chartId = `chart_${stamp}`;
     const timestamp = new Date().toISOString();
     const issueRef = githubIssue ? parseGithubIssueSpec(githubIssue) : undefined;
 
@@ -370,7 +394,12 @@ Current Reality: "${currentReality}"
       {
         name: `${chartId}_chart`,
         entityType: 'structural_tension_chart',
-        observations: [`Chart created on ${timestamp}`],
+        observations: [
+          `Chart created on ${timestamp}`,
+          ...(flagFraming
+            ? [`The desired outcome uses problem-solving language (${detectedProblemWords.join(', ')}). It was kept as written; reframe it as what will exist with update_desired_outcome.`]
+            : [])
+        ],
         metadata: {
           chartId,
           dueDate,
@@ -378,7 +407,8 @@ Current Reality: "${currentReality}"
           createdAt: timestamp,
           updatedAt: timestamp,
           ...(elementsOfPerformance && elementsOfPerformance.length > 0 ? { elementsOfPerformance } : {}),
-          ...(issueRef ? { github: { issue: issueRef } } : {})
+          ...(issueRef ? { github: { issue: issueRef } } : {}),
+          ...(flagFraming ? { orientation: { framing: 'problem-solving', words: detectedProblemWords } } : {})
         }
       },
       {
@@ -811,6 +841,80 @@ Current Reality: "${currentReality}"
 
     await this.saveGraph(graph);
     return { chartId, issue };
+  }
+
+  /**
+   * Add a plain action step to a chart, shaped exactly like the steps written at
+   * creation (not a telescoped sub-chart, which addActionStep makes). For steps a
+   * person already wrote elsewhere, such as the items of a GitHub task list.
+   * Returns the step's entity name.
+   */
+  async appendActionStep(chartId: string, title: string): Promise<string> {
+    assertNoUnparsedCallSyntax(title, 'title');
+    const graph = await this.loadGraph();
+    const chartEntity = graph.entities.find(e => e.name === `${chartId}_chart` && e.entityType === 'structural_tension_chart');
+    if (!chartEntity) throw new Error(`Chart ${chartId} not found`);
+    const prefix = `${chartId}_action_`;
+    const next = 1 + graph.entities.reduce((n, e) => {
+      const m = e.name.startsWith(prefix) ? Number(e.name.slice(prefix.length)) : NaN;
+      return Number.isInteger(m) && m > n ? m : n;
+    }, 0);
+    const name = `${prefix}${next}`;
+    const timestamp = new Date().toISOString();
+    graph.entities.push({
+      name,
+      entityType: 'action_step',
+      observations: [title],
+      metadata: {
+        chartId,
+        dueDate: (chartEntity.metadata as any)?.dueDate,
+        completionStatus: false,
+        createdAt: timestamp,
+        updatedAt: timestamp
+      }
+    });
+    graph.relations.push(
+      { from: `${chartId}_chart`, to: name, relationType: 'contains', metadata: { createdAt: timestamp } },
+      { from: name, to: `${chartId}_desired_outcome`, relationType: 'advances_toward', metadata: { createdAt: timestamp } }
+    );
+    await this.saveGraph(graph);
+    return name;
+  }
+
+  /**
+   * The chart that records a GitHub issue, found by metadata.github.issue.
+   * Owner and repository compare without case, as GitHub does.
+   */
+  async findChartByGithubIssue(owner: string, repo: string, number: number): Promise<string | null> {
+    const graph = await this.loadGraph();
+    const o = owner.toLowerCase();
+    const r = repo.toLowerCase();
+    const chart = graph.entities.find(e => {
+      if (e.entityType !== 'structural_tension_chart') return false;
+      const issue = (e.metadata as any)?.github?.issue;
+      return issue && String(issue.owner).toLowerCase() === o && String(issue.repo).toLowerCase() === r && Number(issue.number) === number;
+    });
+    return chart ? String((chart.metadata as any)?.chartId ?? chart.name.replace(/_chart$/, '')) : null;
+  }
+
+  /**
+   * Set the chart's lifecycle status, and refresh or clear its framing flag.
+   * Only these two chart-level fields; everything else about a chart has its own tool.
+   */
+  async updateChartMetadata(
+    chartId: string,
+    patch: { status?: ChartStatus; orientation?: { framing: 'problem-solving'; words: string[] } | null }
+  ): Promise<void> {
+    const graph = await this.loadGraph();
+    const chartEntity = graph.entities.find(e => e.name === `${chartId}_chart` && e.entityType === 'structural_tension_chart');
+    if (!chartEntity) throw new Error(`Chart ${chartId} not found`);
+    const metadata: Record<string, unknown> = { ...(chartEntity.metadata || {}) };
+    if (patch.status) metadata.status = patch.status;
+    if (patch.orientation === null) delete metadata.orientation;
+    else if (patch.orientation) metadata.orientation = patch.orientation;
+    metadata.updatedAt = new Date().toISOString();
+    chartEntity.metadata = metadata as typeof chartEntity.metadata;
+    await this.saveGraph(graph);
   }
 
   async updateDesiredOutcome(chartId: string, newDesiredOutcome: string): Promise<void> {
