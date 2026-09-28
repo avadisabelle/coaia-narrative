@@ -100,6 +100,20 @@ try {
   check('a pull request yields nothing', githubIssueEventFromPayload({ action: 'opened', repository: { full_name: 'a/b' }, issue: { number: 1, title: 'x', pull_request: {} } }) === null);
   check('the task list parser takes both bullets and ignores prose', JSON.stringify(parseTaskList('- [ ] a\ntext\n* [X] b')) === JSON.stringify([{ title: 'a', done: false }, { title: 'b', done: true }]));
 
+  console.log('\n📋 an issue that talks about tool calls still gets its chart');
+  const talk = await recordGithubIssueEvent(m, githubIssueEventFromPayload(raw('opened', {
+    number: 10, title: 'Explain why <invoke> tags leak into observations', html_url: 'https://github.com/jgwill/dummass/issues/10',
+    body: '- [ ] Show a </parameter> example\n- [ ] Same item\n',
+  })));
+  s = store(file);
+  check('created, with the bracket of the tag written as ‹', talk.created && getDesiredOutcome(s, talk.chartId)?.observations[0] === 'Explain why ‹invoke> tags leak into observations', getDesiredOutcome(s, talk.chartId)?.observations[0]);
+  check('its task item too', getFlatActionSteps(s, talk.chartId)[0]?.observations[0] === 'Show a ‹/parameter> example', getFlatActionSteps(s, talk.chartId)[0]?.observations[0]);
+  const twice = await recordGithubIssueEvent(m, githubIssueEventFromPayload(raw('edited', {
+    number: 10, title: 'Explain why <invoke> tags leak into observations', html_url: 'https://github.com/jgwill/dummass/issues/10',
+    body: '- [ ] Show a </parameter> example\n- [ ] Same item\n- [ ] New one\n- [ ] New one\n',
+  })));
+  check('two new items with one title become one step', getFlatActionSteps(store(file), talk.chartId).length === 3, JSON.stringify(twice));
+
   console.log('\n📋 charts made in one burst never share an id');
   const burst = new KnowledgeGraphManager(join(dir, 'burst.jsonl'));
   const ids = [];
@@ -108,7 +122,7 @@ try {
   console.log('\n📋 a store says whether it follows the contract');
   const { checkStore } = await import('coaia-narrative/contract');
   const good = checkStore(readFileSync(file, 'utf8'));
-  check('what the writer wrote conforms', good.conforms && good.charts === 2 && good.logShaped.length === 0, JSON.stringify(good));
+  check('what the writer wrote conforms', good.conforms && good.charts === 3 && good.logShaped.length === 0, JSON.stringify(good));
   const logLines = Array.from({ length: 60 }, (_, i) => `[2026-09-${String((i % 28) + 1).padStart(2, '0')}T10:00:00Z] @stcissue triggered: Issue #${i} - t (issues.opened)`);
   const logStore = [
     { type: 'entity', name: 'c_chart', entityType: 'structural_tension_chart', observations: ['x'], metadata: { chartId: 'c' } },

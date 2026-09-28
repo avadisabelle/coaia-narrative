@@ -26,6 +26,7 @@
  */
 
 import { KnowledgeGraphManager, detectProblemFraming } from './graph-manager.js';
+import { findUnparsedCallSyntax, KNOWN_ARGUMENT_NAMES } from './argument-hygiene.js';
 
 export { KnowledgeGraphManager, detectProblemFraming, PROBLEM_SOLVING_WORDS } from './graph-manager.js';
 export type { ChartStatus } from './graph-manager.js';
@@ -61,6 +62,22 @@ export interface GithubIssueEventResult {
 }
 
 const MAX_STEPS = 25;
+
+// The store refuses text carrying tool-call tags (argument-hygiene.ts): in a chart an
+// agent wrote, they mean a call that failed to parse. In a GitHub issue a person wrote,
+// they are words about tool calls, and refusing them would leave that issue with no
+// chart at all. So the opening bracket of those tags is written as ‹ instead: the text
+// still reads the same and the guard stays exactly as strict for everything else.
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const MACHINERY = /<(?=\s*\/?\s*(?:[A-Za-z][\w.-]*:)?(?:parameter|invoke|function_calls)\b)/gi;
+const CLOSING = new RegExp(`<(?=\\s*\\/\\s*(?:${KNOWN_ARGUMENT_NAMES.map(escapeRe).join('|')})\\s*>)`, 'gi');
+
+/** A person's text, made safe to record without refusing or losing what it says. */
+export function recordable(text: string): string {
+  let t = text.replace(MACHINERY, '‹').replace(CLOSING, '‹');
+  if (findUnparsedCallSyntax(t)) t = t.replace(/</g, '‹');
+  return t;
+}
 const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
 /** The task list of an issue body: `- [ ] item` and `- [x] item`, in order. */
@@ -68,7 +85,7 @@ export function parseTaskList(body: string | null | undefined): Array<{ title: s
   const items: Array<{ title: string; done: boolean }> = [];
   for (const line of String(body ?? '').split('\n')) {
     const m = /^\s*[-*]\s+\[([ xX])\]\s+(.+?)\s*$/.exec(line);
-    if (m && m[2].trim()) items.push({ title: clip(m[2].trim(), 200), done: m[1].toLowerCase() === 'x' });
+    if (m && m[2].trim()) items.push({ title: clip(recordable(m[2].trim()), 200), done: m[1].toLowerCase() === 'x' });
     if (items.length >= MAX_STEPS) break;
   }
   return items;
@@ -142,7 +159,7 @@ const ACTION_WORDS: Record<string, string> = {
 export async function recordGithubIssueEvent(manager: KnowledgeGraphManager, event: GithubIssueEvent): Promise<GithubIssueEventResult> {
   const [owner, repo] = event.repository.split('/');
   const ref = `${owner}/${repo}#${event.issue.number}`;
-  const title = clip(event.issue.title.trim() || `Issue #${event.issue.number}`, 300);
+  const title = clip(recordable(event.issue.title.trim()) || `Issue #${event.issue.number}`, 300);
   const when = (event.at && !Number.isNaN(Date.parse(event.at)) ? new Date(event.at) : new Date()).toISOString();
   const day = when.slice(0, 10);
   const changes: string[] = [];
@@ -193,6 +210,8 @@ export async function recordGithubIssueEvent(manager: KnowledgeGraphManager, eve
         if (!step) {
           const added = await manager.appendActionStep(chartId, t.title);
           if (t.done) await manager.markActionStepComplete(added);
+          // Two new items with one title are one step, not two.
+          byTitle.set(t.title, { name: added, metadata: { completionStatus: t.done } } as any);
           changes.push('steps-updated');
         } else if (t.done && (step.metadata as any)?.completionStatus !== true) {
           await manager.markActionStepComplete(step.name);
@@ -214,7 +233,7 @@ export async function recordGithubIssueEvent(manager: KnowledgeGraphManager, eve
       break;
     default: {
       const verb = ACTION_WORDS[event.action] ?? event.action;
-      const what = event.subject ? ` ${clip(String(event.subject), 120)}` : '';
+      const what = event.subject ? ` ${clip(recordable(String(event.subject)), 120)}` : '';
       const line = event.action === 'created'
         ? `${day}: ${actor} commented on ${ref}.`
         : `${day}: ${ref} ${verb}${what} by ${actor}.`;

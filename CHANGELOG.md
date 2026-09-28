@@ -5,6 +5,17 @@ All notable changes to COAIA Memory will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.2] - 2026-09-28
+
+### 🗣️ An issue that talks about tool calls still gets its chart
+
+The store refuses text carrying tool-call tags (`<invoke`, `<parameter`, closing tags of this
+package's argument names), because in a chart an agent wrote they mean a call that failed to parse.
+A GitHub issue *about* tool calls carried the same text as words, so `recordGithubIssueEvent` threw
+on it and that issue never got a chart. The writer now records a person's text with the opening
+bracket of those tags written as `‹`; the guard is unchanged for everything else. Also: two new
+task-list items with one title become one step, not two. Found in review (miadisabelle/asterion#9).
+
 ## [0.19.1] - 2026-09-28
 
 ### ✅ Completing a flat action step no longer completes its chart
