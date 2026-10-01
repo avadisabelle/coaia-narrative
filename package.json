@@ -1,6 +1,6 @@
 {
   "name": "coaia-narrative",
-  "version": "0.19.2",
+  "version": "0.20.0",
   "description": "Creative Orientation AI Agentic Memories - Narrative Beat Extension with IAIP relational integration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,7 +9,7 @@
     "coaia-narrative": "dist/index.js",
     "cnarrative": "dist/cli.js"
   },
-  "//exports": "The root entry IS the MCP server bootstrap \u2014 importing it starts a stdio server. './contract' is the import-safe read contract for renderers: zero I/O, zero imports from the server. The remaining patterns exist because introducing an exports field DISABLES CommonJS extension-completion and directory-index resolution, which a bare './*' passthrough cannot restore (it forwards a specifier verbatim). Measured: without them, require('coaia-narrative/dist/src/graph-manager') and require('coaia-narrative/dist') both broke. The explicit '.js' pattern wins by longest suffix, so extensionless CJS specifiers resolve again. ESM was never affected \u2014 it has no extension or directory resolution to lose.",
+  "//exports": "The root entry IS the MCP server bootstrap — importing it starts a stdio server. './contract' is the import-safe read contract for renderers: zero I/O, zero imports from the server. The remaining patterns exist because introducing an exports field DISABLES CommonJS extension-completion and directory-index resolution, which a bare './*' passthrough cannot restore (it forwards a specifier verbatim). Measured: without them, require('coaia-narrative/dist/src/graph-manager') and require('coaia-narrative/dist') both broke. The explicit '.js' pattern wins by longest suffix, so extensionless CJS specifiers resolve again. ESM was never affected — it has no extension or directory resolution to lose.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

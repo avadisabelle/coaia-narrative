@@ -161,9 +161,23 @@ Importing `coaia-narrative/writer` starts nothing; the package's main entry is t
 the title is the desired outcome, the issue's task list (`- [ ] …`) is the action steps and a
 checked item is complete, an edit carries a new title and new or newly checked items, closing
 resolves the chart and reopening makes it active, and any other event is a dated line in current
-reality naming who did what. A comment is noted by its author, never by its text. A title framed
-as a problem ("fix …") is kept as written and marked with `metadata.orientation` rather than
-refused, so a webhook never fails on wording and the framing stays visible to reframe.
+reality naming who did what. A title framed as a problem ("fix …") is kept as written and marked
+with `metadata.orientation` rather than refused, so a webhook never fails on wording and the
+framing stays visible to reframe.
+
+**A comment is a line of current reality.** By default it names who commented and when, never
+what. Pass `{ commentText: 'include' }` to also record the words, clipped to 600 characters: an
+edit then replaces that line and a deletion removes it, so the store never keeps words their author
+took back. Choose `include` only where the thread is already public, because a chart file can travel
+further than the thread it came from.
+
+**A sub-issue is a telescoped chart.** `recordGithubSubIssueEvent(manager,
+githubSubIssueEventFromPayload(payload))` sets the sub-issue chart's `metadata.parentChart` (what
+`getChildCharts` reads) and adds a dated line to the parent's current reality; a removal undoes it,
+and only for the parent it names, so a late removal of an old link never drops a newer one. Either
+chart is made when this store does not hold it yet, marked `metadata.stub`, and the issue's own
+`opened` or `edited` event fills in its title and task list. `linkChildChart` and
+`unlinkChildChart` on the manager do the same for any two charts.
 
 `checkStore(text)` says whether a file follows this package's shape and names charts whose
 current reality reads like an event log. Callers writing one file from several places at once

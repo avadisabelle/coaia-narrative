@@ -14,8 +14,9 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import {
   KnowledgeGraphManager, recordGithubIssueEvent, githubIssueEventFromPayload, parseTaskList,
+  recordGithubSubIssueEvent, githubSubIssueEventFromPayload,
 } from 'coaia-narrative/writer';
-import { parseStore, getChartEntity, getDesiredOutcome, getCurrentReality, getFlatActionSteps } from 'coaia-narrative/contract';
+import { parseStore, getChartEntity, getDesiredOutcome, getCurrentReality, getFlatActionSteps, getChildCharts } from 'coaia-narrative/contract';
 
 let passed = 0;
 let failed = 0;
@@ -33,6 +34,8 @@ const raw = (action, issue, extra = {}) => ({
   ...extra,
 });
 const store = (file) => parseStore(readFileSync(file, 'utf8'));
+const { checkStore: checkStoreOf_ } = await import('coaia-narrative/contract');
+const checkStoreOf = (file) => checkStoreOf_(readFileSync(file, 'utf8'));
 const charts = (s) => [...s.entities.values()].filter((e) => e.entityType === 'structural_tension_chart');
 
 try {
@@ -63,9 +66,25 @@ try {
   s = store(file);
   check('no second chart', charts(s).length === 1 && r2.chartId === r1.chartId && !r2.created);
   check('a dated line naming the label and who applied it', getCurrentReality(s, r1.chartId)?.observations.some((o) => /labeled good first issue by @jgwill/.test(o)));
-  await recordGithubIssueEvent(m, githubIssueEventFromPayload(raw('created', { body }, { comment: { user: { login: 'miette' }, body: 'private words' } })));
+  const said = { commentText: 'include' };
+  await recordGithubIssueEvent(m, githubIssueEventFromPayload(raw('created', { body }, { comment: { id: 501, user: { login: 'miette' }, body: 'The README needs   a section\non install.', created_at: '2026-09-29T10:00:00Z' } })), said);
   s = store(file);
-  check('a comment is noted by its author, never by its text', getCurrentReality(s, r1.chartId)?.observations.some((o) => /@miette commented/.test(o)) && !readFileSync(file, 'utf8').includes('private words'));
+  check('with commentText include, a comment becomes an observation with its words', getCurrentReality(s, r1.chartId)?.observations.includes('2026-09-29: @miette commented on jgwill/dummass#7: "The README needs a section on install."'), JSON.stringify(getCurrentReality(s, r1.chartId)?.observations.slice(-1)));
+  await recordGithubIssueEvent(m, githubIssueEventFromPayload(raw('edited', { body }, { comment: { id: 501, user: { login: 'miette' }, body: 'The README needs an install section.', created_at: '2026-09-29T10:00:00Z', updated_at: '2026-09-29T11:00:00Z' } })), said);
+  s = store(file);
+  let obs = getCurrentReality(s, r1.chartId)?.observations ?? [];
+  check('an edit replaces the earlier words, and is told apart from an issue edit', obs.some((o) => /@miette edited a comment on jgwill\/dummass#7: "The README needs an install section."/.test(o)) && !obs.some((o) => o.includes('a section on install')) && getDesiredOutcome(s, r1.chartId)?.observations[0] === 'Publish the dummass package', JSON.stringify(obs.slice(-2)));
+  await recordGithubIssueEvent(m, githubIssueEventFromPayload(raw('deleted', { body }, { comment: { id: 501, user: { login: 'miette' }, body: 'The README needs an install section.' } })), said);
+  obs = getCurrentReality(store(file), r1.chartId)?.observations ?? [];
+  check('a deletion takes the words out and says so', !readFileSync(file, 'utf8').includes('install section') && obs.some((o) => /a comment by @miette on jgwill\/dummass#7 was deleted/.test(o)));
+  await recordGithubIssueEvent(m, githubIssueEventFromPayload(raw('created', { body }, { comment: { id: 502, user: { login: 'ava' }, body: 'secret words' } })));
+  check('by default only the author is recorded, never the words', !readFileSync(file, 'utf8').includes('secret words') && getCurrentReality(store(file), r1.chartId)?.observations.some((o) => /@ava commented on jgwill\/dummass#7\.$/.test(o)));
+  const longer = 'x'.repeat(598) + '🧠 and more';
+  await recordGithubIssueEvent(m, githubIssueEventFromPayload(raw('created', { body }, { comment: { id: 503, user: { login: 'ava' }, body: longer } })), said);
+  const lastLine = (getCurrentReality(store(file), r1.chartId)?.observations ?? []).at(-1) ?? '';
+  check('a clip never halves an emoji', !/[\ud800-\udbff](?![\udc00-\udfff])/.test(lastLine) && lastLine.includes('…'), lastLine.slice(-12));
+  const notAComment = githubIssueEventFromPayload(raw('edited', { body }, { comment: {} }));
+  check('an empty comment key does not turn an issue edit into a comment edit', notAComment?.action === 'edited');
 
   console.log('\n📋 an edit carries a new title and a changed task list');
   const edited = 'Some context.\n\n- [x] Write the README\n- [x] Choose the name\n* [ ] Publish 0.1.0\n- [ ] Announce it\n';
@@ -113,6 +132,54 @@ try {
     body: '- [ ] Show a </parameter> example\n- [ ] Same item\n- [ ] New one\n- [ ] New one\n',
   })));
   check('two new items with one title become one step', getFlatActionSteps(store(file), talk.chartId).length === 3, JSON.stringify(twice));
+
+  console.log('\n📋 a sub-issue is a telescoped chart');
+  const subFile = join(dir, 'sub.jsonl');
+  const sm = new KnowledgeGraphManager(subFile);
+  const parentEv = await recordGithubIssueEvent(sm, githubIssueEventFromPayload(raw('opened', { number: 20, title: 'Ship the session reader', html_url: 'https://github.com/jgwill/dummass/issues/20' })));
+  const addRaw = {
+    action: 'sub_issue_added', repository: { full_name: 'jgwill/dummass' }, sender: { login: 'jgwill' },
+    parent_issue: { number: 20, title: 'Ship the session reader', html_url: 'https://github.com/jgwill/dummass/issues/20' },
+    sub_issue: { number: 21, title: 'The reader knows ceremonies from talking circles', html_url: 'https://github.com/jgwill/dummass/issues/21' },
+    parent_issue_repo: { full_name: 'jgwill/dummass' }, sub_issue_repo: { full_name: 'jgwill/dummass' },
+  };
+  const linked = await recordGithubSubIssueEvent(sm, githubSubIssueEventFromPayload(addRaw));
+  let ss = store(subFile);
+  check('the parent keeps its chart, the sub-issue gets one', linked.parentChartId === parentEv.chartId && linked.changes.includes('created-child') && linked.changes.includes('linked'), JSON.stringify(linked));
+  check('the contract reads the sub-issue as a child chart', getChildCharts(ss, linked.parentChartId).map((c) => c.metadata.chartId).join() === linked.childChartId);
+  check('one level deeper, linked to its own issue', getChartEntity(ss, linked.childChartId)?.metadata?.level === 1 && getChartEntity(ss, linked.childChartId)?.metadata?.github?.issue?.number === 21);
+  check("the parent's current reality says who added it", getCurrentReality(ss, linked.parentChartId)?.observations.some((o) => /jgwill\/dummass#21 added as a sub-issue by @jgwill/.test(o)));
+  const opened21 = await recordGithubIssueEvent(sm, githubIssueEventFromPayload(raw('opened', { number: 21, title: 'The reader tells ceremonies from talking circles', body: '- [ ] read the circle\n- [x] read the ceremony', html_url: 'https://github.com/jgwill/dummass/issues/21' })));
+  ss = store(subFile);
+  check("the sub-issue's own opened event fills in the chart the link made", opened21.chartId === linked.childChartId && !opened21.created && opened21.changes.includes('filled-in')
+    && getDesiredOutcome(ss, linked.childChartId)?.observations[0] === 'The reader tells ceremonies from talking circles'
+    && getFlatActionSteps(ss, linked.childChartId).length === 2 && !getChartEntity(ss, linked.childChartId)?.metadata?.stub, JSON.stringify(opened21));
+  const mirror = await recordGithubSubIssueEvent(sm, githubSubIssueEventFromPayload({ ...addRaw, action: 'parent_issue_added' }));
+  check('the mirror event changes nothing', mirror.changes.includes('unchanged') && getChildCharts(store(subFile), linked.parentChartId).length === 1, JSON.stringify(mirror));
+  const etlSub = githubSubIssueEventFromPayload({ repository: { fullName: 'jgwill/dummass' }, sender: { login: 'jgwill' }, subIssues: { parentIssue: { number: 20, title: 'x', url: 'https://github.com/jgwill/dummass/issues/20', repo: '' }, subIssue: { number: 21, title: 'y', url: 'https://github.com/jgwill/dummass/issues/21', repo: '' } } }, 'sub_issue_removed');
+  check("Miadi's flattened payload reads the same", etlSub?.parent.number === 20 && etlSub?.child.repo === 'dummass' && etlSub?.action === 'sub_issue_removed', JSON.stringify(etlSub));
+  const removed = await recordGithubSubIssueEvent(sm, etlSub);
+  ss = store(subFile);
+  check('removing it stands the chart on its own again', removed.changes.includes('unlinked') && getChildCharts(ss, linked.parentChartId).length === 0 && getChartEntity(ss, linked.childChartId)?.metadata?.level === 0);
+  // Re-parenting, then a late removal of the old link: the current parent stays.
+  await recordGithubIssueEvent(sm, githubIssueEventFromPayload(raw('opened', { number: 30, title: 'Another home', html_url: 'https://github.com/jgwill/dummass/issues/30' })));
+  const toFirst = { ...addRaw };
+  const toSecond = { ...addRaw, parent_issue: { number: 30, title: 'Another home', html_url: 'https://github.com/jgwill/dummass/issues/30' } };
+  const first = await recordGithubSubIssueEvent(sm, githubSubIssueEventFromPayload(toFirst));
+  const second = await recordGithubSubIssueEvent(sm, githubSubIssueEventFromPayload(toSecond));
+  await recordGithubSubIssueEvent(sm, githubSubIssueEventFromPayload({ ...toFirst, action: 'sub_issue_removed' }));
+  ss = store(subFile);
+  const edges = ss.relations.filter((r) => r.from === `${linked.childChartId}_desired_outcome` && r.relationType === 'advances_toward');
+  check('a late removal of the old link keeps the new parent', getChartEntity(ss, linked.childChartId)?.metadata?.parentChart === second.parentChartId && first.parentChartId !== second.parentChartId);
+  check('re-parenting leaves one edge, toward the new parent', edges.length === 1 && edges[0].to === `${second.parentChartId}_desired_outcome`, JSON.stringify(edges));
+  const crossRepo = githubSubIssueEventFromPayload({ action: 'parent_issue_added', repository: { full_name: 'jgwill/child-repo' }, parent_issue: { number: 1, html_url: 'https://github.com/jgwill/parent-repo/issues/1' }, sub_issue: { number: 5, html_url: 'https://github.com/jgwill/child-repo/issues/5' } });
+  check("an issue's repository comes from its own URL, not from the delivery", crossRepo?.parent.repo === 'parent-repo' && crossRepo?.child.repo === 'child-repo', JSON.stringify(crossRepo));
+  check('an issue with no repository of its own is not guessed', githubSubIssueEventFromPayload({ action: 'sub_issue_added', repository: { full_name: 'o/r' }, parent_issue: { number: 1 }, sub_issue: { number: 5 } }) === null);
+
+  let cycle = null;
+  try { await sm.linkChildChart(linked.childChartId, linked.childChartId); } catch (err) { cycle = err; }
+  check('a chart cannot be its own child', cycle && /own child/.test(cycle.message));
+  check('a sub-issue store conforms', checkStoreOf(subFile).conforms);
 
   console.log('\n📋 charts made in one burst never share an id');
   const burst = new KnowledgeGraphManager(join(dir, 'burst.jsonl'));

@@ -898,6 +898,77 @@ Current Reality: "${currentReality}"
   }
 
   /**
+   * Telescope one chart under another: the child's metadata.parentChart names the
+   * parent (the key the contract reads, getChildCharts), its level is one deeper, and
+   * its desired outcome advances toward the parent's. Idempotent.
+   */
+  async linkChildChart(parentChartId: string, childChartId: string): Promise<boolean> {
+    if (parentChartId === childChartId) throw new Error('A chart cannot be its own child');
+    const graph = await this.loadGraph();
+    const parent = graph.entities.find(e => e.name === `${parentChartId}_chart` && e.entityType === 'structural_tension_chart');
+    const child = graph.entities.find(e => e.name === `${childChartId}_chart` && e.entityType === 'structural_tension_chart');
+    if (!parent || !child) throw new Error(`Chart ${!parent ? parentChartId : childChartId} not found`);
+    // Refuse a cycle: walking up from the parent must not reach the child.
+    const byId = new Map(graph.entities.filter(e => e.entityType === 'structural_tension_chart').map(e => [String((e.metadata as any)?.chartId ?? e.name.replace(/_chart$/, '')), e]));
+    for (let at: string | undefined = parentChartId, hops = 0; at && hops < 100; hops++) {
+      if (at === childChartId) throw new Error(`Linking would make ${childChartId} its own ancestor`);
+      at = (byId.get(at)?.metadata as any)?.parentChart;
+    }
+    const meta = (child.metadata || {}) as Record<string, unknown>;
+    const level = Number((parent.metadata as any)?.level ?? 0) + 1;
+    const from = `${childChartId}_desired_outcome`;
+    const to = `${parentChartId}_desired_outcome`;
+    const hasEdge = graph.relations.some(r => r.from === from && r.to === to && r.relationType === 'advances_toward');
+    if (meta.parentChart === parentChartId && meta.level === level && hasEdge) return false;
+    // Re-parenting: the edge toward the previous parent goes with the old link.
+    const previous = meta.parentChart as string | undefined;
+    if (previous && previous !== parentChartId) {
+      graph.relations = graph.relations.filter(r => !(r.from === from && r.to === `${previous}_desired_outcome` && r.relationType === 'advances_toward'));
+    }
+    const now = new Date().toISOString();
+    child.metadata = { ...meta, parentChart: parentChartId, level, updatedAt: now } as typeof child.metadata;
+    if (!hasEdge) graph.relations.push({ from, to, relationType: 'advances_toward', metadata: { createdAt: now } });
+    this.relevelDescendants(graph, childChartId, level);
+    await this.saveGraph(graph);
+    return true;
+  }
+
+  /** Each chart below `chartId` sits one level deeper than its parent. */
+  private relevelDescendants(graph: KnowledgeGraph, chartId: string, level: number, seen = new Set<string>()): void {
+    if (seen.has(chartId)) return;
+    seen.add(chartId);
+    for (const e of graph.entities) {
+      if (e.entityType !== 'structural_tension_chart' || (e.metadata as any)?.parentChart !== chartId) continue;
+      const id = String((e.metadata as any)?.chartId ?? e.name.replace(/_chart$/, ''));
+      e.metadata = { ...(e.metadata || {}), level: level + 1 } as typeof e.metadata;
+      this.relevelDescendants(graph, id, level + 1, seen);
+    }
+  }
+
+  /**
+   * Undo linkChildChart: the chart stands on its own again. Idempotent. With
+   * `fromParent`, only a link to that parent is undone, so a late removal of an old
+   * link never drops the child's current parent.
+   */
+  async unlinkChildChart(childChartId: string, fromParent?: string): Promise<boolean> {
+    const graph = await this.loadGraph();
+    const child = graph.entities.find(e => e.name === `${childChartId}_chart` && e.entityType === 'structural_tension_chart');
+    if (!child) throw new Error(`Chart ${childChartId} not found`);
+    const meta = { ...(child.metadata || {}) } as Record<string, unknown>;
+    const parentChartId = meta.parentChart as string | undefined;
+    if (!parentChartId) return false;
+    if (fromParent && fromParent !== parentChartId) return false;
+    delete meta.parentChart;
+    meta.level = 0;
+    meta.updatedAt = new Date().toISOString();
+    child.metadata = meta as typeof child.metadata;
+    graph.relations = graph.relations.filter(r => !(r.from === `${childChartId}_desired_outcome` && r.to === `${parentChartId}_desired_outcome` && r.relationType === 'advances_toward'));
+    this.relevelDescendants(graph, childChartId, 0);
+    await this.saveGraph(graph);
+    return true;
+  }
+
+  /**
    * The chart that records a GitHub issue, found by metadata.github.issue.
    * Owner and repository compare without case, as GitHub does.
    */
@@ -919,7 +990,14 @@ Current Reality: "${currentReality}"
    */
   async updateChartMetadata(
     chartId: string,
-    patch: { status?: ChartStatus; orientation?: { framing: 'problem-solving'; words: string[] } | null }
+    patch: {
+      status?: ChartStatus;
+      orientation?: { framing: 'problem-solving'; words: string[] } | null;
+      /** A chart made from a partial record (a sub-issue link) until its own event fills it in. */
+      stub?: boolean | null;
+      /** GitHub comment id → the line of current reality that records it, so an edit or deletion replaces it. */
+      githubComments?: Record<string, string> | null;
+    }
   ): Promise<void> {
     const graph = await this.loadGraph();
     const chartEntity = graph.entities.find(e => e.name === `${chartId}_chart` && e.entityType === 'structural_tension_chart');
@@ -928,6 +1006,10 @@ Current Reality: "${currentReality}"
     if (patch.status) metadata.status = patch.status;
     if (patch.orientation === null) delete metadata.orientation;
     else if (patch.orientation) metadata.orientation = patch.orientation;
+    if (patch.stub === null || patch.stub === false) delete metadata.stub;
+    else if (patch.stub) metadata.stub = true;
+    if (patch.githubComments === null) delete metadata.githubComments;
+    else if (patch.githubComments) metadata.githubComments = patch.githubComments;
     metadata.updatedAt = new Date().toISOString();
     chartEntity.metadata = metadata as typeof chartEntity.metadata;
     await this.saveGraph(graph);

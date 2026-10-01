@@ -5,6 +5,26 @@ All notable changes to COAIA Memory will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0] - 2026-09-30
+
+### 🔭 A sub-issue is a telescoped chart, and a comment can carry its words
+
+- `recordGithubSubIssueEvent` and `githubSubIssueEventFromPayload` (GitHub's `sub_issues` webhook,
+  in GitHub's shape or Miadi's flattened one). The sub-issue's chart gets `metadata.parentChart` and
+  a level one deeper, its desired outcome advances toward the parent's, and the parent's current
+  reality says who linked it. A removal unlinks only from the parent it names. A chart made from a
+  link is a `stub` until the issue's own event fills in its title and task list. An issue's
+  repository is read from its own URL, never guessed from the delivery.
+- `KnowledgeGraphManager.linkChildChart` / `unlinkChildChart`: re-parenting drops the old edge and
+  re-levels descendants; a cycle is refused.
+- Comments are their own actions (`comment.created`, `comment.edited`, `comment.deleted`), keyed by
+  comment id. `{ commentText: 'include' }` records the words; an edit replaces the line and a
+  deletion removes it. The default stays author-only, as in 0.19.
+- Text is clipped on code points, so an emoji at the boundary is never halved into a lone
+  surrogate (which Postgres `jsonb` refuses).
+
+Found in review: miadisabelle/asterion#9.
+
 ## [0.19.2] - 2026-09-28
 
 ### 🗣️ An issue that talks about tool calls still gets its chart
