@@ -91,6 +91,29 @@ try {
   check('isComplete reads completionStatus', C.isComplete(flat[0]) === false);
 
   // -------------------------------------------------------------------------
+  console.log('\n📋 a telescoped step is one unit of work, whichever side names the link');
+  // -------------------------------------------------------------------------
+  // telescopeActionStep keeps the flat step and writes parentActionStep on the child.
+  const tStepA = flat.find((e) => e.observations[0] === 'Flat step A');
+  const tFromPackage = await mgr.telescopeActionStep(tStepA.name, 'Seen closer up');
+  // Another writer (Miadi's editor, the visualizer) names the child on the step instead.
+  const tOther = await mgr.createStructuralTensionChart('Step B, seen closer up', 'Not started', '2026-08-08');
+  const tg = await mgr.readGraph();
+  const tStepB = tg.entities.find((e) => e.entityType === 'action_step' && e.observations[0] === 'Flat step B' && e.metadata.chartId === chartId);
+  tStepB.metadata.telescopedChartId = tOther.chartId;
+  tg.entities.find((e) => e.name === `${tOther.chartId}_chart`).metadata.parentChart = chartId;
+  await mgr.saveGraph(tg);
+  const tLinked = C.parseStore(readFileSync(store, 'utf8'));
+  const tWork2 = C.getWork(tLinked, chartId);
+  check('each telescoped step is listed once', tWork2.length === work.length,
+    `before=${work.length} after=${tWork2.length} ${JSON.stringify(tWork2.map((w) => [w.id, w.childChartId]))}`);
+  check('a step named on its child carries childChartId', tWork2.find((w) => w.id === tStepA.name)?.childChartId === tFromPackage.chartId);
+  check('a step that names its child carries childChartId', tWork2.find((w) => w.id === tStepB.name)?.childChartId === tOther.chartId);
+  const tProgress = await mgr.getChartProgress(chartId);
+  check('get_chart_progress counts the same units as getWork', tProgress.totalActions === tWork2.length,
+    `progress=${tProgress.totalActions} work=${tWork2.length}`);
+
+  // -------------------------------------------------------------------------
   console.log('\n📋 MMOT trail and beats');
   // -------------------------------------------------------------------------
   const evals = C.getMmotEvaluations(chart);
@@ -160,7 +183,7 @@ try {
   const raw = readFileSync(store, 'utf8');
   const torn = C.parseStore(raw.trimEnd() + '\n{"name":"half","entityTy');
   check('a torn line is skipped and counted, not fatal', torn.skipped === 1);
-  check('every whole record still parsed', torn.entities.size === parsed.entities.size);
+  check('every whole record still parsed', torn.entities.size === C.parseStore(raw).entities.size);
   check('an empty store parses to nothing rather than throwing',
     C.parseStore('').entities.size === 0);
 

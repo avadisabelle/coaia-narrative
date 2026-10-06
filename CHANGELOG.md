@@ -5,6 +5,18 @@ All notable changes to COAIA Memory will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.0] - 2026-10-06
+
+### 🔭 A telescoped step is one unit of work, whichever side names the link
+
+`getWork` listed a flat step and the child chart it was telescoped into as two items.
+A step and its child are now one item, the step, carrying `childChartId`. The link is read from
+either side: the child names its step (`parentActionStep`, what `telescopeActionStep` writes), or
+the step names its child (`telescopedChartId` or `telescopedToChartId`, what Miadi's editor and
+the visualizer write). `get_chart_progress` counts by the same rule, so the two agree. New
+selectors: `getTelescopedSteps(store, chartId)` and `isChartComplete(store, chartId)` (the chart
+or its desired outcome). Ref: avadisabelle/coaia-narrative#52, miadisabelle/asterion#9.
+
 ## [0.20.0] - 2026-09-30
 
 ### 🔭 A sub-issue is a telescoped chart, and a comment can carry its words

@@ -258,6 +258,36 @@ export function getChildCharts(s: ParsedStore, chartId: string): StoreEntity[] {
   return out;
 }
 
+/**
+ * A child chart is complete when the chart itself is, or when its desired outcome is:
+ * mark_action_complete on a telescoped result writes to the outcome.
+ */
+export function isChartComplete(s: ParsedStore, chartId: string): boolean {
+  return isComplete(getChartEntity(s, chartId)) || isComplete(getDesiredOutcome(s, chartId));
+}
+
+/**
+ * The child charts each flat step of this chart was telescoped into, keyed by step name.
+ * Writers record the link from either side: the step names its child
+ * (`telescopedChartId`, or `telescopedToChartId`), or the child names its step
+ * (`parentActionStep`, what this package's telescopeActionStep writes). A step and the
+ * chart it opened into are one unit of work, counted once, through the step.
+ */
+export function getTelescopedSteps(s: ParsedStore, chartId: string): Map<string, string> {
+  const out = new Map<string, string>();
+  const steps = new Set(getFlatActionSteps(s, chartId).map(e => e.name));
+  for (const name of steps) {
+    const e = s.entities.get(name);
+    const child = metaString(e, 'telescopedChartId') ?? metaString(e, 'telescopedToChartId');
+    if (child && getChartEntity(s, child)) out.set(name, child);
+  }
+  for (const c of getChildCharts(s, chartId)) {
+    const step = metaString(c, 'parentActionStep');
+    if (step && steps.has(step) && !out.has(step)) out.set(step, metaString(c, 'chartId') ?? c.name.replace(/_chart$/, ''));
+  }
+  return out;
+}
+
 /** One unit of work on a chart, whether it is a flat step or a telescoped child. */
 export interface WorkItem {
   /** Entity name for a flat step; the CHILD CHART's id for a telescoped one. */
@@ -266,7 +296,10 @@ export interface WorkItem {
   completed: boolean;
   dueDate?: string;
   updatedAt?: string;
+  /** True when `id` is a child chart that no flat step stands for. */
   telescoped: boolean;
+  /** For a flat step that was telescoped: the child chart it opened into. */
+  childChartId?: string;
   /** The underlying record, for callers that need more than the summary. */
   entity: StoreEntity;
 }
@@ -279,8 +312,11 @@ export interface WorkItem {
  */
 export function getWork(s: ParsedStore, chartId: string): WorkItem[] {
   const out: WorkItem[] = [];
+  const telescoped = getTelescopedSteps(s, chartId);
+  const claimed = new Set(telescoped.values());
 
   for (const e of getFlatActionSteps(s, chartId)) {
+    const childChartId = telescoped.get(e.name);
     out.push({
       id: e.name,
       title: e.observations?.[0] ?? e.name,
@@ -288,17 +324,19 @@ export function getWork(s: ParsedStore, chartId: string): WorkItem[] {
       dueDate: metaString(e, 'dueDate'),
       updatedAt: metaString(e, 'updatedAt'),
       telescoped: false,
+      ...(childChartId ? { childChartId } : {}),
       entity: e,
     });
   }
 
   for (const e of getChildCharts(s, chartId)) {
     const childId = metaString(e, 'chartId') ?? e.name.replace(/_chart$/, '');
+    if (claimed.has(childId)) continue; // counted through the step it opened from
     const childOutcome = getDesiredOutcome(s, childId);
     out.push({
       id: childId,
       title: childOutcome?.observations?.[0] ?? childId,
-      completed: isComplete(e),
+      completed: isChartComplete(s, childId),
       dueDate: metaString(e, 'dueDate'),
       updatedAt: metaString(e, 'updatedAt'),
       telescoped: true,

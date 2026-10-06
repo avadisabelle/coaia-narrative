@@ -631,10 +631,17 @@ Current Reality: "${currentReality}"
     );
 
     // A child chart telescoped out of one of this chart's own steps is that same result
-    // seen closer up — it is counted through the step, not a second time.
+    // seen closer up — it is counted through the step, not a second time. The link is
+    // written from either side: the child names its step (parentActionStep), or the step
+    // names its child (telescopedChartId / telescopedToChartId). Same rule as the
+    // contract's getWork.
     const stepNames = new Set(actionSteps.map(e => e.name));
+    const claimedByStep = new Set(actionSteps
+      .map(e => e.metadata?.telescopedChartId ?? e.metadata?.telescopedToChartId)
+      .filter((id): id is string => typeof id === 'string'));
     const telescopedChildren = childCharts.filter(c =>
-      !(c.metadata?.parentActionStep && stepNames.has(c.metadata.parentActionStep))
+      !(c.metadata?.parentActionStep && stepNames.has(c.metadata.parentActionStep)) &&
+      !claimedByStep.has(c.metadata?.chartId || c.name.replace(/_chart$/, ''))
     );
 
     const units: Array<{ name: string; complete: boolean; dueDate?: string }> = [
@@ -652,7 +659,7 @@ Current Reality: "${currentReality}"
         );
         return {
           name: `${childId}_desired_outcome`,
-          complete: outcome?.metadata?.completionStatus === true,
+          complete: outcome?.metadata?.completionStatus === true || c.metadata?.completionStatus === true,
           dueDate: c.metadata?.dueDate
         };
       })
