@@ -5,6 +5,16 @@ All notable changes to COAIA Memory will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.0] - 2026-10-06
+
+### ✏️ What a chart panel edits, through the writer
+
+Three manager methods so a service that edits charts by hand (Miadi's `/stc-config` panel) can
+stop rewriting files itself: `setActionStepCompletion(step, complete)` (un-completing keeps the
+earlier "Completed:" line as history), `updateActionStepTitle(step, title)` (a telescoped step's
+title is its chart's desired outcome), and `replaceObservation(entity, index, text)`.
+Ref: jgwill/Miadi#679.
+
 ## [0.21.0] - 2026-10-06
 
 ### 🔭 A telescoped step is one unit of work, whichever side names the link

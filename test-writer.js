@@ -181,6 +181,24 @@ try {
   check('a chart cannot be its own child', cycle && /own child/.test(cycle.message));
   check('a sub-issue store conforms', checkStoreOf(subFile).conforms);
 
+  console.log('\n📋 editing a chart by hand: a step either way, its title, one line of reality');
+  const eFile = join(dir, 'edit.jsonl');
+  const em = new KnowledgeGraphManager(eFile);
+  const { chartId: ec } = await em.createStructuralTensionChart('A chart edited from a panel', 'Line one', '2026-12-01T00:00:00Z', ['Step one']);
+  const eStep = getFlatActionSteps(store(eFile), ec)[0].name;
+  await em.setActionStepCompletion(eStep, true);
+  await em.setActionStepCompletion(eStep, false);
+  let es = store(eFile);
+  check('a step completed then uncompleted reads pending, and its history stays', es.entities.get(eStep)?.metadata?.completionStatus === false && getCurrentReality(es, ec)?.observations.includes('Completed: Step one'));
+  await em.updateActionStepTitle(eStep, 'Step one, renamed');
+  await em.replaceObservation(`${ec}_current_reality`, 0, 'Line one, corrected');
+  es = store(eFile);
+  check('a step is renamed in place', es.entities.get(eStep)?.observations[0] === 'Step one, renamed');
+  check('one line of reality is replaced, the others kept', getCurrentReality(es, ec)?.observations[0] === 'Line one, corrected' && getCurrentReality(es, ec)?.observations.length === 2);
+  let bad = null;
+  try { await em.replaceObservation(`${ec}_current_reality`, 9, 'x'); } catch (err) { bad = err; }
+  check('a line that does not exist is refused', bad && /no observation 9/.test(bad.message));
+
   console.log('\n📋 charts made in one burst never share an id');
   const burst = new KnowledgeGraphManager(join(dir, 'burst.jsonl'));
   const ids = [];

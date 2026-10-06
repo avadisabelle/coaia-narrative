@@ -905,6 +905,59 @@ Current Reality: "${currentReality}"
   }
 
   /**
+   * Set a step's completion either way. Completing goes through markActionStepComplete
+   * (its line flows into current reality). Un-completing clears the mark on the step,
+   * and on a telescoped step's chart, and leaves the earlier "Completed:" line in
+   * current reality: it records that the step was once done.
+   */
+  async setActionStepCompletion(actionStepName: string, complete: boolean): Promise<void> {
+    if (complete) return this.markActionStepComplete(actionStepName);
+    const graph = await this.loadGraph();
+    const step = graph.entities.find(e => e.name === actionStepName && (e.entityType === 'action_step' || e.entityType === 'desired_outcome'));
+    if (!step) throw new Error(`Action step ${actionStepName} not found`);
+    const now = new Date().toISOString();
+    step.metadata = { ...(step.metadata || {}), completionStatus: false, updatedAt: now } as typeof step.metadata;
+    if (step.entityType === 'desired_outcome') {
+      const chart = graph.entities.find(e => e.name === `${(step.metadata as any)?.chartId}_chart`);
+      if (chart) chart.metadata = { ...(chart.metadata || {}), completionStatus: false, updatedAt: now } as typeof chart.metadata;
+    }
+    await this.saveGraph(graph);
+  }
+
+  /**
+   * Rename a step. A flat step's title is its first observation; a telescoped step's
+   * title is its chart's desired outcome.
+   */
+  async updateActionStepTitle(actionStepName: string, title: string): Promise<void> {
+    assertNoUnparsedCallSyntax(title, 'title');
+    const text = String(title).trim();
+    if (!text) throw new Error('A step needs a title');
+    const graph = await this.loadGraph();
+    const step = graph.entities.find(e => e.name === actionStepName && (e.entityType === 'action_step' || e.entityType === 'desired_outcome'));
+    if (!step) throw new Error(`Action step ${actionStepName} not found`);
+    if (step.entityType === 'desired_outcome') return this.updateDesiredOutcome(String((step.metadata as any)?.chartId), text);
+    step.observations = [text, ...step.observations.slice(1)];
+    step.metadata = { ...(step.metadata || {}), updatedAt: new Date().toISOString() } as typeof step.metadata;
+    await this.saveGraph(graph);
+  }
+
+  /** Replace the observation at `index` of an entity (an edited line of current reality). */
+  async replaceObservation(entityName: string, index: number, text: string): Promise<void> {
+    assertNoUnparsedCallSyntax(text, 'text');
+    const value = String(text).trim();
+    if (!value) throw new Error('An observation needs text; use deleteObservations to remove one');
+    const graph = await this.loadGraph();
+    const entity = graph.entities.find(e => e.name === entityName);
+    if (!entity) throw new Error(`Entity ${entityName} not found`);
+    if (!Number.isInteger(index) || index < 0 || index >= entity.observations.length) {
+      throw new Error(`${entityName} has no observation ${index}`);
+    }
+    entity.observations = entity.observations.map((o, i) => (i === index ? value : o));
+    entity.metadata = { ...(entity.metadata || {}), updatedAt: new Date().toISOString() } as typeof entity.metadata;
+    await this.saveGraph(graph);
+  }
+
+  /**
    * Telescope one chart under another: the child's metadata.parentChart names the
    * parent (the key the contract reads, getChildCharts), its level is one deeper, and
    * its desired outcome advances toward the parent's. Idempotent.
