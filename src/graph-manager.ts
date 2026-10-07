@@ -872,8 +872,11 @@ Current Reality: "${currentReality}"
    * person already wrote elsewhere, such as the items of a GitHub task list.
    * Returns the step's entity name.
    */
-  async appendActionStep(chartId: string, title: string): Promise<string> {
+  async appendActionStep(chartId: string, title: string, options: { dueDate?: string } = {}): Promise<string> {
     assertNoUnparsedCallSyntax(title, 'title');
+    if (options.dueDate !== undefined && Number.isNaN(Date.parse(options.dueDate))) {
+      throw new Error(`dueDate is not a date: ${options.dueDate}`);
+    }
     const graph = await this.loadGraph();
     const chartEntity = graph.entities.find(e => e.name === `${chartId}_chart` && e.entityType === 'structural_tension_chart');
     if (!chartEntity) throw new Error(`Chart ${chartId} not found`);
@@ -890,7 +893,8 @@ Current Reality: "${currentReality}"
       observations: [title],
       metadata: {
         chartId,
-        dueDate: (chartEntity.metadata as any)?.dueDate,
+        // A step is due when its caller says, else when its chart is.
+        dueDate: options.dueDate !== undefined ? new Date(options.dueDate).toISOString() : (chartEntity.metadata as any)?.dueDate,
         completionStatus: false,
         createdAt: timestamp,
         updatedAt: timestamp

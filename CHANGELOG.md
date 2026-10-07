@@ -5,6 +5,12 @@ All notable changes to COAIA Memory will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.0] - 2026-10-07
+
+`appendActionStep(chartId, title, { dueDate })`: a step can carry its own due date; without one
+it inherits its chart's, as before. Miadi's `/api/stc/charts` `add-action` passes the caller's
+`dueDate` through it (P4). Ref: jgwill/Miadi#679.
+
 ## [0.22.0] - 2026-10-06
 
 ### ✏️ What a chart panel edits, through the writer

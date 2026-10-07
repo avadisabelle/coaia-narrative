@@ -195,6 +195,8 @@ try {
   es = store(eFile);
   check('a step is renamed in place', es.entities.get(eStep)?.observations[0] === 'Step one, renamed');
   check('one line of reality is replaced, the others kept', getCurrentReality(es, ec)?.observations[0] === 'Line one, corrected' && getCurrentReality(es, ec)?.observations.length === 2);
+  const dated = await em.appendActionStep(ec, 'A dated step', { dueDate: '2026-11-15' });
+  check('a step can carry its own due date', store(eFile).entities.get(dated)?.metadata?.dueDate === '2026-11-15T00:00:00.000Z');
   let bad = null;
   try { await em.replaceObservation(`${ec}_current_reality`, 9, 'x'); } catch (err) { bad = err; }
   check('a line that does not exist is refused', bad && /no observation 9/.test(bad.message));
