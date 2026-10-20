@@ -394,7 +394,7 @@ mightyeagle proposal §2.1.
 | `goal` | `desired_outcome.observations[0]` (chart's child) | Read via `contains` relation from chart |
 | `current_reality` | `current_reality.observations[0]` | Same |
 | `question` | chart `metadata.narrative.description` if present, else first sentence of `desired_outcome.observations[0]` | Heuristic; document choice on first sync |
-| `Status` | derived from `metadata.phase` + action-step completion ratio | Derivation kept in `coaia-github` |
+| `Status` | derived from `metadata.phase` + action-step completion ratio | Implemented as `deriveGithubProjectStatus` (`src/github-bridge.ts`): `Completed` when `completionStatus` is true; since 0.24.0, `Delaying Resolution` while the chart or one of its telescoped steps carries an open `delayedResolution` (`delayed_resolution.spec.md`, Miadi Chronicle Episode 297); otherwise phase and completion ratio |
 | `structural_phase` | `metadata.phase` | direct |
 | `tension_state` | computed (see `mmotEvaluations` recency + completionStatus distribution) | not stored; derived per call |
 | `direction` | `metadata.pde.direction` (UPPERCASE) | from schema-evolution spec |
@@ -410,7 +410,7 @@ mightyeagle proposal §2.1.
 | `plan_sync_state` | `metadata.plan.syncState` | schema-evolution spec |
 | `source_system` | `metadata.source.system` | schema-evolution spec |
 | `due_date` | `metadata.dueDate` | existing field |
-| `session_id` | `metadata.source.sessionId` | schema-evolution spec |
+| `session_id` | `metadata.source.sessionId` | schema-evolution spec. The session that wrote the entity, distinct from `delayedResolution.session`, the session to rehydrate (0.24.0) |
 | `chart_jsonl_path` | session JSONL filename (computed by bridge from runtime context, not stored) | not in entity metadata |
 
 The bridge MUST NOT write a custom-field value for a GitHub field whose

@@ -59,12 +59,18 @@ Claude (calling add_action_step):
 
 ### Tool Grouping Strategy
 
-**STC_TOOLS** (Default): Structural Tension Chart focus
-- Primary tools: create_structural_tension_chart, add_action_step, telescope_action_step
-- Progress tools: mark_action_complete, list_active_charts, update_action_progress
-- Reality tools: update_current_reality, update_desired_outcome
+**STC_TOOLS** (Default): Structural Tension Chart focus (19 tools at 0.24.1)
+- Primary tools: create_structural_tension_chart, manage_action_step, add_action_step (deprecated), telescope_action_step (deprecated), remove_action_step
+- Progress tools: mark_action_complete, list_active_charts, get_chart, get_action_step, get_chart_progress, update_action_progress
+- Reality tools: update_current_reality, update_desired_outcome, update_chart_due_date
+- Delay tools (0.24.0): delay_resolution, list_delayed_resolutions, end_delayed_resolution (see `delayed_resolution.spec.md`)
+- Link tools: link_chart_to_github_issue
 - Evaluation tools: perform_mmot_evaluation
 - Use when: LLM is primarily supporting creative projects and learning goals
+
+**NARRATIVE_TOOLS** (Default): create_narrative_beat, telescope_narrative_beat, list_narrative_beats
+
+**WAMPUM_TOOLS** (off by default): create_wampum_belt, add_wampum_bead, read_wampum_belt
 
 **KG_TOOLS**: Traditional knowledge graph tools
 - create_entities, create_relations, add_observations
@@ -239,7 +245,7 @@ COAIA_DISABLED_TOOLS="delete_entities,delete_relations"
 function getEnabledTools(): Set<string> {
   
   // Parse enabled tools from env
-  const enabledStr = process.env.COAIA_TOOLS || 'STC_TOOLS,init_llm_guidance'
+  const enabledStr = process.env.COAIA_TOOLS || 'STC_TOOLS,NARRATIVE_TOOLS,init_llm_guidance'
   const enabledGroups = enabledStr.split(/[,\s]+/)
   
   // Expand tool groups to individual tools
@@ -349,6 +355,9 @@ Creative orientation creates advancing patterns toward desired outcomes."
 ```
 
 ### Delayed Resolution Error
+
+This error teaches the older sense of the phrase: current reality may not claim readiness. The recorded choice to delay a step's resolution (`delay_resolution`, 0.24.0) is a different feature, specified in `delayed_resolution.spec.md`.
+
 ```
 User: "I'm ready to learn Python"
 

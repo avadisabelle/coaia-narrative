@@ -71,6 +71,12 @@ This directory contains comprehensive RISE (Reverse-engineer, Intent-extract, Sp
     - Positional reading resolution (`col:N` → `row:N` → left/center/right → canonical)
     - Ceremony surface: witnesses, renewal dates, and links that no relation edge carries
 
+11. **[delayed_resolution.spec.md](./delayed_resolution.spec.md)** (0.24.0, 0.24.1; Miadi Chronicle Episode 297)
+    - A step records that someone chose to delay its resolution: until when, why, for what
+    - The agent session to rehydrate, and the command that resumes it
+    - Listing by date with days remaining and owed; ending as rehydrated, released, or resolved by completion
+    - The `Delaying Resolution` GitHub project status
+
 ---
 
 ## 🎯 Core Creative Intent
@@ -304,7 +310,7 @@ COAIA Memory implements principles from Robert Fritz's work on structural tensio
 
 - **Structural Tension**: The unresolved gap between current reality and desired outcome
 - **Creative Orientation**: Focusing on what you want to create vs what you want to eliminate
-- **Delayed Resolution**: Tolerating productive tension rather than prematurely resolving it
+- **Delayed Resolution**: Tolerating productive tension rather than prematurely resolving it. Since 0.24.0 a step can also record a strategic choice to delay its resolution in favour of a primary choice ("a secondary choice to our primary choice"); see `delayed_resolution.spec.md`
 - **Advancing Patterns**: Structural designs that create continuous forward movement
 
 For more information: [robertfritz.com](https://robertfritz.com)

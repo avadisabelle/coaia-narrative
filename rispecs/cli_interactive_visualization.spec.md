@@ -39,6 +39,21 @@ cnarrative view chart_123
 - Narrative beats history.
 - MMOT evaluation history.
 
+**User Chooses to Delay a Step** (0.24.0, Miadi Chronicle Episode 297, `miadi-chronicle://297`; specified in `delayed_resolution.spec.md`):
+```bash
+cnarrative delay chart_123_action_1 2026-11-01 --reason "waits on the review" --by mia \
+  [--primary "<what it serves>"] [--wake-on "<cue>"]... \
+  [--session-id <id> --agent claude --host gaia --cwd <dir> --tmux <pane> --resume-command "<cmd>" --inventory-record <path>]
+cnarrative delayed [--within <days>] [--all]
+cnarrative end-delay chart_123_action_1 --outcome rehydrated|released --by mia [--note "<how>"]
+```
+**System Displays**:
+- ⏸️ with the step, its chart, the date and the days remaining, or "owed" once the date has passed.
+- The reason, who chose, what the delay serves, the wake cues and the session.
+- On a rehydrated end, the command that resumes the session.
+- `list`, `view` and `progress` show a delayed step's status and date beside its other steps.
+- `delay`, `delayed` and `end-delay` print their records as JSON with `--json`.
+
 **User Exports to Markdown**:
 ```bash
 cnarrative export chart_123 --output report.md
@@ -72,9 +87,17 @@ interface Config {
 | `update` | `up` | Update chart properties |
 | `add-action` | `aa` | Interactive action step addition |
 | `add-obs` | `ao` | Add observation to current reality |
-| `complete` | `done` | Mark action as complete |
+| `complete` | `done` | Mark action as complete; `--by <who>` names who ended its delay, when it had one (0.24.1) |
+| `set-date` | `sd` | Set a chart's due date |
+| `delay` | | Record a chosen delay of a step's resolution (0.24.0) |
+| `delayed` | | List standing delays, soonest first, owed ones marked (0.24.0) |
+| `end-delay` | | End a delay as rehydrated or released (0.24.0) |
+| `mmot` | `evaluate` | MMOT evaluation |
+| `progress` | `pg` | Progress report for a chart |
 | `export` | `exp` | Export single chart to MD |
 | `export-all` | `exp-all` | Export all charts to MD |
+| `export-progress` | `exp-progress` | Export a chart's progress to MD |
+| `export-stats` | `exp-stats` | Export statistics to MD |
 | `stats` | `st` | Show summary statistics |
 
 ### Markdown Export Logic

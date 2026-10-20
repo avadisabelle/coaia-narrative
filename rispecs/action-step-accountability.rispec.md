@@ -2,7 +2,7 @@
 
 ## Current Reality
 
-The `action_step` entity metadata supports `dueDate`, `completionStatus`, `phase`, `chartId`, and telescoping fields — the *when*, *status*, and *structure* of action steps. But there is no field for **who is accountable** for the action step. The STC functions as a personal planning tool but cannot serve as a Strategic Action Plan for a team of humans and AI companions working together.
+The `action_step` entity metadata supports `dueDate`, `completionStatus`, `phase`, `chartId`, and telescoping fields — the *when*, *status*, and *structure* of action steps. Since 0.24.0 (Miadi Chronicle Episode 297) a step can also carry `delayedResolution`, which names who **chose to delay** its resolution (`chosenBy`) and who ended the delay (`endedBy`); see `delayed_resolution.spec.md`. Those name a choice about timing, not who is accountable. But there is no field for **who is accountable** for the action step. The STC functions as a personal planning tool but cannot serve as a Strategic Action Plan for a team of humans and AI companions working together.
 
 When a PDE decomposition produces an actionStack with items mapped to Four Directions, and these become STC action steps, there is no way to assign them to specific agents (human or AI) for execution and accountability tracking.
 

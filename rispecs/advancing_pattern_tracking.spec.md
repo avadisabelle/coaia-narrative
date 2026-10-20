@@ -139,31 +139,42 @@ interface ProgressObservation {
 ```
 
 ### Completion Algorithm
+
+Revised against 0.24.1 on 2026-10-20 (Miadi Chronicle Episode 297, `miadi-chronicle://297`): a flat step flows into its own chart's current reality (since 0.19.1), and completion ends an open delayed resolution (0.24.1, `delayed_resolution.spec.md` rule 4b).
+
 ```typescript
-MARK_ACTION_COMPLETE(actionStepName):
+MARK_ACTION_COMPLETE(actionStepName, completedBy?):
   
+  // A step is an action_step entity (flat) or a sub-chart's desired_outcome (telescoped)
   action = LOAD(actionStepName)
   chartId = action.metadata.chartId
   
   // Mark action as complete
   action.metadata.completionStatus = true
-  action.metadata.completionDate = NOW()
+  action.metadata.updatedAt = NOW()
   
-  // Get chart and parent references
-  chart = LOAD(chartId)
-  parentChartId = chart.metadata.parentChart
+  // Resolution reached is the third way a delay ends
+  IF action.metadata.delayedResolution IS OPEN:
+    action.metadata.delayedResolution.endedAt = NOW()
+    action.metadata.delayedResolution.endedBy = completedBy OR "mark_action_complete"
+    action.metadata.delayedResolution.outcome = "resolved"
+    action.metadata.delayedResolution.endNote = "completed"
   
-  // Update current reality with completion as FACT
-  IF parentChartId EXISTS:
-    parentCurrentReality = LOAD(parentChartId + "_current_reality")
-    fact = "Completed: " + action.observations[0]
-    parentCurrentReality.observations.APPEND(fact)
-    parentCurrentReality.metadata.updatedAt = NOW()
+  fact = "Completed: " + action.observations[0]
   
-  // Save updated state
-  SAVE(action)
-  SAVE(parentCurrentReality)
+  IF action IS FLAT:
+    // One step of its chart: the chart itself stays open
+    ownCurrentReality = LOAD(chartId + "_current_reality")
+    ownCurrentReality.observations.APPEND_IF_ABSENT(fact)
+  ELSE:
+    // A telescoped step is the whole sub-chart
+    chart = LOAD(chartId + "_chart")
+    chart.metadata.completionStatus = true
+    IF chart.metadata.parentChart EXISTS:
+      parentCurrentReality = LOAD(chart.metadata.parentChart + "_current_reality")
+      parentCurrentReality.observations.APPEND_IF_ABSENT(fact)
   
+  SAVE(graph)
   RETURN success message showing structural advancement
 ```
 
@@ -217,6 +228,8 @@ GET_CHART_PROGRESS(chartId):
     momentum: CALCULATE_MOMENTUM(chartId)
   }
 ```
+
+Since 0.24.0 the progress also lists `steps`, each with its derived status (`completed`, `delayed` while a chosen delay stands, else `pending`), its `dueDate`, and for an open delay its `resolveBy` and whether it is `owed`; and it counts `delayedActions`. A delayed step is still incomplete, so it can be the `nextAction`. A delay is a choice inside the advancing pattern, not a reversal of it: the step keeps its place and its date says when it is wanted. See `delayed_resolution.spec.md`.
 
 ---
 

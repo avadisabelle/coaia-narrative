@@ -33,6 +33,18 @@ All MCP tools follow this definition pattern:
 }
 ```
 
+### Tool Registry at 0.24.1
+
+`src/tool-definitions.ts` registers 35 tools; `src/tool-groups.ts` places them in groups. By default (`COAIA_TOOLS` unset) `STC_TOOLS`, `NARRATIVE_TOOLS` and `init_llm_guidance` are enabled: 23 tools. Revised 2026-10-20 from Miadi Chronicle Episode 297 (`miadi-chronicle://297`).
+
+| group | tools | detailed in |
+|---|---|---|
+| `STC_TOOLS` (19) | `create_structural_tension_chart`, `telescope_action_step`, `add_action_step`, `manage_action_step`, `remove_action_step`, `mark_action_complete`, `get_chart_progress`, `list_active_charts`, `get_chart`, `get_action_step`, `update_action_progress`, `update_current_reality`, `update_desired_outcome`, `update_chart_due_date`, `delay_resolution`, `list_delayed_resolutions`, `end_delayed_resolution`, `link_chart_to_github_issue`, `perform_mmot_evaluation` | sections 1 to 9, 20 and 22 to 24 below; `delayed_resolution.spec.md` for the three delay tools; `coaia-github/` for the issue link; `src/tool-definitions.ts` for `get_chart`, `get_action_step`, `remove_action_step` and `update_chart_due_date` |
+| `NARRATIVE_TOOLS` (3) | `create_narrative_beat`, `telescope_narrative_beat`, `list_narrative_beats` | sections 10 to 12, `narrative_beat_creation.spec.md` |
+| `WAMPUM_TOOLS` (3) | `create_wampum_belt`, `add_wampum_bead`, `read_wampum_belt` | `wampum_belt_visualization.spec.md` |
+| `KG_TOOLS` (9) | `create_entities`, `create_relations`, `add_observations`, `delete_entities`, `delete_observations`, `delete_relations`, `search_nodes`, `open_nodes`, `read_graph` | sections 13 to 19 |
+| ungrouped (1) | `init_llm_guidance` | section 21 |
+
 ---
 
 ## 🔧 Complete Tool Specifications
@@ -225,6 +237,10 @@ All MCP tools follow this definition pattern:
     "actionStepName": {
       "type": "string",
       "description": "Action step ID to mark complete"
+    },
+    "completedBy": {
+      "type": "string",
+      "description": "The person or seat that completed it; recorded as endedBy when this ends a delayed resolution (default 'mark_action_complete')"
     }
   },
   "required": ["actionStepName"]
@@ -241,6 +257,8 @@ All MCP tools follow this definition pattern:
   "updatedCurrentReality": "Proficient with recording workflow"
 }
 ```
+
+**Delayed step (0.24.1)**: when the step carries an open delayed resolution, completing it ends that delay with `outcome: "resolved"`, `endedBy` = `completedBy` (or `"mark_action_complete"`), `endNote: "completed"`. The tool's text response does not mention the ended delay; `get_action_step` shows it. See `delayed_resolution.spec.md`, rule 4b.
 
 ---
 
@@ -363,6 +381,8 @@ All MCP tools follow this definition pattern:
   "actionSteps": [...]
 }
 ```
+
+**Since 0.24.0** the progress also carries `steps` (each with `name`, derived `status` of `completed`, `delayed` or `pending`, `dueDate`, and for an open delay `resolveBy` and `owed`) and `delayedActions`. `nextAction` is the incomplete step due earliest, delayed ones included.
 
 ---
 
@@ -636,6 +656,75 @@ All MCP tools follow this definition pattern:
 
 ---
 
+### Delayed Resolution Tools (0.24.0)
+
+Specified in full in `delayed_resolution.spec.md`. A step is named as a written step (`chart_123_action_1`) or a telescoped step (`chart_123`, `chart_123_chart` or `chart_123_desired_outcome`).
+
+#### 22. delay_resolution
+
+**Purpose**: Record that someone strategically chose to delay a step's resolution. The step's due date becomes `resolveBy`.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "actionStepName": { "type": "string" },
+    "resolveBy": { "type": "string", "description": "ISO date-time in the future" },
+    "reason": { "type": "string" },
+    "chosenBy": { "type": "string" },
+    "primaryChoice": { "type": "string", "description": "Defaults to the desired outcome of the chart the step advances" },
+    "wakeOn": { "type": "array", "items": { "type": "string" } },
+    "session": {
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string" }, "agent": { "type": "string" }, "host": { "type": "string" },
+        "cwd": { "type": "string" }, "tmux": { "type": "string" },
+        "resumeCommand": { "type": "string" }, "inventoryRecord": { "type": "string" }
+      },
+      "required": ["sessionId"]
+    }
+  },
+  "required": ["actionStepName", "resolveBy", "reason", "chosenBy"]
+}
+```
+
+Refused: a completed step, a chart with no parent, a `resolveBy` that is not a date or not in the future.
+
+#### 23. list_delayed_resolutions
+
+**Purpose**: The standing delays, sorted by `resolveBy`, each with `daysRemaining` and `owed`.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "dueWithinDays": { "type": "number", "description": "Owed ones included" },
+    "includeEnded": { "type": "boolean", "default": false }
+  }
+}
+```
+
+#### 24. end_delayed_resolution
+
+**Purpose**: End a delay by rehydrating its session or releasing the step. The record is kept.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "actionStepName": { "type": "string" },
+    "endedBy": { "type": "string" },
+    "outcome": { "type": "string", "enum": ["rehydrated", "released"] },
+    "endNote": { "type": "string" }
+  },
+  "required": ["actionStepName", "endedBy", "outcome"]
+}
+```
+
+A `rehydrated` end returns the session's `resumeCommand` (or `null`). `resolved` is written only by completion.
+
+---
+
 ## 🔄 Data Models
 
 ### Structural Tension Chart Entity
@@ -662,6 +751,21 @@ All MCP tools follow this definition pattern:
   }
 }
 ```
+
+### Action Step Entity (delay fields, 0.24.0)
+
+An `action_step` entity, or a telescoped step's `desired_outcome` entity, may carry in its `metadata`:
+
+```typescript
+{
+  dueDate?: ISO8601                                  // becomes resolveBy when a delay is chosen
+  completionStatus?: boolean                         // unchanged by a delay
+  delayedResolution?: DelayedResolution              // the current delay, open or ended
+  delayedResolutionHistory?: DelayedResolution[]     // earlier records, oldest first
+}
+```
+
+`DelayedResolution` and `AgentSessionRef` are defined in `delayed_resolution.spec.md`.
 
 ### Narrative Beat Entity
 
@@ -756,7 +860,7 @@ All MCP tools follow this definition pattern:
 
 An implementation is correct when:
 
-- [ ] All 21 tools implement exact schemas as specified
+- [ ] Every registered tool (35 at 0.24.1) implements its schema; this file details those in its numbered sections, and the registry table names where the others are specified
 - [ ] All required fields validated before processing
 - [ ] All enum values enforced strictly
 - [ ] Creative orientation validated where applicable

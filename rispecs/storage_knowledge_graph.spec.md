@@ -96,6 +96,8 @@ interface Entity {
     level?: number               // Hierarchical level
     createdAt?: string          // Creation timestamp
     updatedAt?: string          // Last update timestamp
+    delayedResolution?: DelayedResolution            // 0.24.0: a chosen delay, open or ended (delayed_resolution.spec.md)
+    delayedResolutionHistory?: DelayedResolution[]   // 0.24.0: earlier delays, oldest first
   }
 }
 
@@ -225,7 +227,7 @@ OPEN_NODES(names):
 
 **action_step**: Strategic intermediary results
 - Observations: [0] = action title, [1+] = progress observations
-- Metadata: chartId, dueDate, completionStatus, level (if telescoped)
+- Metadata: chartId, dueDate, completionStatus, level (if telescoped), and since 0.24.0 `delayedResolution` / `delayedResolutionHistory` when someone chose to delay its resolution. A telescoped step keeps those on its chart's `desired_outcome` entity. See `delayed_resolution.spec.md` (Miadi Chronicle Episode 297, `miadi-chronicle://297`).
 
 ### Traditional Knowledge Graph Entity Types
 - **person**: Individual entities

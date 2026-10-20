@@ -145,6 +145,8 @@ For each step i from 1 to stepCount:
 Result: Array of dates naturally pacing action steps
 ```
 
+**A step's own date after creation** (revised 2026-10-20, Miadi Chronicle Episode 297): a step added later through the writer, `appendActionStep(chartId, title, { dueDate })` (0.23.0), carries the given date, normalized to ISO; an unparseable date is refused; without one the step inherits its chart's due date. Since 0.24.0 a step's date can also carry a **chosen delay**: `delay_resolution` sets the step's `dueDate` to its `resolveBy` and records why and for what (`delayed_resolution.spec.md`). That is a different thing from the "Delayed Resolution Principle" this spec enforces on current reality below.
+
 **Creative Orientation Validation Algorithm**:
 ```
 problemWords = ["fix", "solve", "eliminate", "prevent", "stop", "avoid", "reduce", "remove"]
