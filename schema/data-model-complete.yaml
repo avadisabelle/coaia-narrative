@@ -134,6 +134,19 @@ definitions:
                   inventoryRecord:
                     type: string
                     description: Path of the session's record in the session inventory
+                  trace:
+                    type: string
+                    pattern: ^miadi-
+                    description: >-
+                      The session's LLMOps record, as @miadi/llmops writes it (e.g.
+                      'miadi-tracing:ceremony/session/<id>'). Stored as given.
+                  rehydrateWith:
+                    type: string
+                    pattern: ^miadi-
+                    description: >-
+                      The pinned prompt version that rehydrates the session (e.g.
+                      'miadi-tracing:ceremony/prompt/miadiRun-<name>@<N>'), as 'llmops rehydrate'
+                      prints it. Stored as given.
               endedAt:
                 type: string
                 format: date-time

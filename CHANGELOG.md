@@ -5,6 +5,35 @@ All notable changes to COAIA Memory will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.0] - 2026-10-20
+
+### 🔁 A delay's session carries its LLMOps trace and the prompt that rehydrates it
+
+A delay named its session by id, cwd and resume command. Bringing a session back also needs its
+LLMOps record and the pinned prompt version that rehydrates it, as `@miadi/llmops` 0.1.0 prints
+them (`llmops rehydrate --domain <d> --trace <T> --mission miadiRun-<name>.v<N>`,
+jgwill/Miadi#829).
+
+- `session` takes two optional strings, `trace` and `rehydrateWith` (the design's
+  `rehydrate_with`). Each is refused unless it begins with `miadi-`, and is stored as given:
+  resolving an address is the LLMOps package's work, not the chart's.
+- `endDelayedResolution` with outcome `rehydrated` returns `trace` and `rehydrateWith` beside
+  `resumeCommand` (each `null` when the session named none). `end_delayed_resolution` names them
+  in its text.
+- MCP: the `delay_resolution` schema gains `session.trace` and `session.rehydrateWith`.
+- CLI: `cnarrative delay … --session-id <id> --trace <addr> --rehydrate-with <addr>`;
+  `delayed` and `end-delay` show them. Either flag without `--session-id` is refused.
+- Data model schema: `session.trace` and `session.rehydrateWith`, pattern `^miadi-`.
+
+### 💬 `mark_action_complete` says when it ended a delay
+
+Completing a delayed step ended its delay as `resolved` (0.24.1) while the tool's text said only
+that the step was complete. The text now adds the delay's `resolveBy`, who chose it, and who
+ended it. `markActionStepComplete` returns the delay record it ended, or `null`.
+
+Design: miadi-chronicle Episode 297, `delayed-resolution-design-261019.md` (AgentSessionRef,
+commit c06b57cd).
+
 ## [0.24.1] - 2026-10-19
 
 ### ✅ Completing a delayed step ends its delay, as resolved

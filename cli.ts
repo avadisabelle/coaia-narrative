@@ -554,6 +554,7 @@ COMMANDS:
                                   --primary <what it serves>  --wake-on <cue> (repeatable)
                                   --session-id <id> --cwd <dir> --host <host> --tmux <pane>
                                   --agent <name> --resume-command <cmd> --inventory-record <path>
+                                  --trace <miadi-addr> --rehydrate-with <miadi-addr>  (LLMOps, need --session-id)
   delayed                       List delayed steps by date (--within <days>, --all)
   end-delay <step>              End a delay: --outcome rehydrated|released --by <who> [--note]
 
@@ -1051,6 +1052,10 @@ async function delayStep(actionStepName: string, resolveBy: string, memoryPath: 
   }
   const wakeOn = ([] as unknown[]).concat(args['wake-on'] ?? []).map(String);
   const sessionId = flagText(args['session-id']);
+  if (!sessionId && (flagText(args.trace) || flagText(args['rehydrate-with']))) {
+    console.log('\n❌ Error: --trace and --rehydrate-with belong to a session: give --session-id too\n');
+    process.exit(1);
+  }
   const session = sessionId ? {
     sessionId,
     agent: flagText(args.agent),
@@ -1058,7 +1063,9 @@ async function delayStep(actionStepName: string, resolveBy: string, memoryPath: 
     cwd: flagText(args.cwd),
     tmux: flagText(args.tmux),
     resumeCommand: flagText(args['resume-command']),
-    inventoryRecord: flagText(args['inventory-record'])
+    inventoryRecord: flagText(args['inventory-record']),
+    trace: flagText(args.trace),
+    rehydrateWith: flagText(args['rehydrate-with'])
   } : undefined;
 
   const manager = new KnowledgeGraphManager(memoryPath);
@@ -1082,6 +1089,8 @@ async function delayStep(actionStepName: string, resolveBy: string, memoryPath: 
   if (record.session) {
     console.log(`   Session: ${record.session.sessionId} (${record.session.agent}${record.session.host ? `@${record.session.host}` : ''})`);
     if (record.session.resumeCommand) console.log(`   Rehydrate: ${record.session.resumeCommand}`);
+    if (record.session.trace) console.log(`   Trace: ${record.session.trace}`);
+    if (record.session.rehydrateWith) console.log(`   Rehydrate with prompt: ${record.session.rehydrateWith}`);
   }
   if (step.delayedResolutionHistory.length > 0) console.log(`   Earlier delays kept: ${step.delayedResolutionHistory.length}`);
   console.log('');
@@ -1122,6 +1131,8 @@ async function listDelayed(memoryPath: string, args: minimist.ParsedArgs, jsonOu
     if (entry.wakeOn.length > 0) console.log(`     Wake on: ${entry.wakeOn.join('; ')}`);
     if (entry.session?.resumeCommand) console.log(`     Rehydrate: ${entry.session.resumeCommand}`);
     else if (entry.session) console.log(`     Session: ${entry.session.sessionId} (${entry.session.agent})`);
+    if (entry.session?.trace) console.log(`     Trace: ${entry.session.trace}`);
+    if (entry.session?.rehydrateWith) console.log(`     Rehydrate with prompt: ${entry.session.rehydrateWith}`);
     console.log('');
   });
 
@@ -1150,6 +1161,8 @@ async function endDelay(actionStepName: string, memoryPath: string, args: minimi
   console.log(`   Ended by: ${endedBy}`);
   if (outcome === 'rehydrated') {
     console.log(ended.resumeCommand ? `   Rehydrate with: ${ended.resumeCommand}` : '   No resume command was recorded for this delay.');
+    if (ended.trace) console.log(`   Trace: ${ended.trace}`);
+    if (ended.rehydrateWith) console.log(`   Prompt that rehydrates it: ${ended.rehydrateWith}`);
   }
   console.log('');
 }

@@ -244,7 +244,7 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "mark_action_complete",
-    description: "Mark an action step as completed and update current reality. A delayed resolution standing on the step ends with it, with outcome 'resolved'.",
+    description: "Mark an action step as completed and update current reality. A delayed resolution standing on the step ends with it, with outcome 'resolved', and the response says so.",
     inputSchema: {
       type: "object",
       properties: {
@@ -453,7 +453,9 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
             cwd: { type: "string", description: "Directory the session ran in" },
             tmux: { type: "string", description: "tmux session or pane" },
             resumeCommand: { type: "string", description: "Command that brings the session back" },
-            inventoryRecord: { type: "string", description: "Path of the session's record in the session inventory" }
+            inventoryRecord: { type: "string", description: "Path of the session's record in the session inventory" },
+            trace: { type: "string", description: "The session's LLMOps record, as @miadi/llmops writes it (e.g. 'miadi-tracing:ceremony/session/<id>'). Must begin with 'miadi-'; stored as given." },
+            rehydrateWith: { type: "string", description: "The pinned prompt version that rehydrates the session (e.g. 'miadi-tracing:ceremony/prompt/miadiRun-<name>@<N>'), as 'llmops rehydrate' prints it. Must begin with 'miadi-'; stored as given." }
           },
           required: ["sessionId"]
         }
@@ -474,7 +476,7 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "end_delayed_resolution",
-    description: "End a step's delayed resolution, either by rehydrating its agent session or by releasing the step. The record stays with endedAt, endedBy and outcome, and the step's status returns to what it was. When the outcome is 'rehydrated', the result gives back the session's resumeCommand.",
+    description: "End a step's delayed resolution, either by rehydrating its agent session or by releasing the step. The record stays with endedAt, endedBy and outcome, and the step's status returns to what it was. When the outcome is 'rehydrated', the result gives back the session's resumeCommand, trace and rehydrateWith.",
     inputSchema: {
       type: "object",
       properties: {

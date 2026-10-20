@@ -179,10 +179,15 @@ try {
   check('mark_action_complete closes the delay: resolved, by whoever completed it, note "completed"',
     !done1.isError && r1?.completionStatus === true && r1.delayedResolution.outcome === 'resolved' && r1.delayedResolution.endedBy === 'william' && r1.delayedResolution.endNote === 'completed' && !!r1.delayedResolution.endedAt, JSON.stringify(r1?.delayedResolution));
   check('the record keeps its choice', r1?.delayedResolution.chosenBy === 'mia' && r1.delayedResolution.reason === 'waits');
+  check('mark_action_complete says the delay ended as resolved, and by whom',
+    /marked as complete/.test(text(done1)) && /delayed resolution \(until [^)]+, chosen by mia\) ended as resolved by william/.test(text(done1)), text(done1));
+  const plain = await handleToolCall('mark_action_complete', { actionStepName: `${A}_action_1` }, m);
+  check('completing a step with no delay says nothing of one', !plain.isError && /marked as complete/.test(text(plain)) && !/delayed resolution/.test(text(plain)), text(plain));
   await m.setActionStepCompletion(b2, true, { completedBy: 'stc-panel' });
   check('setActionStepCompletion closes it too', store().entities.get(b2)?.metadata?.delayedResolution?.outcome === 'resolved' && store().entities.get(b2)?.metadata?.delayedResolution?.endedBy === 'stc-panel');
-  await m.markActionStepComplete(uStep);
+  const uReturned = await m.markActionStepComplete(uStep);
   const uRecord = store().entities.get(uStep)?.metadata?.delayedResolution;
+  check('markActionStepComplete returns the delay it ended', uReturned?.outcome === 'resolved' && uReturned.endedAt === uRecord?.endedAt, JSON.stringify(uReturned));
   check('a telescoped step completed with no name given: endedBy "mark_action_complete"', uRecord?.outcome === 'resolved' && uRecord.endedBy === 'mark_action_complete', JSON.stringify(uRecord));
   const cDone = cli('complete', b3, '--by', 'cli-seat');
   const r3 = store().entities.get(b3)?.metadata?.delayedResolution;
@@ -206,6 +211,63 @@ try {
   const ghRecord = parseStore(readFileSync(join(dir, 'gh.jsonl'), 'utf8')).entities.get(`${opened.chartId}_action_1`)?.metadata?.delayedResolution;
   check('a task-list item checked on GitHub ends the delay as resolved by whoever checked it', ghRecord?.outcome === 'resolved' && ghRecord.endedBy === '@jgwill', JSON.stringify(ghRecord));
   check('the resolved record moved to history when the step was delayed again', store().entities.get(b1)?.metadata?.delayedResolutionHistory?.[0]?.outcome === 'resolved');
+
+  console.log('\n📋 a delay\'s session carries its LLMOps trace and the prompt that rehydrates it (0.25.0)');
+  const traceAddr = 'miadi-tracing:ceremony/session/a284e640-afed-404f-8138-7ac93c41e870';
+  const promptAddr = 'miadi-tracing:ceremony/prompt/miadiRun-coaia-delay@3';
+  const { chartId: C } = await m.createStructuralTensionChart(
+    'A delayed session comes back with its trace and its prompt', 'A delay names a session by id and cwd only', inDays(30), ['Rehydrate through the library', 'Rehydrate through the MCP tool', 'Rehydrate through the CLI', 'Delay with no LLMOps address']
+  );
+  const [c1, c2, c3, c4] = [1, 2, 3, 4].map((i) => `${C}_action_${i}`);
+  const t1 = await m.delayResolution(c1, {
+    resolveBy: inDays(5), reason: 'waits for the ceremony', chosenBy: 'mia',
+    session: { sessionId: 'a284e640', cwd: '/srv/miadi/episodes', trace: traceAddr, rehydrateWith: promptAddr }
+  });
+  check('trace and rehydrateWith are stored as given', t1.delayedResolution.session.trace === traceAddr && t1.delayedResolution.session.rehydrateWith === promptAddr, JSON.stringify(t1.delayedResolution.session));
+  check('the resume command is still composed beside them', t1.delayedResolution.session.resumeCommand === 'cd /srv/miadi/episodes && claude --resume a284e640');
+  check('the store keeps them', store().entities.get(c1)?.metadata?.delayedResolution?.session?.rehydrateWith === promptAddr);
+  await refuses('a trace that does not begin with miadi-', () => m.delayResolution(c2, { resolveBy: inDays(5), reason: 'x', chosenBy: 'mia', session: { sessionId: 's', trace: 'langfuse:abc' } }), /session\.trace must be an address beginning with "miadi-"/);
+  await refuses('a rehydrateWith that does not begin with miadi-', () => m.delayResolution(c2, { resolveBy: inDays(5), reason: 'x', chosenBy: 'mia', session: { sessionId: 's', rehydrateWith: 'miadiRun-x.v1' } }), /session\.rehydrateWith must be an address beginning with "miadi-"/);
+  await refuses('a trace that is not text', () => m.delayResolution(c2, { resolveBy: inDays(5), reason: 'x', chosenBy: 'mia', session: { sessionId: 's', trace: 42 } }), /session\.trace must be a string/);
+  check('a refused address wrote nothing', !store().entities.get(c2)?.metadata?.delayedResolution);
+  const listedT = (await m.listDelayedResolutions()).find((e) => e.actionStepName === c1);
+  check('list_delayed_resolutions carries them in the session', listedT?.session?.trace === traceAddr && listedT.session.rehydrateWith === promptAddr, JSON.stringify(listedT?.session));
+  const endedT = await m.endDelayedResolution(c1, { endedBy: 'mia', outcome: 'rehydrated' });
+  check('rehydrated returns trace and rehydrateWith beside resumeCommand',
+    endedT.resumeCommand === 'cd /srv/miadi/episodes && claude --resume a284e640' && endedT.trace === traceAddr && endedT.rehydrateWith === promptAddr, JSON.stringify({ r: endedT.resumeCommand, t: endedT.trace, w: endedT.rehydrateWith }));
+
+  const viaMcp = await handleToolCall('delay_resolution', {
+    actionStepName: c2, resolveBy: inDays(6), reason: 'waits for the ceremony', chosenBy: 'mia',
+    session: { sessionId: 'b-2', trace: traceAddr, rehydrateWith: promptAddr }
+  }, m);
+  check('the MCP tool accepts them, with no argument ignored', !viaMcp.isError && jsonOf(viaMcp).delayedResolution.session.trace === traceAddr && !/ignored/.test(text(viaMcp)), text(viaMcp));
+  await refuses('the MCP tool refuses an address outside miadi-', () => handleToolCall('delay_resolution', {
+    actionStepName: c4, resolveBy: inDays(6), reason: 'x', chosenBy: 'mia', session: { sessionId: 'b-3', trace: 'https://trace.example/abc' }
+  }, m), /must be an address beginning with "miadi-"/);
+  const endViaMcp = await handleToolCall('end_delayed_resolution', { actionStepName: c2, endedBy: 'mia', outcome: 'rehydrated' }, m);
+  const endViaMcpJson = jsonOf(endViaMcp);
+  check('end_delayed_resolution returns and names them', !endViaMcp.isError && endViaMcpJson.trace === traceAddr && endViaMcpJson.rehydrateWith === promptAddr
+    && text(endViaMcp).includes(`Trace: ${traceAddr}`) && text(endViaMcp).includes(`Prompt that rehydrates it: ${promptAddr}`), text(endViaMcp));
+  const delaySchema = ALL_TOOL_DEFINITIONS.find((t) => t.name === 'delay_resolution').inputSchema.properties.session.properties;
+  check('the delay_resolution schema names trace and rehydrateWith', delaySchema.trace?.type === 'string' && delaySchema.rehydrateWith?.type === 'string');
+
+  await m.delayResolution(c4, { resolveBy: inDays(7), reason: 'no LLMOps record', chosenBy: 'mia', session: { sessionId: 'c-4', cwd: '/tmp' } });
+  const endedNone = await m.endDelayedResolution(c4, { endedBy: 'mia', outcome: 'rehydrated' });
+  check('a session with no address returns trace and rehydrateWith as null', endedNone.trace === null && endedNone.rehydrateWith === null && endedNone.resumeCommand === 'cd /tmp && claude --resume c-4', JSON.stringify({ t: endedNone.trace, w: endedNone.rehydrateWith }));
+  await m.delayResolution(c4, { resolveBy: inDays(7), reason: 'released this time', chosenBy: 'mia', session: { sessionId: 'c-4', trace: traceAddr } });
+  const releasedT = await m.endDelayedResolution(c4, { endedBy: 'mia', outcome: 'released' });
+  check('released returns neither', !('trace' in releasedT) && !('rehydrateWith' in releasedT) && !('resumeCommand' in releasedT));
+
+  const cT = cli('delay', c3, inDays(5).slice(0, 10), '--reason', 'waits for the ceremony', '--by', 'cli-seat', '--session-id', 'd-3', '--trace', traceAddr, '--rehydrate-with', promptAddr);
+  check('cnarrative delay --trace --rehydrate-with records them', cT.status === 0 && cT.stdout.includes(`Trace: ${traceAddr}`) && store().entities.get(c3)?.metadata?.delayedResolution?.session?.rehydrateWith === promptAddr, cT.stdout + cT.stderr);
+  const cTList = cli('delayed');
+  check('cnarrative delayed shows them', cTList.status === 0 && cTList.stdout.includes(`Trace: ${traceAddr}`) && cTList.stdout.includes(`Rehydrate with prompt: ${promptAddr}`), cTList.stdout);
+  const cTEnd = cli('end-delay', c3, '--outcome', 'rehydrated', '--by', 'cli-seat');
+  check('cnarrative end-delay prints them', cTEnd.status === 0 && cTEnd.stdout.includes(`Trace: ${traceAddr}`) && cTEnd.stdout.includes(`Prompt that rehydrates it: ${promptAddr}`), cTEnd.stdout + cTEnd.stderr);
+  const cTNoSession = cli('delay', c3, inDays(5).slice(0, 10), '--reason', 'r', '--by', 'b', '--trace', traceAddr);
+  check('cnarrative delay refuses --trace without --session-id', cTNoSession.status === 1 && /--session-id/.test(cTNoSession.stdout + cTNoSession.stderr), cTNoSession.stdout + cTNoSession.stderr);
+  const cTBad = cli('delay', c3, inDays(5).slice(0, 10), '--reason', 'r', '--by', 'b', '--session-id', 'd-3', '--rehydrate-with', 'miadiRun-x.v1');
+  check('cnarrative delay refuses an address outside miadi-', cTBad.status === 1 && /beginning with "miadi-"/.test(cTBad.stdout + cTBad.stderr), cTBad.stdout + cTBad.stderr);
 
   console.log('\n📋 the tools are published');
   for (const name of ['delay_resolution', 'list_delayed_resolutions', 'end_delayed_resolution']) {

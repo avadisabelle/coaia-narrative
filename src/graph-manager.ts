@@ -109,6 +109,15 @@ function normalizeAgentSession(value: unknown): AgentSessionRef | undefined {
     const text = optionalText(raw[key], `session.${key}`);
     if (text) session[key] = text;
   }
+  // LLMOps addresses (@miadi/llmops): kept as given. Resolving one is that package's work.
+  for (const key of ['trace', 'rehydrateWith'] as const) {
+    const text = optionalText(raw[key], `session.${key}`);
+    if (!text) continue;
+    if (!text.startsWith('miadi-')) {
+      throw new Error(`session.${key} must be an address beginning with "miadi-" (e.g. miadi-tracing:ceremony/session/<id>): got "${text}"`);
+    }
+    session[key] = text;
+  }
   assertNoUnparsedCallSyntax(Object.values(session), 'session');
   if (!session.resumeCommand && session.agent === 'claude' && session.cwd) {
     session.resumeCommand = `cd ${shellWord(session.cwd)} && claude --resume ${shellWord(sessionId)}`;
@@ -616,8 +625,9 @@ Current Reality: "${currentReality}"
   /**
    * Complete a step. A delay that stands on it ends with it (outcome "resolved",
    * endedBy `completedBy`, or "mark_action_complete" when the caller does not say who).
+   * Returns that ended delay record, or null when no delay stood on the step.
    */
-  async markActionStepComplete(actionStepName: string, options: { completedBy?: string } = {}): Promise<void> {
+  async markActionStepComplete(actionStepName: string, options: { completedBy?: string } = {}): Promise<DelayedResolution | null> {
     const graph = await this.loadGraph();
     // An "action step" can be a 'desired_outcome' of a sub-chart, or a simple 'action_step' entity.
     const actionStep = graph.entities.find(e => e.name === actionStepName && (e.entityType === 'action_step' || e.entityType === 'desired_outcome'));
@@ -632,11 +642,14 @@ Current Reality: "${currentReality}"
     }
 
     // Mark the action step itself as complete
+    let resolvedDelay: DelayedResolution | null = null;
     if (actionStep.metadata) {
       actionStep.metadata.completionStatus = true;
       actionStep.metadata.updatedAt = new Date().toISOString();
       // Resolution reached is the third way a delay ends, next to rehydrated and released.
+      const wasOpen = openDelayOf(actionStep);
       actionStep.metadata = closeDelayOnCompletion(actionStep.metadata, options.completedBy, actionStep.metadata.updatedAt);
+      if (wasOpen) resolvedDelay = actionStep.metadata.delayedResolution ?? null;
     }
 
     const chartEntity = graph.entities.find(e => e.name === `${chartId}_chart`);
@@ -653,7 +666,7 @@ Current Reality: "${currentReality}"
         if (ownReality.metadata) ownReality.metadata.updatedAt = new Date().toISOString();
       }
       await this.saveGraph(graph);
-      return;
+      return resolvedDelay;
     }
 
     // A telescoped step is a whole sub-chart, named by its desired outcome: completing it
@@ -683,6 +696,7 @@ Current Reality: "${currentReality}"
     }
 
     await this.saveGraph(graph);
+    return resolvedDelay;
   }
 
   async getChartProgress(chartId: string, preloadedGraph?: KnowledgeGraph): Promise<{
@@ -1241,13 +1255,13 @@ Current Reality: "${currentReality}"
    * End a step's delay, by rehydrating its session or by releasing the step. The
    * record stays, with `endedAt`, `endedBy` and `outcome`; the step returns to the
    * status it had (pending, since a completed step is never delayed). When the outcome
-   * is `rehydrated`, the result carries the session's `resumeCommand` (null when the
-   * delay named no session or no command).
+   * is `rehydrated`, the result carries the session's `resumeCommand`, `trace` and
+   * `rehydrateWith` (each null when the delay named no session or the session named none).
    */
   async endDelayedResolution(
     actionStepName: string,
     input: { endedBy: string; outcome: DelayedResolutionOutcome; endNote?: string }
-  ): Promise<DelayedStepView & { resumeCommand?: string | null }> {
+  ): Promise<DelayedStepView & { resumeCommand?: string | null; trace?: string | null; rehydrateWith?: string | null }> {
     const endedBy = requiredText(input?.endedBy, 'endedBy');
     const outcome = input?.outcome;
     if (!DELAYED_RESOLUTION_OUTCOMES.includes(outcome)) {
@@ -1268,7 +1282,14 @@ Current Reality: "${currentReality}"
 
     await this.saveGraph(graph);
     const view = this.delayStepView(graph, ref);
-    return outcome === 'rehydrated' ? { ...view, resumeCommand: closed.session?.resumeCommand ?? null } : view;
+    return outcome === 'rehydrated'
+      ? {
+          ...view,
+          resumeCommand: closed.session?.resumeCommand ?? null,
+          trace: closed.session?.trace ?? null,
+          rehydrateWith: closed.session?.rehydrateWith ?? null
+        }
+      : view;
   }
 
   /**
@@ -1278,7 +1299,10 @@ Current Reality: "${currentReality}"
    * current reality: it records that the step was once done.
    */
   async setActionStepCompletion(actionStepName: string, complete: boolean, options: { completedBy?: string } = {}): Promise<void> {
-    if (complete) return this.markActionStepComplete(actionStepName, options);
+    if (complete) {
+      await this.markActionStepComplete(actionStepName, options);
+      return;
+    }
     const graph = await this.loadGraph();
     const step = graph.entities.find(e => e.name === actionStepName && (e.entityType === 'action_step' || e.entityType === 'desired_outcome'));
     if (!step) throw new Error(`Action step ${actionStepName} not found`);

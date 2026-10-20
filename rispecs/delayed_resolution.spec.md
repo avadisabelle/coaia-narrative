@@ -3,7 +3,7 @@
 
 **Component Purpose**: Let a person or an agent record on an action step that they strategically chose to delay its resolution: until when, why, what the delay serves, and which agent session to rehydrate when the date or an event comes. Then list those delays by date and end them.
 
-**Status**: Implemented and published. 0.24.0 (`5a39994`, 2026-10-19) brought the record, the three operations (library, MCP, CLI), the derived status and the GitHub status; 0.24.1 (`3bed9ee`, 2026-10-19) made completion end a delay as `resolved`. `npm view coaia-narrative version` → 0.24.1; a consumer installing 0.24.1 from npm ran delay, list and end with exit 0 (Episode 297 `validation/coaia-narrative/output-261019.txt`).
+**Status**: Implemented and published. 0.24.0 (`5a39994`, 2026-10-19) brought the record, the three operations (library, MCP, CLI), the derived status and the GitHub status; 0.24.1 (`3bed9ee`, 2026-10-19) made completion end a delay as `resolved`; a consumer installing 0.24.1 from npm ran delay, list and end with exit 0 (Episode 297 `validation/coaia-narrative/output-261019.txt`). 0.25.0 (2026-10-20) adds the session's LLMOps addresses `trace` and `rehydrateWith`, and `mark_action_complete` now says when it ended a delay (finding F4 of the 2026-10-20 spec lane). Proof of the 0.25.0 release is `npm view coaia-narrative version`; the consumer run that feeds `@miadi/llmops` 0.1.0 output into a delay is Episode 297 `validation/coaia-narrative/consume-llmops.mjs`, output `output-261020.txt`.
 
 **Origin**: Miadi Chronicle Episode 297 (`miadi-chronicle://297`), design `2026-07-24-episode-297-mino-bimaadizi-daa-stc-bot-ceremony/delayed-resolution-design-261019.md`, shared with `coaiajs` and the medicine wheel. Each lineage implements it on its own.
 
@@ -35,6 +35,8 @@ interface AgentSessionRef {
   host?: string; cwd?: string; tmux?: string;
   resumeCommand?: string;     // composed at delay time for a claude session with a cwd: cd <cwd> && claude --resume <id>
   inventoryRecord?: string;
+  trace?: string;             // 0.25.0: the session's LLMOps record, e.g. miadi-tracing:ceremony/session/<id>
+  rehydrateWith?: string;     // 0.25.0: the pinned prompt version, e.g. miadi-tracing:ceremony/prompt/miadiRun-<name>@<N>
 }
 
 type DelayedResolutionOutcome = 'rehydrated' | 'released' | 'resolved';
@@ -59,6 +61,8 @@ delayedResolutionHistory?: DelayedResolution[];   // earlier records, oldest fir
 
 The data model schema (`schema/data-model-complete.*`, `schema/data-model/entity.*`) carries both fields.
 
+`trace` and `rehydrateWith` are the design's `trace` and `rehydrate_with`: what `llmops rehydrate --domain <d> --trace <T> --mission miadiRun-<name>.v<N>` prints (`@miadi/llmops` 0.1.0, jgwill/Miadi#829). Each is refused unless it begins with `miadi-` and is stored as given. Resolving an address is the LLMOps package's work, not the chart's.
+
 `delayedResolution.session` is the session to bring back. It is distinct from `metadata.source.sessionId` (and `session_id`), the session that wrote the entity, which the GitHub projection keeps reading. The two can name different sessions.
 
 ### Which step a name points to
@@ -70,10 +74,10 @@ The data model schema (`schema/data-model-complete.*`, `schema/data-model/entity
 ### Rules
 
 1. Choosing a delay sets the step's `dueDate` to `resolveBy`. For a telescoped step, its chart's `dueDate` moves with it.
-2. A completed step is refused (for a telescoped step, completion of its desired outcome or its chart counts). `resolveBy` must parse as a date and lie in the future. `reason` and `chosenBy` are required. A `session` must be an object carrying `sessionId`.
+2. A completed step is refused (for a telescoped step, completion of its desired outcome or its chart counts). `resolveBy` must parse as a date and lie in the future. `reason` and `chosenBy` are required. A `session` must be an object carrying `sessionId`. A `session.trace` or `session.rehydrateWith` that does not begin with `miadi-` is refused.
 3. Delaying a step that already carries a record, open or ended, moves that record to `delayedResolutionHistory` and writes the new one. Nothing is overwritten.
 4. Ending keeps the record with `endedAt`, `endedBy`, `outcome`, and an optional `endNote`. `completionStatus` is never changed by a delay.
-4b. Completing a delayed step ends its open delay with `outcome: "resolved"`, `endedBy` = the completer or `"mark_action_complete"`, `endNote: "completed"`. This runs through `markActionStepComplete` (`mark_action_complete` with `completedBy`), `setActionStepCompletion(step, true, { completedBy })`, `cnarrative complete <step> --by <who>`, and the GitHub writer, which passes the person who checked the task-list item (`@login`). Pure helper: `closeDelayOnCompletion(metadata, completedBy)`.
+4b. Completing a delayed step ends its open delay with `outcome: "resolved"`, `endedBy` = the completer or `"mark_action_complete"`, `endNote: "completed"`. This runs through `markActionStepComplete` (`mark_action_complete` with `completedBy`), `setActionStepCompletion(step, true, { completedBy })`, `cnarrative complete <step> --by <who>`, and the GitHub writer, which passes the person who checked the task-list item (`@login`). Pure helper: `closeDelayOnCompletion(metadata, completedBy)`. Since 0.25.0 (finding F4), `markActionStepComplete` returns the delay record it ended (or `null`), and `mark_action_complete`'s text adds a line naming the delay's `resolveBy`, who chose it and who ended it as resolved. `cnarrative complete` already printed "Its delayed resolution ended as resolved."
 5. Derived status, never stored: `completed` when the step is complete, else `delayed` while a delay is open, else `pending`.
 6. Owed: a step whose status is `delayed` and whose `resolveBy` has passed.
 7. Free-text arguments (`reason`, `primaryChoice`, `wakeOn`, `endNote`, session fields) are refused when they carry unparsed call syntax.
@@ -82,16 +86,16 @@ The data model schema (`schema/data-model-complete.*`, `schema/data-model/entity
 
 | library (`KnowledgeGraphManager`) | MCP tool (`STC_TOOLS`) | CLI | result |
 |---|---|---|---|
-| `delayResolution(actionStepName, { resolveBy, reason, chosenBy, primaryChoice?, wakeOn?, session? })` | `delay_resolution` | `cnarrative delay <step> <resolveBy> --reason "<why>" --by "<who>" [--primary] [--wake-on]... [--session-id --agent --host --cwd --tmux --resume-command --inventory-record]` | the step view: `actionStepName`, `kind` (`written` or `telescoped`), `chartId`, `telescopedChartId`, `title`, `dueDate`, `status`, `delayedResolution`, `delayedResolutionHistory` |
+| `delayResolution(actionStepName, { resolveBy, reason, chosenBy, primaryChoice?, wakeOn?, session? })` | `delay_resolution` | `cnarrative delay <step> <resolveBy> --reason "<why>" --by "<who>" [--primary] [--wake-on]... [--session-id --agent --host --cwd --tmux --resume-command --inventory-record --trace --rehydrate-with]` | the step view: `actionStepName`, `kind` (`written` or `telescoped`), `chartId`, `telescopedChartId`, `title`, `dueDate`, `status`, `delayedResolution`, `delayedResolutionHistory` |
 | `listDelayedResolutions({ dueWithinDays?, includeEnded?, now? })` | `list_delayed_resolutions` | `cnarrative delayed [--within <days>] [--all]` | entries sorted by `resolveBy`, then by name |
-| `endDelayedResolution(actionStepName, { endedBy, outcome, endNote? })` | `end_delayed_resolution` | `cnarrative end-delay <step> --outcome rehydrated\|released --by "<who>" [--note]` | the step view, and `resumeCommand` (or `null`) when rehydrated |
+| `endDelayedResolution(actionStepName, { endedBy, outcome, endNote? })` | `end_delayed_resolution` | `cnarrative end-delay <step> --outcome rehydrated\|released --by "<who>" [--note]` | the step view, and `resumeCommand`, `trace`, `rehydrateWith` (each or `null`) when rehydrated |
 | `describeActionStep(name)` | `get_action_step` | | the step view, or `null` for a primary chart |
 
 - A listing entry: `actionStepName`, `kind`, `chartId`, `telescopedChartId`, `title`, `status`, `resolveBy`, `daysRemaining`, `owed`, `primaryChoice`, `reason`, `chosenBy`, `chosenAt`, `wakeOn`, `session`, and when ended `endedAt`, `endedBy`, `outcome`, `endNote`.
 - `daysRemaining`: whole days to `resolveBy`, rounded up, never `-0`.
 - Without `includeEnded`, ended delays and delays on steps completed since are left out. `dueWithinDays: N` keeps entries whose `resolveBy` is at or before now + N days, owed ones included.
 - `end_delayed_resolution` accepts only `rehydrated` and `released`; `resolved` comes from completion alone. A `rehydrated` end on a delay with no session answers `resumeCommand: null` (coaiajs refuses that case).
-- `delay`, `delayed` and `end-delay` print JSON with `--json`.
+- `delay`, `delayed` and `end-delay` print JSON with `--json`. Without it, `delay`, `delayed` and `end-delay` print the session's trace and prompt address when it names them. `--trace` or `--rehydrate-with` without `--session-id` is refused.
 - Pure readers in `src/delayed-resolution.ts`, re-exported from `coaia-narrative/writer`: `deriveStepStatus`, `openDelayOf`, `delayRecordOf`, `isOwed`, `daysRemaining`, `closeDelayOnCompletion`, `DELAYED_RESOLUTION_OUTCOMES`, `UNKNOWN_COMPLETER`.
 
 ### Where the status shows
@@ -133,14 +137,15 @@ The data model schema (`schema/data-model-complete.*`, `schema/data-model/entity
 - ✅ A completed step and a past `resolveBy` are refused, and so is a chart with no parent
 - ✅ A re-delay keeps the earlier record in history
 - ✅ Ending keeps the record and leaves `completionStatus` untouched
-- ✅ Completing a delayed step, by any path, ends its delay as `resolved`
+- ✅ Completing a delayed step, by any path, ends its delay as `resolved`, and `mark_action_complete` says so
+- ✅ `trace` and `rehydrateWith` outside `miadi-` are refused; a `rehydrated` end returns them as stored
 - ✅ MCP, CLI, library and the GitHub projection report the same derived status
 - ✅ `test-delayed-resolution.js` runs in `npm test`
 
 ## Out of scope
 
 - The clock that steers a session before `resolveBy`. Who runs it is undecided (Episode 297, resolve-by 2026-10-27).
-- The LLMOps fields `trace` and `rehydrate_with`, which wait for jgwill/Miadi `packages/llmops` (Episode 297, resolve-by 2026-11-09).
+- Resolving or fetching a `trace` or `rehydrateWith` address. That belongs to `@miadi/llmops`.
 - Writing these fields from the session inventory, which owns its own records.
 
 ---

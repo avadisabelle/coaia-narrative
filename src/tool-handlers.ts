@@ -185,8 +185,12 @@ export async function handleToolCall(
     case "mark_action_complete": {
       const valResult = validate(toolArgs, { actionStepName: ValidationSchemas.nonEmptyString(), completedBy: { type: 'string' } });
       if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
-      await manager.markActionStepComplete(toolArgs.actionStepName as string, { completedBy: toolArgs.completedBy as string | undefined });
-      return noteIgnored({ content: [{ type: "text", text: `Action step '${toolArgs.actionStepName as string}' marked as complete and current reality updated` }] }, valResult.ignored);
+      const resolvedDelay = await manager.markActionStepComplete(toolArgs.actionStepName as string, { completedBy: toolArgs.completedBy as string | undefined });
+      let completeText = `Action step '${toolArgs.actionStepName as string}' marked as complete and current reality updated`;
+      if (resolvedDelay) {
+        completeText += `\nIts delayed resolution (until ${resolvedDelay.resolveBy}, chosen by ${resolvedDelay.chosenBy}) ended as resolved by ${resolvedDelay.endedBy}.`;
+      }
+      return noteIgnored({ content: [{ type: "text", text: completeText }] }, valResult.ignored);
     }
     case "get_chart_progress": {
       const valResult = validate(toolArgs, { chartId: ValidationSchemas.nonEmptyString() });
@@ -383,7 +387,9 @@ export async function handleToolCall(
             cwd: { type: 'string' },
             tmux: { type: 'string' },
             resumeCommand: { type: 'string' },
-            inventoryRecord: { type: 'string' }
+            inventoryRecord: { type: 'string' },
+            trace: { type: 'string' },
+            rehydrateWith: { type: 'string' }
           }
         }
       });
@@ -430,6 +436,8 @@ export async function handleToolCall(
       let endText = `Delayed resolution of '${ended.actionStepName}' ended (${ended.delayedResolution?.outcome}) by ${ended.delayedResolution?.endedBy}. Status: ${ended.status}.`;
       if (ended.resumeCommand) endText += `\nRehydrate with: ${ended.resumeCommand}`;
       else if (ended.resumeCommand === null) endText += `\nThe delay named no resume command.`;
+      if (ended.trace) endText += `\nTrace: ${ended.trace}`;
+      if (ended.rehydrateWith) endText += `\nPrompt that rehydrates it: ${ended.rehydrateWith}`;
       return noteIgnored({ content: [{ type: "text", text: `${endText}\n\n${JSON.stringify(ended, null, 2)}` }] }, valResult.ignored);
     }
     case "perform_mmot_evaluation": {
