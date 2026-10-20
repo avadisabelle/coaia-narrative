@@ -10,6 +10,7 @@ import type {
   LegacyGithubRef,
   LegacyGithubSyncTarget,
 } from './types.js';
+import { deriveStepStatus } from './delayed-resolution.js';
 
 export const GITHUB_PROJECT_FIELD_NAMES = [
   'goal',
@@ -138,6 +139,7 @@ export const projectEntityToGithubFields = createGithubProjectFieldProjection;
 
 export function deriveGithubProjectStatus(entity: Entity, graph?: KnowledgeGraph): GithubProjectStatus | undefined {
   if (entity.metadata?.completionStatus === true) return 'Completed';
+  if (isDelayingResolution(entity, graph)) return 'Delaying Resolution';
 
   const context = getChartProjectionContext(entity, graph);
   const completionRatio = getCompletionRatio(context.actionSteps);
@@ -153,6 +155,30 @@ export function deriveGithubProjectStatus(entity: Entity, graph?: KnowledgeGraph
       if (completionRatio === undefined) return undefined;
       return completionRatio > 0 ? 'In progress' : 'Actionnable';
   }
+}
+
+/**
+ * A chart is delaying resolution while it, or one of its telescoped steps, carries a
+ * delay that has not ended (src/delayed-resolution.ts). A telescoped chart's own delay
+ * lives on its desired outcome, the entity that names it as a step. Once the delay ends,
+ * or the step is completed, the status falls back to what the chart's phase and steps say.
+ */
+function isDelayingResolution(entity: Entity, graph?: KnowledgeGraph): boolean {
+  const entities = graph?.entities ?? [];
+  if (deriveStepStatus(entity, entities) === 'delayed') return true;
+  if (entity.entityType !== 'structural_tension_chart' || !graph) return false;
+
+  const chartId = resolveChartId(entity);
+  if (!chartId) return false;
+  const outcomeOf = (id: string) => entities.find(e => e.name === `${id}_desired_outcome` && e.entityType === 'desired_outcome');
+  const self = outcomeOf(chartId);
+  if (self && deriveStepStatus(self, entities) === 'delayed') return true;
+
+  return entities.some(child => {
+    if (child.entityType !== 'structural_tension_chart' || child.metadata?.parentChart !== chartId) return false;
+    const outcome = outcomeOf(resolveChartId(child) ?? '');
+    return Boolean(outcome) && deriveStepStatus(outcome, entities) === 'delayed';
+  });
 }
 
 export function getGithubIssueUrl(issue: GithubIssueRef): string {

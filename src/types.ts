@@ -204,11 +204,61 @@ export interface WampumBeltMetadata {
   updatedAt: string;
 }
 
+/**
+ * The agent session to bring back when a delayed step is due. Rehydrating is the act
+ * of resuming it: the step holds the reference, the session holds the work.
+ */
+export interface AgentSessionRef {
+  /** Claude Code session id, or another agent's. */
+  sessionId: string;
+  /** Which agent the session belongs to. Defaults to "claude". */
+  agent: string;
+  /** gaia, ilex, eury, … */
+  host?: string;
+  cwd?: string;
+  /** tmux session or pane. */
+  tmux?: string;
+  /** e.g. `cd <cwd> && claude --resume <id>`. Written for a claude session that names its cwd. */
+  resumeCommand?: string;
+  /** Path of the session's record in the session inventory. */
+  inventoryRecord?: string;
+}
+
+export type DelayedResolutionOutcome = 'rehydrated' | 'released';
+
+/**
+ * A strategic choice to delay a step's resolution in favour of a longer-term goal
+ * (Fritz: the delay "is a secondary choice to our primary choice"). A due date says
+ * when; this record says that someone chose to wait, why, and what the wait serves.
+ * Lives in an action step's metadata as `delayedResolution`; earlier records move to
+ * `delayedResolutionHistory` and are never overwritten.
+ */
+export interface DelayedResolution {
+  chosenAt: string;
+  chosenBy: string;
+  /** When resolution is wanted. Also the step's due date while the delay stands. */
+  resolveBy: string;
+  reason: string;
+  /** What the delay serves: the chart's desired outcome at the time of choosing, unless given. */
+  primaryChoice?: string;
+  /** Event cues, in words. */
+  wakeOn?: string[];
+  session?: AgentSessionRef;
+  endedAt?: string;
+  endedBy?: string;
+  outcome?: DelayedResolutionOutcome;
+  endNote?: string;
+}
+
 export interface EntityMetadata {
   dueDate?: string;
   chartId?: string;
   phase?: 'germination' | 'assimilation' | 'completion';
   completionStatus?: boolean;
+  /** An open or ended chosen delay on this step (src/delayed-resolution.ts). */
+  delayedResolution?: DelayedResolution;
+  /** Earlier delays on this step, oldest first. */
+  delayedResolutionHistory?: DelayedResolution[];
   parentChart?: string;
   parentActionStep?: string;
   level?: number;

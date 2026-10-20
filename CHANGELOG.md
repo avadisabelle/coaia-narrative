@@ -5,6 +5,49 @@ All notable changes to COAIA Memory will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.0] - 2026-10-19
+
+### ⏸️ Delayed resolution: a step can carry the choice to wait
+
+A due date says when a step is wanted. It did not say that someone chose to wait for it. A step
+now carries `metadata.delayedResolution`: `chosenAt`, `chosenBy`, `resolveBy`, `reason`,
+`primaryChoice` (what the delay serves; the chart's desired outcome, copied at the time of
+choosing, unless given), `wakeOn` (event cues, in words) and `session`, the agent session to
+rehydrate (`sessionId`, `agent` defaulting to `claude`, `host`, `cwd`, `tmux`, `resumeCommand`,
+`inventoryRecord`). Ending a delay adds `endedAt`, `endedBy`, `outcome` (`rehydrated` or
+`released`) and `endNote`.
+
+- Library: `delayResolution(actionStepName, …)`, `listDelayedResolutions({ dueWithinDays,
+  includeEnded })`, `endDelayedResolution(actionStepName, { endedBy, outcome, endNote })`, and
+  `describeActionStep(name)`. Pure readers in `src/delayed-resolution.ts`, re-exported from
+  `coaia-narrative/writer`: `deriveStepStatus`, `openDelayOf`, `isOwed`, `daysRemaining`.
+- MCP tools (in `STC_TOOLS`): `delay_resolution`, `list_delayed_resolutions`,
+  `end_delayed_resolution`. CLI: `cnarrative delay`, `delayed`, `end-delay`.
+- The step reference works for both kinds of step: a written step (`chart_123_action_1`) and a
+  telescoped step, named by its chart (`chart_123`, `chart_123_chart`) or its desired outcome
+  (`chart_123_desired_outcome`), where its record lives. A chart with no parent is a primary
+  choice, not a step, and is refused.
+- Rules: choosing a delay sets the step's due date to `resolveBy` (a telescoped step's chart
+  too). A completed step cannot be delayed, and `resolveBy` must be in the future. Delaying again
+  moves the earlier record, open or ended, into `delayedResolutionHistory`; nothing is
+  overwritten. Ending keeps the record. A delay whose `resolveBy` has passed is `owed`, and the
+  listing says so with `daysRemaining`. A `rehydrated` end gives back the session's
+  `resumeCommand`; a claude session that names its `cwd` gets `cd <cwd> && claude --resume <id>`.
+- Status: `completionStatus` is unchanged. A derived status (`completed`, `delayed`, `pending`)
+  is reported by `get_action_step` (which now answers for a written step too), `get_chart` and
+  `get_chart_progress` (`steps`, `delayedActions`), `list_active_charts` (⏸️ with the date, and
+  "owed"), and the CLI's `list`, `view` and `progress` views.
+- GitHub projection: `deriveGithubProjectStatus` now returns the `Delaying Resolution` status it
+  already declared, while the chart itself or one of its telescoped steps carries an open delay,
+  and stops once the delay ends.
+- `delayedResolution.session` is the session to bring back. It is distinct from
+  `metadata.source.sessionId` (and `session_id`), the session that wrote the entity, which the
+  GitHub projection's `session_id` field keeps reading. The two can name different sessions.
+- Data model schema: `delayedResolution` and `delayedResolutionHistory` in entity metadata.
+
+Design: miadi-chronicle Episode 297,
+`2026-07-24-episode-297-mino-bimaadizi-daa-stc-bot-ceremony/delayed-resolution-design-261019.md`.
+
 ## [0.23.0] - 2026-10-07
 
 `appendActionStep(chartId, title, { dueDate })`: a step can carry its own due date; without one

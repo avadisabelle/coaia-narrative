@@ -31,6 +31,12 @@ import { findUnparsedCallSyntax, KNOWN_ARGUMENT_NAMES } from './argument-hygiene
 export { KnowledgeGraphManager, detectProblemFraming, PROBLEM_SOLVING_WORDS } from './graph-manager.js';
 export type { ChartStatus } from './graph-manager.js';
 export type { Entity, Relation, KnowledgeGraph, GithubIssueRef } from './types.js';
+export {
+  DELAYED_RESOLUTION_OUTCOMES, deriveStepStatus, openDelayOf, delayRecordOf, isOwed, daysRemaining,
+} from './delayed-resolution.js';
+export type {
+  AgentSessionRef, DelayedResolution, DelayedResolutionOutcome, DelayedResolutionEntry, DelayedStepView, StepStatus,
+} from './delayed-resolution.js';
 
 export interface GithubIssueEvent {
   /** GitHub's action: opened, edited, closed, reopened, assigned, labeled, milestoned, created (a comment)… */

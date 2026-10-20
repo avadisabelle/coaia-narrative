@@ -25,7 +25,9 @@ import { handleSkillCommand } from './src/skill.js';
 import { readJsonlMemoryFile, writeJsonlMemoryFile } from './src/jsonl-preservation.js';
 import { findUnparsedCallSyntax } from './src/argument-hygiene.js';
 import { readPerspectiveTypes } from './src/perspective-types.js';
-import type { Entity, Relation, KnowledgeGraph } from './src/types.js';
+import type { Entity, Relation, KnowledgeGraph, DelayedResolution } from './src/types.js';
+import { KnowledgeGraphManager } from './src/graph-manager.js';
+import { deriveStepStatus, openDelayOf, isOwed, daysRemaining } from './src/delayed-resolution.js';
 
 // ==================== CONFIGURATION ====================
 
@@ -141,6 +143,14 @@ function formatDate(dateStr?: string): string {
   if (days === 1) return "📅 Due tomorrow";
   if (days <= 7) return `📅 Due in ${days} days`;
   return `📅 ${date.toLocaleDateString()}`;
+}
+
+/** "Delayed until <date> (N days remaining)" or "(owed)" once resolveBy has passed. */
+function formatDelay(record: Pick<DelayedResolution, 'resolveBy' | 'endedAt'>): string {
+  const when = new Date(record.resolveBy).toLocaleDateString();
+  if (isOwed(record as DelayedResolution)) return `⏸️  Delayed until ${when} (owed)`;
+  const days = daysRemaining(record);
+  return `⏸️  Delayed until ${when} (${days} day${days === 1 ? '' : 's'} remaining)`;
 }
 
 function getProgressBar(progress: number, width: number = 20): string {
@@ -266,9 +276,12 @@ async function listCharts(memoryPath: string): Promise<void> {
         const isLast = idx === actionCharts.length - 1;
         const prefix = isLast ? '  └──' : '  ├──';
         
-        const status = isComplete ? '✅' : (actionProgress > 0 ? '🔄' : '⏳');
+        const actionDelay = !isComplete && deriveStepStatus(actionOutcome, graph.entities) === 'delayed'
+          ? openDelayOf(actionOutcome)
+          : undefined;
+        const status = isComplete ? '✅' : actionDelay ? '⏸️' : (actionProgress > 0 ? '🔄' : '⏳');
         console.log(`${prefix} ${status} ${actionOutcome?.observations[0] || 'Unknown'}`);
-        console.log(`  ${isLast ? '   ' : '│  '}    ID: ${actionChartId} | ${formatDate(actionChart.metadata?.dueDate)}`);
+        console.log(`  ${isLast ? '   ' : '│  '}    ID: ${actionChartId} | ${actionDelay ? formatDelay(actionDelay) : formatDate(actionChart.metadata?.dueDate)}`);
         
         if (actionTotal > 0) {
           console.log(`  ${isLast ? '   ' : '│  '}    ${getProgressBar(actionProgress, 30)}`);
@@ -392,13 +405,19 @@ async function viewChart(chartId: string, memoryPath: string): Promise<void> {
     console.log('─'.repeat(79) + '\n');
     
     actionSteps.forEach((step, idx) => {
-      const isComplete = step.metadata?.completionStatus === true;
-      const status = isComplete ? '✅' : '⏳';
+      const stepStatus = deriveStepStatus(step, graph.entities);
+      const status = stepStatus === 'completed' ? '✅' : stepStatus === 'delayed' ? '⏸️' : '⏳';
       const stepDue = formatDate(step.metadata?.dueDate);
       
       console.log(`  ${idx + 1}. ${status} ${step.observations[0]}`);
       console.log(`     Entity: ${step.name}`);
       console.log(`     ${stepDue}`);
+      const delay = stepStatus === 'delayed' ? openDelayOf(step) : undefined;
+      if (delay) {
+        console.log(`     ${formatDelay(delay)}, chosen by ${delay.chosenBy}`);
+        console.log(`     Reason: ${delay.reason}`);
+        if (delay.session?.resumeCommand) console.log(`     Rehydrate: ${delay.session.resumeCommand}`);
+      }
       
       if (step.observations.length > 1) {
         console.log(`     Progress notes:`);
@@ -490,8 +509,10 @@ async function viewChart(chartId: string, memoryPath: string): Promise<void> {
       const subOutcome = graph.entities.find(e =>
         e.name === `${subId}_desired_outcome`
       );
-      console.log(`  • ${subOutcome?.observations[0] || 'Unknown'}`);
+      const subDelay = deriveStepStatus(subOutcome, graph.entities) === 'delayed' ? openDelayOf(subOutcome) : undefined;
+      console.log(`  ${subDelay ? '⏸️' : '•'} ${subOutcome?.observations[0] || 'Unknown'}`);
       console.log(`    Chart ID: ${subId}`);
+      if (subDelay) console.log(`    ${formatDelay(subDelay)}, chosen by ${subDelay.chosenBy}`);
       console.log('');
     });
   }
@@ -526,6 +547,16 @@ COMMANDS:
   complete, done <actionName>   Mark an action step as complete
   set-date, sd <chartId>        Update chart due date
   
+  ⏸️  DELAYED RESOLUTION
+  ───────────────────────────────────────────────────────────────────────────────
+  delay <step> <resolveBy>      Choose to delay a step's resolution until a date
+                                  --reason <why> --by <who>   (required)
+                                  --primary <what it serves>  --wake-on <cue> (repeatable)
+                                  --session-id <id> --cwd <dir> --host <host> --tmux <pane>
+                                  --agent <name> --resume-command <cmd> --inventory-record <path>
+  delayed                       List delayed steps by date (--within <days>, --all)
+  end-delay <step>              End a delay: --outcome rehydrated|released --by <who> [--note]
+
 
   📄 MARKDOWN EXPORT
   ───────────────────────────────────────────────────────────────────────────────
@@ -746,8 +777,9 @@ async function showProgress(chartId: string, memoryPath: string): Promise<void> 
   console.log(`⏳ Remaining: ${incomplete.length}`);
   if (incomplete.length > 0) {
     incomplete.forEach(action => {
-      const due = formatDate(action.metadata?.dueDate);
-      console.log(`   • ${action.observations[0]} (${due})`);
+      const delay = openDelayOf(action);
+      const due = delay ? formatDelay(delay) : formatDate(action.metadata?.dueDate);
+      console.log(`   ${delay ? '⏸️' : '•'} ${action.observations[0]} (${due})`);
     });
   }
   
@@ -995,6 +1027,127 @@ async function setDueDate(chartId: string, dateStr: string, memoryPath: string):
   
   console.log(`\n✅ Due date updated for chart ${chartId}`);
   console.log(`   New date: ${formatDate(chart.metadata.dueDate)}\n`);
+}
+
+// ==================== DELAYED RESOLUTION COMMANDS ====================
+
+/** A flag's value as text; minimist turns numeric-looking values into numbers. */
+function flagText(value: unknown): string | undefined {
+  if (value === undefined || value === null || value === false || value === true) return undefined;
+  return String(value);
+}
+
+async function delayStep(actionStepName: string, resolveBy: string, memoryPath: string, args: minimist.ParsedArgs, jsonOutput: boolean): Promise<void> {
+  const reason = flagText(args.reason);
+  const chosenBy = flagText(args.by);
+  if (!reason || !chosenBy) {
+    console.log('\n❌ Error: --reason and --by are required\n');
+    console.log('Usage: cnarrative delay <actionStepName> <resolveBy> --reason "<why>" --by "<who>"\n');
+    process.exit(1);
+  }
+  const wakeOn = ([] as unknown[]).concat(args['wake-on'] ?? []).map(String);
+  const sessionId = flagText(args['session-id']);
+  const session = sessionId ? {
+    sessionId,
+    agent: flagText(args.agent),
+    host: flagText(args.host),
+    cwd: flagText(args.cwd),
+    tmux: flagText(args.tmux),
+    resumeCommand: flagText(args['resume-command']),
+    inventoryRecord: flagText(args['inventory-record'])
+  } : undefined;
+
+  const manager = new KnowledgeGraphManager(memoryPath);
+  const step = await manager.delayResolution(actionStepName, {
+    resolveBy, reason, chosenBy, primaryChoice: flagText(args.primary), wakeOn, session
+  });
+  await manager.asterionIdle();
+
+  if (jsonOutput) {
+    process.stdout.write(JSON.stringify(step, null, 2) + '\n');
+    return;
+  }
+  const record = step.delayedResolution!;
+  console.log(`\n⏸️  Resolution delayed: ${step.title}`);
+  console.log(`   Step: ${step.actionStepName} | Chart: ${step.chartId}`);
+  console.log(`   ${formatDelay(record)}`);
+  console.log(`   Reason: ${record.reason}`);
+  console.log(`   Chosen by: ${record.chosenBy}`);
+  if (record.primaryChoice) console.log(`   Serves: ${record.primaryChoice}`);
+  if (record.wakeOn?.length) console.log(`   Wake on: ${record.wakeOn.join('; ')}`);
+  if (record.session) {
+    console.log(`   Session: ${record.session.sessionId} (${record.session.agent}${record.session.host ? `@${record.session.host}` : ''})`);
+    if (record.session.resumeCommand) console.log(`   Rehydrate: ${record.session.resumeCommand}`);
+  }
+  if (step.delayedResolutionHistory.length > 0) console.log(`   Earlier delays kept: ${step.delayedResolutionHistory.length}`);
+  console.log('');
+}
+
+async function listDelayed(memoryPath: string, args: minimist.ParsedArgs, jsonOutput: boolean): Promise<void> {
+  const manager = new KnowledgeGraphManager(memoryPath);
+  const entries = await manager.listDelayedResolutions({
+    dueWithinDays: args.within !== undefined ? Number(args.within) : undefined,
+    includeEnded: args.all === true
+  });
+
+  if (jsonOutput) {
+    process.stdout.write(JSON.stringify(entries, null, 2) + '\n');
+    return;
+  }
+
+  console.log('\n╔═══════════════════════════════════════════════════════════════════════════════╗');
+  console.log('║                        ⏸️  DELAYED RESOLUTIONS                                 ║');
+  console.log('╚═══════════════════════════════════════════════════════════════════════════════╝\n');
+
+  if (entries.length === 0) {
+    console.log('  No delayed resolutions standing.\n');
+    return;
+  }
+
+  entries.forEach((entry, idx) => {
+    const mark = entry.endedAt ? (entry.outcome === 'rehydrated' ? '🔁' : '▶️') : entry.status === 'completed' ? '✅' : entry.owed ? '⚠️' : '⏸️';
+    console.log(`  ${idx + 1}. ${mark} ${entry.title}`);
+    console.log(`     Step: ${entry.actionStepName} | Chart: ${entry.chartId}`);
+    if (entry.endedAt) {
+      console.log(`     Ended ${new Date(entry.endedAt).toLocaleDateString()} by ${entry.endedBy} (${entry.outcome})`);
+    } else {
+      console.log(`     ${formatDelay(entry)}`);
+    }
+    console.log(`     Reason: ${entry.reason} (chosen by ${entry.chosenBy})`);
+    if (entry.primaryChoice) console.log(`     Serves: ${entry.primaryChoice}`);
+    if (entry.wakeOn.length > 0) console.log(`     Wake on: ${entry.wakeOn.join('; ')}`);
+    if (entry.session?.resumeCommand) console.log(`     Rehydrate: ${entry.session.resumeCommand}`);
+    else if (entry.session) console.log(`     Session: ${entry.session.sessionId} (${entry.session.agent})`);
+    console.log('');
+  });
+
+  const owed = entries.filter(e => e.owed).length;
+  if (owed > 0) console.log(`  ⚠️  ${owed} owed: resolveBy has passed.\n`);
+}
+
+async function endDelay(actionStepName: string, memoryPath: string, args: minimist.ParsedArgs, jsonOutput: boolean): Promise<void> {
+  const outcome = flagText(args.outcome);
+  const endedBy = flagText(args.by);
+  if (!endedBy || (outcome !== 'rehydrated' && outcome !== 'released')) {
+    console.log('\n❌ Error: --outcome rehydrated|released and --by are required\n');
+    console.log('Usage: cnarrative end-delay <actionStepName> --outcome rehydrated --by "<who>" [--note "<text>"]\n');
+    process.exit(1);
+  }
+  const manager = new KnowledgeGraphManager(memoryPath);
+  const ended = await manager.endDelayedResolution(actionStepName, { endedBy, outcome, endNote: flagText(args.note) });
+  await manager.asterionIdle();
+
+  if (jsonOutput) {
+    process.stdout.write(JSON.stringify(ended, null, 2) + '\n');
+    return;
+  }
+  console.log(`\n✅ Delay ended (${outcome}): ${ended.title}`);
+  console.log(`   Step: ${ended.actionStepName} | Status: ${ended.status}`);
+  console.log(`   Ended by: ${endedBy}`);
+  if (outcome === 'rehydrated') {
+    console.log(ended.resumeCommand ? `   Rehydrate with: ${ended.resumeCommand}` : '   No resume command was recorded for this delay.');
+  }
+  console.log('');
 }
 
 // ==================== MMOT EVALUATION COMMAND ====================
@@ -1376,6 +1529,34 @@ async function main() {
         await setDueDate(sdChartId, dateStr, config.memoryPath);
         break;
         
+      case 'delay': {
+        const delayStepName = args._[1];
+        const resolveBy = args._[2] !== undefined ? String(args._[2]) : undefined;
+        if (!delayStepName || !resolveBy) {
+          console.log('\n❌ Error: Action step name and resolveBy date required\n');
+          console.log('Usage: cnarrative delay <actionStepName> <resolveBy> --reason "<why>" --by "<who>"\n');
+          console.log('Example: cnarrative delay chart_123_action_1 2026-11-01 --reason "waits on the review" --by mia\n');
+          process.exit(1);
+        }
+        await delayStep(String(delayStepName), resolveBy, config.memoryPath, args, config.jsonOutput);
+        break;
+      }
+
+      case 'delayed':
+        await listDelayed(config.memoryPath, args, config.jsonOutput);
+        break;
+
+      case 'end-delay': {
+        const endStepName = args._[1];
+        if (!endStepName) {
+          console.log('\n❌ Error: Action step name required\n');
+          console.log('Usage: cnarrative end-delay <actionStepName> --outcome rehydrated|released --by "<who>"\n');
+          process.exit(1);
+        }
+        await endDelay(String(endStepName), config.memoryPath, args, config.jsonOutput);
+        break;
+      }
+
       case 'mmot':
       case 'evaluate':
         const mmotChartId = args._[1] || config.currentChart;

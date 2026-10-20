@@ -21,6 +21,9 @@ export const TOOL_GROUPS: Record<string, string[]> = {
     'update_current_reality',
     'update_desired_outcome',
     'update_chart_due_date',
+    'delay_resolution',
+    'list_delayed_resolutions',
+    'end_delayed_resolution',
     'link_chart_to_github_issue',
     'perform_mmot_evaluation'
   ],

@@ -431,6 +431,61 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
     }
   },
   {
+    name: "delay_resolution",
+    description: "Record on an action step that someone strategically chose to delay its resolution in favour of a longer-term goal: until when (resolveBy), why (reason), who chose (chosenBy) and what the delay serves (primaryChoice). The step's due date becomes resolveBy and its status reads 'delayed'. Optionally names the agent session to rehydrate when the date or an event (wakeOn) comes. A completed step cannot be delayed. Delaying a step again moves its earlier record into delayedResolutionHistory; nothing is overwritten.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        actionStepName: { type: "string", description: "The step: a written step ('chart_123_action_1') or a telescoped step, named by its chart ('chart_123', 'chart_123_chart') or its desired outcome ('chart_123_desired_outcome')" },
+        resolveBy: { type: "string", description: "When resolution is wanted, as an ISO date-time in the future (e.g. '2026-11-01T12:00:00Z'). Becomes the step's due date." },
+        reason: { type: "string", description: "Why delaying serves the work now" },
+        chosenBy: { type: "string", description: "The person or seat that made the choice" },
+        primaryChoice: { type: "string", description: "What the delay serves. Defaults to the desired outcome of the chart the step advances, copied at the time of choosing." },
+        wakeOn: { type: "array", items: { type: "string" }, description: "Event cues, in words, that should also bring the step back" },
+        session: {
+          type: "object",
+          description: "The agent session to rehydrate when the step is due. A claude session that names its cwd and no resumeCommand gets 'cd <cwd> && claude --resume <sessionId>'.",
+          properties: {
+            sessionId: { type: "string", description: "Claude Code session id, or another agent's" },
+            agent: { type: "string", description: "Which agent the session belongs to (default 'claude')" },
+            host: { type: "string", description: "Host the session runs on (gaia, ilex, eury, …)" },
+            cwd: { type: "string", description: "Directory the session ran in" },
+            tmux: { type: "string", description: "tmux session or pane" },
+            resumeCommand: { type: "string", description: "Command that brings the session back" },
+            inventoryRecord: { type: "string", description: "Path of the session's record in the session inventory" }
+          },
+          required: ["sessionId"]
+        }
+      },
+      required: ["actionStepName", "resolveBy", "reason", "chosenBy"]
+    }
+  },
+  {
+    name: "list_delayed_resolutions",
+    description: "List the steps whose resolution was chosen to be delayed, sorted by resolveBy, each with daysRemaining, whether it is now owed (resolveBy has passed), primaryChoice, wakeOn and the session to rehydrate.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        dueWithinDays: { type: "number", description: "Only delays whose resolveBy falls within this many days from now (owed ones included)" },
+        includeEnded: { type: "boolean", default: false, description: "Also list delays that were ended, and delays on steps completed since" }
+      }
+    }
+  },
+  {
+    name: "end_delayed_resolution",
+    description: "End a step's delayed resolution, either by rehydrating its agent session or by releasing the step. The record stays with endedAt, endedBy and outcome, and the step's status returns to what it was. When the outcome is 'rehydrated', the result gives back the session's resumeCommand.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        actionStepName: { type: "string", description: "The delayed step, named as for delay_resolution" },
+        endedBy: { type: "string", description: "The person or seat ending the delay" },
+        outcome: { type: "string", enum: ["rehydrated", "released"], description: "'rehydrated': the session was brought back to resolve the step. 'released': the step goes on without it." },
+        endNote: { type: "string", description: "Optional note on how the delay ended" }
+      },
+      required: ["actionStepName", "endedBy", "outcome"]
+    }
+  },
+  {
     name: "perform_mmot_evaluation",
     description: "Autonomous MMOT (Managerial Moment of Truth) self-evaluation on a structural tension chart. The agent compares produced output against defined Elements of Performance, acknowledges discrepancy, analyzes dynamics, updates the chart, and recommits or redirects. Runs the four Creator's Moment of Truth steps: acknowledge → analyze → update → recommit. Can be called from any directional perspective (South/East/West/North) for collective inquiry.",
     inputSchema: {

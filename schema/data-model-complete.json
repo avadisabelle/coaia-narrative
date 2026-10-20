@@ -71,6 +71,113 @@
               "type": "boolean",
               "description": "Whether an action_step has been completed"
             },
+            "delayedResolution": {
+              "type": "object",
+              "description": "A strategic choice to delay this step's resolution in favour of a longer-term goal. A due date says when; this says someone chose to wait. Open while endedAt is absent; the step's derived status is then 'delayed'. Written by delay_resolution, closed by end_delayed_resolution.",
+              "required": [
+                "chosenAt",
+                "chosenBy",
+                "resolveBy",
+                "reason"
+              ],
+              "properties": {
+                "chosenAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When the delay was chosen"
+                },
+                "chosenBy": {
+                  "type": "string",
+                  "description": "The person or seat that made the choice"
+                },
+                "resolveBy": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When resolution is wanted; also the step's dueDate while the delay stands"
+                },
+                "reason": {
+                  "type": "string",
+                  "description": "Why delaying serves the work now"
+                },
+                "primaryChoice": {
+                  "type": "string",
+                  "description": "What the delay serves; the chart's desired outcome at the time of choosing unless given"
+                },
+                "wakeOn": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Event cues, in words"
+                },
+                "session": {
+                  "type": "object",
+                  "description": "The agent session to rehydrate when the step is due. Distinct from metadata.source.sessionId, which names the session that wrote the entity.",
+                  "required": [
+                    "sessionId",
+                    "agent"
+                  ],
+                  "properties": {
+                    "sessionId": {
+                      "type": "string",
+                      "description": "Claude Code session id, or another agent's"
+                    },
+                    "agent": {
+                      "type": "string",
+                      "description": "Which agent the session belongs to (default 'claude')"
+                    },
+                    "host": {
+                      "type": "string",
+                      "description": "Host the session runs on (gaia, ilex, eury, ...)"
+                    },
+                    "cwd": {
+                      "type": "string",
+                      "description": "Directory the session ran in"
+                    },
+                    "tmux": {
+                      "type": "string",
+                      "description": "tmux session or pane"
+                    },
+                    "resumeCommand": {
+                      "type": "string",
+                      "description": "Command that brings the session back, e.g. 'cd <cwd> && claude --resume <id>'"
+                    },
+                    "inventoryRecord": {
+                      "type": "string",
+                      "description": "Path of the session's record in the session inventory"
+                    }
+                  }
+                },
+                "endedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When the delay ended"
+                },
+                "endedBy": {
+                  "type": "string",
+                  "description": "Who ended it"
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": [
+                    "rehydrated",
+                    "released"
+                  ],
+                  "description": "rehydrated: the session was brought back; released: the step went on without it"
+                },
+                "endNote": {
+                  "type": "string",
+                  "description": "Optional note on how the delay ended"
+                }
+              }
+            },
+            "delayedResolutionHistory": {
+              "type": "array",
+              "description": "Earlier delayed resolutions on this step, oldest first. A new delay moves the previous record here; nothing is overwritten.",
+              "items": {
+                "$ref": "#/definitions/Entity/properties/metadata/properties/delayedResolution"
+              }
+            },
             "parentChart": {
               "type": "string",
               "description": "For telescoped charts, the ID of the parent chart"

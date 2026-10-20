@@ -1,4 +1,16 @@
-import { Entity, Relation, KnowledgeGraph, WampumBead, WampumBeltMetadata, WampumBeadPosition, WampumCeremonyLink, GithubIssueRef } from './types.js';
+import { Entity, Relation, KnowledgeGraph, WampumBead, WampumBeltMetadata, WampumBeadPosition, WampumCeremonyLink, GithubIssueRef, EntityMetadata, AgentSessionRef, DelayedResolution, DelayedResolutionOutcome } from './types.js';
+import {
+  DELAYED_RESOLUTION_OUTCOMES,
+  daysRemaining,
+  delayRecordOf,
+  deriveStepStatus,
+  isOwed,
+  isStepComplete,
+  openDelayOf,
+  type DelayedResolutionEntry,
+  type DelayedStepView,
+  type StepStatus,
+} from './delayed-resolution.js';
 import { readJsonlMemoryFile, writeJsonlMemoryFile } from './jsonl-preservation.js';
 import { assertNoUnparsedCallSyntax } from './argument-hygiene.js';
 import { createAsterionNotifier, readAsterionConfig, type AsterionNotifier } from './asterion-bridge.js';
@@ -44,6 +56,64 @@ export function detectProblemFraming(desiredOutcome: string): string[] {
 }
 
 export type ChartStatus = 'active' | 'paused' | 'resolved' | 'archived';
+
+/** Where a step's delayed resolution lives, and the chart that step advances. */
+interface DelayStepRef {
+  /** The entity carrying the record: the action_step, or a telescoped step's desired outcome. */
+  step: Entity;
+  kind: 'written' | 'telescoped';
+  /** The chart the step advances: its own chart for a written step, the parent for a telescoped one. */
+  chartId: string;
+  telescopedChartId?: string;
+  chart?: Entity;
+  /** A chart with no parent is a primary choice, not a step. */
+  isPrimary?: boolean;
+}
+
+function requiredText(value: unknown, label: string): string {
+  const text = typeof value === 'string' ? value.trim() : '';
+  if (!text) throw new Error(`${label} is required: a non-empty string`);
+  return text;
+}
+
+function optionalText(value: unknown, label: string): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== 'string') throw new Error(`${label} must be a string`);
+  return value.trim() || undefined;
+}
+
+function textList(value: unknown, label: string): string[] {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value) || value.some(v => typeof v !== 'string')) throw new Error(`${label} must be an array of strings`);
+  return value.map(v => v.trim()).filter(Boolean);
+}
+
+/** A word the shell reads as itself, or that word single-quoted. */
+function shellWord(value: string): string {
+  return /^[A-Za-z0-9_\/.~:@%+=,-]+$/.test(value) ? value : `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+/**
+ * The session to rehydrate, kept to the AgentSessionRef fields. `agent` defaults to
+ * "claude". A claude session that names its cwd and no resume command gets the one
+ * that brings it back: claude finds a session by the directory it ran in.
+ */
+function normalizeAgentSession(value: unknown): AgentSessionRef | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== 'object' || Array.isArray(value)) throw new Error('session must be an object carrying at least sessionId');
+  const raw = value as Record<string, unknown>;
+  const sessionId = requiredText(raw.sessionId, 'session.sessionId');
+  const session: AgentSessionRef = { sessionId, agent: optionalText(raw.agent, 'session.agent') ?? 'claude' };
+  for (const key of ['host', 'cwd', 'tmux', 'resumeCommand', 'inventoryRecord'] as const) {
+    const text = optionalText(raw[key], `session.${key}`);
+    if (text) session[key] = text;
+  }
+  assertNoUnparsedCallSyntax(Object.values(session), 'session');
+  if (!session.resumeCommand && session.agent === 'claude' && session.cwd) {
+    session.resumeCommand = `cd ${shellWord(session.cwd)} && claude --resume ${shellWord(sessionId)}`;
+  }
+  return session;
+}
 
 export class KnowledgeGraphManager {
   private memoryFilePath: string;
@@ -615,6 +685,10 @@ Current Reality: "${currentReality}"
     totalActions: number;
     nextAction?: string;
     dueDate?: string;
+    /** Open steps whose resolution someone chose to delay. */
+    delayedActions: number;
+    /** Each unit of work with its derived status: completed, delayed or pending. */
+    steps: Array<{ name: string; status: StepStatus; dueDate?: string; resolveBy?: string; owed?: boolean }>;
   }> {
     const graph = preloadedGraph ?? await this.loadGraph();
     const actionSteps = graph.entities.filter(e =>
@@ -644,11 +718,12 @@ Current Reality: "${currentReality}"
       !claimedByStep.has(c.metadata?.chartId || c.name.replace(/_chart$/, ''))
     );
 
-    const units: Array<{ name: string; complete: boolean; dueDate?: string }> = [
+    const units: Array<{ name: string; complete: boolean; dueDate?: string; entity?: Entity }> = [
       ...actionSteps.map(e => ({
         name: e.name,
         complete: e.metadata?.completionStatus === true,
-        dueDate: e.metadata?.dueDate
+        dueDate: e.metadata?.dueDate,
+        entity: e
       })),
       ...telescopedChildren.map(c => {
         const childId = c.metadata?.chartId || c.name.replace('_chart', '');
@@ -660,7 +735,8 @@ Current Reality: "${currentReality}"
         return {
           name: `${childId}_desired_outcome`,
           complete: outcome?.metadata?.completionStatus === true || c.metadata?.completionStatus === true,
-          dueDate: c.metadata?.dueDate
+          dueDate: c.metadata?.dueDate,
+          entity: outcome
         };
       })
     ];
@@ -680,13 +756,26 @@ Current Reality: "${currentReality}"
 
     const chart = graph.entities.find(e => e.name === `${chartId}_chart`);
 
+    const steps = units.map(u => {
+      const open = u.complete ? undefined : openDelayOf(u.entity);
+      const status: StepStatus = u.complete ? 'completed' : open ? 'delayed' : 'pending';
+      return {
+        name: u.name,
+        status,
+        ...(u.dueDate ? { dueDate: u.dueDate } : {}),
+        ...(open ? { resolveBy: open.resolveBy, owed: isOwed(open) } : {})
+      };
+    });
+
     return {
       chartId,
       progress,
       completedActions,
       totalActions,
       nextAction: incompleteActions[0]?.name,
-      dueDate: chart?.metadata?.dueDate
+      dueDate: chart?.metadata?.dueDate,
+      delayedActions: steps.filter(s => s.status === 'delayed').length,
+      steps
     };
   }
 
@@ -712,11 +801,18 @@ Current Reality: "${currentReality}"
     level: number;
     parentChart?: string;
     parentActionStep?: string;
+    /** For a telescoped chart: its status as a step of its parent (completed, delayed, pending). */
+    stepStatus?: StepStatus;
+    resolveBy?: string;
+    owed?: boolean;
     actionSteps: Array<{
       name: string;
       title: string;
       complete: boolean;
       dueDate?: string;
+      status: StepStatus;
+      resolveBy?: string;
+      owed?: boolean;
     }>;
   }>> {
     const graph = await this.loadGraph();
@@ -737,12 +833,24 @@ Current Reality: "${currentReality}"
         // parentChart alone see only the second and report the first as absent.
         const actionSteps = graph.entities
           .filter(e => e.entityType === 'action_step' && e.metadata?.chartId === chartId)
-          .map(e => ({
-            name: e.name,
-            title: e.observations[0] || 'Untitled action step',
-            complete: Boolean(e.metadata?.completionStatus),
-            dueDate: e.metadata?.dueDate as string | undefined
-          }));
+          .map(e => {
+            const status = deriveStepStatus(e, graph.entities);
+            const open = status === 'delayed' ? openDelayOf(e) : undefined;
+            return {
+              name: e.name,
+              title: e.observations[0] || 'Untitled action step',
+              complete: Boolean(e.metadata?.completionStatus),
+              dueDate: e.metadata?.dueDate as string | undefined,
+              status,
+              ...(open ? { resolveBy: open.resolveBy, owed: isOwed(open) } : {})
+            };
+          });
+
+        // A telescoped chart is a step of its parent; its delay lives on its desired outcome.
+        const stepStatus = chart.metadata?.parentChart && desiredOutcome
+          ? deriveStepStatus(desiredOutcome, graph.entities)
+          : undefined;
+        const stepDelay = stepStatus === 'delayed' ? openDelayOf(desiredOutcome) : undefined;
 
         return {
           chartId,
@@ -754,6 +862,8 @@ Current Reality: "${currentReality}"
           level: chart.metadata?.level || 0,
           parentChart: chart.metadata?.parentChart,
           parentActionStep: chart.metadata?.parentActionStep,
+          ...(stepStatus ? { stepStatus } : {}),
+          ...(stepDelay ? { resolveBy: stepDelay.resolveBy, owed: isOwed(stepDelay) } : {}),
           actionSteps
         };
       })
@@ -906,6 +1016,252 @@ Current Reality: "${currentReality}"
     );
     await this.saveGraph(graph);
     return name;
+  }
+
+  // ==================== DELAYED RESOLUTION ====================
+  //
+  // A due date says when. A delayed resolution says that someone chose to wait:
+  // who, until when, why, what the wait serves, and which agent session to
+  // rehydrate when the date or an event comes. Design: miadi-chronicle Episode 297,
+  // delayed-resolution-design-261019.md. Status is derived in src/delayed-resolution.ts.
+
+  /** Where a step's delay lives, and the chart it advances. */
+  private delayStepRefOf(graph: KnowledgeGraph, step: Entity): DelayStepRef {
+    if (step.entityType === 'action_step') {
+      return { step, kind: 'written', chartId: String(step.metadata?.chartId ?? '') };
+    }
+    const ownChartId = String(step.metadata?.chartId ?? step.name.replace(/_desired_outcome$/, ''));
+    const chart = graph.entities.find(e => e.name === `${ownChartId}_chart` && e.entityType === 'structural_tension_chart');
+    const parent = chart?.metadata?.parentChart;
+    return { step, kind: 'telescoped', chartId: parent ?? ownChartId, telescopedChartId: ownChartId, chart, isPrimary: !parent };
+  }
+
+  /**
+   * The step a reference names. A written step is an action_step entity
+   * (`chart_123_action_1`). A telescoped step is a sub-chart, named by its chart id
+   * (`chart_123`), its chart entity (`chart_123_chart`) or its desired outcome
+   * (`chart_123_desired_outcome`); its record lives on the desired outcome, the entity
+   * mark_action_complete writes to.
+   */
+  private findDelayStep(graph: KnowledgeGraph, actionStepName: string): DelayStepRef | null {
+    const name = String(actionStepName ?? '').trim();
+    const written = graph.entities.find(e => e.name === name && e.entityType === 'action_step');
+    if (written) return this.delayStepRefOf(graph, written);
+    const asChart = graph.entities.find(e => e.entityType === 'structural_tension_chart' && (e.name === name || e.name === `${name}_chart`));
+    const outcomeName = asChart ? `${asChart.metadata?.chartId ?? asChart.name.replace(/_chart$/, '')}_desired_outcome` : name;
+    const outcome = graph.entities.find(e => e.name === outcomeName && e.entityType === 'desired_outcome');
+    return outcome ? this.delayStepRefOf(graph, outcome) : null;
+  }
+
+  private delayStepView(graph: KnowledgeGraph, ref: DelayStepRef): DelayedStepView {
+    const record = delayRecordOf(ref.step);
+    const history = ref.step.metadata?.delayedResolutionHistory;
+    return {
+      actionStepName: ref.step.name,
+      kind: ref.kind,
+      chartId: ref.chartId,
+      ...(ref.telescopedChartId ? { telescopedChartId: ref.telescopedChartId } : {}),
+      title: ref.step.observations[0] ?? ref.step.name,
+      ...(typeof ref.step.metadata?.dueDate === 'string' ? { dueDate: ref.step.metadata.dueDate } : {}),
+      status: deriveStepStatus(ref.step, graph.entities),
+      ...(record ? { delayedResolution: record } : {}),
+      delayedResolutionHistory: Array.isArray(history) ? history : []
+    };
+  }
+
+  private notFoundStep(actionStepName: string): Error {
+    return new Error(
+      `Action step ${actionStepName} not found. Name a written step (chart_123_action_1) or a telescoped step ` +
+      `(chart_123, chart_123_chart or chart_123_desired_outcome).`
+    );
+  }
+
+  /**
+   * A step with its status (completed, delayed, pending) and its delays, or null when
+   * the name is no step: a primary chart, or nothing at all.
+   */
+  async describeActionStep(actionStepName: string): Promise<DelayedStepView | null> {
+    const graph = await this.loadGraph();
+    const ref = this.findDelayStep(graph, actionStepName);
+    return ref && !ref.isPrimary ? this.delayStepView(graph, ref) : null;
+  }
+
+  /**
+   * Choose to delay a step's resolution until `resolveBy`.
+   *
+   * The step's due date becomes `resolveBy`: one date, now carrying a chosen delay.
+   * A completed step cannot be delayed, and `resolveBy` must be in the future. A step
+   * that already carries a delay, open or ended, keeps it: the earlier record moves to
+   * `delayedResolutionHistory` and the new one is written. Nothing is overwritten.
+   * `primaryChoice` defaults to the desired outcome of the chart the step advances,
+   * copied now, so the record still says what the wait served after the chart changes.
+   */
+  async delayResolution(
+    actionStepName: string,
+    input: {
+      resolveBy: string;
+      reason: string;
+      chosenBy: string;
+      primaryChoice?: string;
+      wakeOn?: string[];
+      session?: Partial<AgentSessionRef> & { sessionId: string };
+    }
+  ): Promise<DelayedStepView> {
+    const reason = requiredText(input?.reason, 'reason');
+    const chosenBy = requiredText(input?.chosenBy, 'chosenBy');
+    const givenPrimary = optionalText(input?.primaryChoice, 'primaryChoice');
+    const wakeOn = textList(input?.wakeOn, 'wakeOn');
+    const session = normalizeAgentSession(input?.session);
+    assertNoUnparsedCallSyntax(reason, 'reason');
+    assertNoUnparsedCallSyntax(givenPrimary, 'primaryChoice');
+    assertNoUnparsedCallSyntax(wakeOn, 'wakeOn');
+
+    const parsed = Date.parse(String(input?.resolveBy ?? ''));
+    if (Number.isNaN(parsed)) {
+      throw new Error(`resolveBy is not a date: "${input?.resolveBy}". Use an ISO date-time in the future, e.g. 2026-11-01T12:00:00Z`);
+    }
+    if (parsed <= Date.now()) {
+      throw new Error(`resolveBy must be in the future: ${new Date(parsed).toISOString()} has already passed. A delay is chosen ahead of the date resolution is wanted.`);
+    }
+    const resolveBy = new Date(parsed).toISOString();
+
+    const graph = await this.loadGraph();
+    const ref = this.findDelayStep(graph, actionStepName);
+    if (!ref) throw this.notFoundStep(actionStepName);
+    if (ref.isPrimary) {
+      throw new Error(
+        `${actionStepName} names chart ${ref.telescopedChartId}, which is not a step of another chart: its desired outcome is a primary choice. ` +
+        `Delay one of its steps instead.`
+      );
+    }
+    if (isStepComplete(ref.step, graph.entities)) {
+      throw new Error(`Action step ${ref.step.name} is completed. A completed step cannot be delayed.`);
+    }
+
+    const primaryChoice = givenPrimary ?? graph.entities.find(e =>
+      e.name === `${ref.chartId}_desired_outcome` && e.entityType === 'desired_outcome'
+    )?.observations[0];
+
+    const timestamp = new Date().toISOString();
+    const metadata: EntityMetadata = { ...(ref.step.metadata || {}) };
+    const previous = metadata.delayedResolution;
+    if (previous && typeof previous === 'object') {
+      const history = Array.isArray(metadata.delayedResolutionHistory) ? metadata.delayedResolutionHistory : [];
+      metadata.delayedResolutionHistory = [...history, previous];
+    }
+    const record: DelayedResolution = {
+      chosenAt: timestamp,
+      chosenBy,
+      resolveBy,
+      reason,
+      ...(primaryChoice ? { primaryChoice } : {}),
+      ...(wakeOn.length > 0 ? { wakeOn } : {}),
+      ...(session ? { session } : {})
+    };
+    metadata.delayedResolution = record;
+    metadata.dueDate = resolveBy;
+    metadata.updatedAt = timestamp;
+    ref.step.metadata = metadata;
+
+    // A telescoped step's date is its chart's date too; they were created together
+    // and update_chart_due_date moves them together.
+    if (ref.kind === 'telescoped' && ref.chart) {
+      ref.chart.metadata = { ...(ref.chart.metadata || {}), dueDate: resolveBy, updatedAt: timestamp };
+    }
+
+    await this.saveGraph(graph);
+    return this.delayStepView(graph, ref);
+  }
+
+  /**
+   * The delays that stand, sorted by `resolveBy`, each with its days remaining and
+   * whether it is now owed (its `resolveBy` has passed). A delay on a step completed
+   * since is no longer listed. `includeEnded` lists ended delays and completed steps
+   * too; `dueWithinDays` keeps those whose `resolveBy` falls within that many days
+   * (owed ones included). `now` is for callers that read the list as of another time.
+   */
+  async listDelayedResolutions(options: {
+    dueWithinDays?: number;
+    includeEnded?: boolean;
+    now?: Date | string | number;
+  } = {}): Promise<DelayedResolutionEntry[]> {
+    const { dueWithinDays, includeEnded = false } = options;
+    if (dueWithinDays !== undefined && (typeof dueWithinDays !== 'number' || Number.isNaN(dueWithinDays) || dueWithinDays < 0)) {
+      throw new Error(`dueWithinDays must be a number of days, zero or more: ${dueWithinDays}`);
+    }
+    const now = options.now === undefined ? Date.now() : new Date(options.now).getTime();
+    if (Number.isNaN(now)) throw new Error(`now is not a date: ${options.now}`);
+    const horizon = dueWithinDays === undefined ? Infinity : now + dueWithinDays * 24 * 60 * 60 * 1000;
+
+    const graph = await this.loadGraph();
+    const entries: DelayedResolutionEntry[] = [];
+    for (const entity of graph.entities) {
+      if (entity.entityType !== 'action_step' && entity.entityType !== 'desired_outcome') continue;
+      const record = delayRecordOf(entity);
+      if (!record) continue;
+      const status = deriveStepStatus(entity, graph.entities);
+      if (!includeEnded && (record.endedAt || status === 'completed')) continue;
+      if (Date.parse(record.resolveBy) > horizon) continue;
+      const ref = this.delayStepRefOf(graph, entity);
+      entries.push({
+        actionStepName: entity.name,
+        kind: ref.kind,
+        chartId: ref.chartId,
+        ...(ref.telescopedChartId ? { telescopedChartId: ref.telescopedChartId } : {}),
+        title: entity.observations[0] ?? entity.name,
+        status,
+        resolveBy: record.resolveBy,
+        daysRemaining: daysRemaining(record, now),
+        owed: status === 'delayed' && isOwed(record, now),
+        primaryChoice: record.primaryChoice ?? null,
+        reason: record.reason,
+        chosenBy: record.chosenBy,
+        chosenAt: record.chosenAt,
+        wakeOn: Array.isArray(record.wakeOn) ? record.wakeOn : [],
+        session: record.session ?? null,
+        ...(record.endedAt ? { endedAt: record.endedAt } : {}),
+        ...(record.endedBy ? { endedBy: record.endedBy } : {}),
+        ...(record.outcome ? { outcome: record.outcome } : {}),
+        ...(record.endNote ? { endNote: record.endNote } : {})
+      });
+    }
+    return entries.sort((a, b) =>
+      Date.parse(a.resolveBy) - Date.parse(b.resolveBy) || a.actionStepName.localeCompare(b.actionStepName)
+    );
+  }
+
+  /**
+   * End a step's delay, by rehydrating its session or by releasing the step. The
+   * record stays, with `endedAt`, `endedBy` and `outcome`; the step returns to the
+   * status it had (pending, since a completed step is never delayed). When the outcome
+   * is `rehydrated`, the result carries the session's `resumeCommand` (null when the
+   * delay named no session or no command).
+   */
+  async endDelayedResolution(
+    actionStepName: string,
+    input: { endedBy: string; outcome: DelayedResolutionOutcome; endNote?: string }
+  ): Promise<DelayedStepView & { resumeCommand?: string | null }> {
+    const endedBy = requiredText(input?.endedBy, 'endedBy');
+    const outcome = input?.outcome;
+    if (!DELAYED_RESOLUTION_OUTCOMES.includes(outcome)) {
+      throw new Error(`outcome must be one of ${DELAYED_RESOLUTION_OUTCOMES.join(', ')}: got "${outcome}"`);
+    }
+    const endNote = optionalText(input?.endNote, 'endNote');
+    assertNoUnparsedCallSyntax(endNote, 'endNote');
+
+    const graph = await this.loadGraph();
+    const ref = this.findDelayStep(graph, actionStepName);
+    if (!ref) throw this.notFoundStep(actionStepName);
+    const open = openDelayOf(ref.step);
+    if (!open) throw new Error(`Action step ${ref.step.name} has no open delayed resolution to end.`);
+
+    const timestamp = new Date().toISOString();
+    const closed: DelayedResolution = { ...open, endedAt: timestamp, endedBy, outcome, ...(endNote ? { endNote } : {}) };
+    ref.step.metadata = { ...(ref.step.metadata || {}), delayedResolution: closed, updatedAt: timestamp };
+
+    await this.saveGraph(graph);
+    const view = this.delayStepView(graph, ref);
+    return outcome === 'rehydrated' ? { ...view, resumeCommand: closed.session?.resumeCommand ?? null } : view;
   }
 
   /**

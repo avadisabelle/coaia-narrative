@@ -77,6 +77,9 @@ MCP TOOLS AVAILABLE:
    • update_action_progress        - Track progress without completing actions
    • mark_action_complete          - Complete actions & update reality
    • update_current_reality        - Add observations directly to current reality
+   • delay_resolution              - Choose to delay a step's resolution until a date
+   • list_delayed_resolutions      - Delayed steps by date, with days remaining and owed
+   • end_delayed_resolution        - End a delay: rehydrate its session, or release the step
    • create_structural_tension_chart - Create new chart with outcome & reality
    
    Chart Analysis (Advanced):
