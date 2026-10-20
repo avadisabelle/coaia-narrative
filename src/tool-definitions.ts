@@ -244,11 +244,12 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "mark_action_complete",
-    description: "Mark an action step as completed and update current reality",
+    description: "Mark an action step as completed and update current reality. A delayed resolution standing on the step ends with it, with outcome 'resolved'.",
     inputSchema: {
       type: "object",
       properties: {
-        actionStepName: { type: "string", description: "Name of the completed action step" }
+        actionStepName: { type: "string", description: "Name of the completed action step" },
+        completedBy: { type: "string", description: "The person or seat that completed it; recorded as endedBy when this ends a delayed resolution (default 'mark_action_complete')" }
       },
       required: ["actionStepName"]
     }

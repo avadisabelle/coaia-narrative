@@ -5,6 +5,26 @@ All notable changes to COAIA Memory will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.1] - 2026-10-19
+
+### ✅ Completing a delayed step ends its delay, as resolved
+
+Design rule 4b, added during the build after the coaiajs lane found a completed step left its
+delay open. `markActionStepComplete` (the `mark_action_complete` tool) and
+`setActionStepCompletion(step, true)` now close an open `delayedResolution` with
+`outcome: "resolved"`, `endedBy` set to whoever completed the step, and `endNote: "completed"`.
+Resolution reached is the third way a delay ends, next to `rehydrated` and `released`.
+
+- `mark_action_complete` takes an optional `completedBy`; without it, `endedBy` is
+  `"mark_action_complete"`. The library methods take `{ completedBy }`.
+- `cnarrative complete <step> --by <who>` closes it the same way.
+- The GitHub writer passes the person who checked the task-list item (`@login`).
+- `end_delayed_resolution` still accepts only `rehydrated` and `released`; `resolved` comes from
+  completion alone. Pure helper: `closeDelayOnCompletion(metadata, completedBy)`.
+- Data model schema: `resolved` joins the `outcome` enum.
+
+Design: miadi-chronicle Episode 297, `delayed-resolution-design-261019.md`, rule 4b.
+
 ## [0.24.0] - 2026-10-19
 
 ### ⏸️ Delayed resolution: a step can carry the choice to wait

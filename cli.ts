@@ -27,7 +27,7 @@ import { findUnparsedCallSyntax } from './src/argument-hygiene.js';
 import { readPerspectiveTypes } from './src/perspective-types.js';
 import type { Entity, Relation, KnowledgeGraph, DelayedResolution } from './src/types.js';
 import { KnowledgeGraphManager } from './src/graph-manager.js';
-import { deriveStepStatus, openDelayOf, isOwed, daysRemaining } from './src/delayed-resolution.js';
+import { deriveStepStatus, openDelayOf, isOwed, daysRemaining, closeDelayOnCompletion } from './src/delayed-resolution.js';
 
 // ==================== CONFIGURATION ====================
 
@@ -544,7 +544,7 @@ COMMANDS:
   update, up <chartId>          Update chart properties (outcome, due date, etc.)
   add-action, aa <chartId>      Add new action step to a chart
   add-obs, ao <chartId>         Add observation to current reality
-  complete, done <actionName>   Mark an action step as complete
+  complete, done <actionName>   Mark an action step as complete (--by <who>)
   set-date, sd <chartId>        Update chart due date
   
   ⏸️  DELAYED RESOLUTION
@@ -961,7 +961,7 @@ async function addObservation(chartId: string, memoryPath: string, interactive: 
   console.log(`\n✅ Observation added to current reality.\n`);
 }
 
-async function completeAction(actionName: string, memoryPath: string, interactive: boolean = false): Promise<void> {
+async function completeAction(actionName: string, memoryPath: string, interactive: boolean = false, completedBy?: string): Promise<void> {
   const graph = await loadGraph(memoryPath);
   const action = graph.entities.find(e =>
     e.entityType === 'action_step' && e.name === actionName
@@ -995,9 +995,13 @@ async function completeAction(actionName: string, memoryPath: string, interactiv
   action.metadata = action.metadata || {};
   action.metadata.completionStatus = true;
   action.metadata.updatedAt = new Date().toISOString();
+  // A delay standing on the step ends with it, as resolved (the same rule as mark_action_complete).
+  const wasDelayed = Boolean(openDelayOf(action));
+  action.metadata = closeDelayOnCompletion(action.metadata, completedBy, action.metadata.updatedAt);
 
   await saveGraph(memoryPath, graph);
   console.log(`\n✅ Action step marked complete: ${action.observations[0]}\n`);
+  if (wasDelayed) console.log(`   Its delayed resolution ended as resolved.\n`);
 }
 
 async function setDueDate(chartId: string, dateStr: string, memoryPath: string): Promise<void> {
@@ -1105,7 +1109,7 @@ async function listDelayed(memoryPath: string, args: minimist.ParsedArgs, jsonOu
   }
 
   entries.forEach((entry, idx) => {
-    const mark = entry.endedAt ? (entry.outcome === 'rehydrated' ? '🔁' : '▶️') : entry.status === 'completed' ? '✅' : entry.owed ? '⚠️' : '⏸️';
+    const mark = entry.endedAt ? (entry.outcome === 'rehydrated' ? '🔁' : entry.outcome === 'resolved' ? '✅' : '▶️') : entry.status === 'completed' ? '✅' : entry.owed ? '⚠️' : '⏸️';
     console.log(`  ${idx + 1}. ${mark} ${entry.title}`);
     console.log(`     Step: ${entry.actionStepName} | Chart: ${entry.chartId}`);
     if (entry.endedAt) {
@@ -1513,7 +1517,7 @@ async function main() {
           console.log('Example: cnarrative complete chart_123_action_1\n');
           process.exit(1);
         }
-        await completeAction(args._[1], config.memoryPath, config.interactive);
+        await completeAction(args._[1], config.memoryPath, config.interactive, flagText(args.by));
         break;
       
       case 'set-date':

@@ -13,7 +13,7 @@ import { mkdtempSync, rmSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { KnowledgeGraphManager } from 'coaia-narrative/writer';
+import { KnowledgeGraphManager, recordGithubIssueEvent, githubIssueEventFromPayload } from 'coaia-narrative/writer';
 import { parseStore } from 'coaia-narrative/contract';
 import { handleToolCall } from './dist/src/tool-handlers.js';
 import { TOOL_GROUPS } from './dist/src/tool-groups.js';
@@ -164,6 +164,48 @@ try {
   check('cnarrative end-delay prints the resume command', cEnd.status === 0 && /Rehydrate with: cd '\/tmp\/the work' && claude --resume 4242/.test(cEnd.stdout), cEnd.stdout + cEnd.stderr);
   const cBad = cli('delay', written, '2001-01-01', '--reason', 'r', '--by', 'b');
   check('cnarrative delay refuses a past date and exits non-zero', cBad.status === 1 && /must be in the future/.test(cBad.stdout + cBad.stderr), cBad.stdout + cBad.stderr);
+
+  console.log('\n📋 completing a delayed step ends its delay as resolved (rule 4b)');
+  const { chartId: B } = await m.createStructuralTensionChart(
+    'Rule 4b holds in every lineage', 'A completed step left its delay open in coaiajs', inDays(30), ['Complete through the MCP tool', 'Complete through the writer', 'Complete through the CLI']
+  );
+  const [b1, b2, b3] = [1, 2, 3].map((i) => `${B}_action_${i}`);
+  for (const name of [b1, b2, b3]) await m.delayResolution(name, { resolveBy: inDays(4), reason: 'waits', chosenBy: 'mia' });
+  const { chartId: U, actionStepName: uStep } = await m.addActionStep(B, 'A telescoped step completed with no name given', inDays(9), 'Nothing built yet');
+  await m.delayResolution(U, { resolveBy: inDays(6), reason: 'waits too', chosenBy: 'mia' });
+  check('four delays stand before completion', (await m.listDelayedResolutions()).filter((e) => e.chartId === B).length === 4);
+  const done1 = await handleToolCall('mark_action_complete', { actionStepName: b1, completedBy: 'william' }, m);
+  const r1 = store().entities.get(b1)?.metadata;
+  check('mark_action_complete closes the delay: resolved, by whoever completed it, note "completed"',
+    !done1.isError && r1?.completionStatus === true && r1.delayedResolution.outcome === 'resolved' && r1.delayedResolution.endedBy === 'william' && r1.delayedResolution.endNote === 'completed' && !!r1.delayedResolution.endedAt, JSON.stringify(r1?.delayedResolution));
+  check('the record keeps its choice', r1?.delayedResolution.chosenBy === 'mia' && r1.delayedResolution.reason === 'waits');
+  await m.setActionStepCompletion(b2, true, { completedBy: 'stc-panel' });
+  check('setActionStepCompletion closes it too', store().entities.get(b2)?.metadata?.delayedResolution?.outcome === 'resolved' && store().entities.get(b2)?.metadata?.delayedResolution?.endedBy === 'stc-panel');
+  await m.markActionStepComplete(uStep);
+  const uRecord = store().entities.get(uStep)?.metadata?.delayedResolution;
+  check('a telescoped step completed with no name given: endedBy "mark_action_complete"', uRecord?.outcome === 'resolved' && uRecord.endedBy === 'mark_action_complete', JSON.stringify(uRecord));
+  const cDone = cli('complete', b3, '--by', 'cli-seat');
+  const r3 = store().entities.get(b3)?.metadata?.delayedResolution;
+  check('cnarrative complete closes it too', cDone.status === 0 && r3?.outcome === 'resolved' && r3.endedBy === 'cli-seat' && /ended as resolved/.test(cDone.stdout), cDone.stdout + JSON.stringify(r3));
+  check('resolved delays leave the default list', (await m.listDelayedResolutions()).filter((e) => e.chartId === B).length === 0);
+  check('includeEnded shows them as resolved', (await m.listDelayedResolutions({ includeEnded: true })).filter((e) => e.chartId === B && e.outcome === 'resolved').length === 4);
+  check('the chart no longer reads Delaying Resolution', (await m.getGithubProjectFieldProjection(B))?.Status !== 'Delaying Resolution', (await m.getGithubProjectFieldProjection(B))?.Status);
+  await m.setActionStepCompletion(b1, false);
+  await m.delayResolution(b1, { resolveBy: inDays(2), reason: 'reopened and waiting again', chosenBy: 'mia' });
+  const viaTool = await handleToolCall('end_delayed_resolution', { actionStepName: b1, endedBy: 'mia', outcome: 'resolved' }, m);
+  check('end_delayed_resolution does not accept "resolved"', viaTool.isError === true && /rehydrated, released/.test(text(viaTool)), text(viaTool));
+  await refuses('nor does endDelayedResolution', () => m.endDelayedResolution(b1, { endedBy: 'mia', outcome: 'resolved' }), /outcome must be one of rehydrated, released/);
+  const gh = new KnowledgeGraphManager(join(dir, 'gh.jsonl'));
+  const issue = (action, body) => githubIssueEventFromPayload({
+    action, repository: { full_name: 'jgwill/dummass' }, sender: { login: 'jgwill' },
+    issue: { number: 8, title: 'Ship the delayed thing', body, user: { login: 'jgwill' }, html_url: 'https://github.com/jgwill/dummass/issues/8', created_at: '2026-10-19T12:00:00Z' },
+  });
+  const opened = await recordGithubIssueEvent(gh, issue('opened', '- [ ] Ship it'));
+  await gh.delayResolution(`${opened.chartId}_action_1`, { resolveBy: inDays(3), reason: 'waits for the review', chosenBy: 'mia' });
+  await recordGithubIssueEvent(gh, issue('edited', '- [x] Ship it'));
+  const ghRecord = parseStore(readFileSync(join(dir, 'gh.jsonl'), 'utf8')).entities.get(`${opened.chartId}_action_1`)?.metadata?.delayedResolution;
+  check('a task-list item checked on GitHub ends the delay as resolved by whoever checked it', ghRecord?.outcome === 'resolved' && ghRecord.endedBy === '@jgwill', JSON.stringify(ghRecord));
+  check('the resolved record moved to history when the step was delayed again', store().entities.get(b1)?.metadata?.delayedResolutionHistory?.[0]?.outcome === 'resolved');
 
   console.log('\n📋 the tools are published');
   for (const name of ['delay_resolution', 'list_delayed_resolutions', 'end_delayed_resolution']) {

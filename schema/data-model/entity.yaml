@@ -140,7 +140,10 @@ properties:
             enum:
               - rehydrated
               - released
-            description: 'rehydrated: the session was brought back; released: the step went on without it'
+              - resolved
+            description: >-
+              rehydrated: the session was brought back; released: the step went on without it;
+              resolved: the step was completed (written by completion only)
           endNote:
             type: string
             description: Optional note on how the delay ended

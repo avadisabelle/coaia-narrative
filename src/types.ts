@@ -224,7 +224,11 @@ export interface AgentSessionRef {
   inventoryRecord?: string;
 }
 
-export type DelayedResolutionOutcome = 'rehydrated' | 'released';
+/**
+ * How a delay ended: its session was brought back (rehydrated), the step went on
+ * without it (released), or the step was completed (resolved, written by completion only).
+ */
+export type DelayedResolutionOutcome = 'rehydrated' | 'released' | 'resolved';
 
 /**
  * A strategic choice to delay a step's resolution in favour of a longer-term goal

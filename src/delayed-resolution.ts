@@ -21,7 +21,14 @@ import type { AgentSessionRef, DelayedResolution, DelayedResolutionOutcome, Enti
 
 export type { AgentSessionRef, DelayedResolution, DelayedResolutionOutcome };
 
+/**
+ * The outcomes end_delayed_resolution accepts. `resolved` is not among them: only
+ * completing the step writes it (closeDelayOnCompletion).
+ */
 export const DELAYED_RESOLUTION_OUTCOMES: readonly DelayedResolutionOutcome[] = ['rehydrated', 'released'];
+
+/** Who ended a delay by completing its step, when the completion did not say. */
+export const UNKNOWN_COMPLETER = 'mark_action_complete';
 
 export type StepStatus = 'completed' | 'delayed' | 'pending';
 
@@ -75,6 +82,23 @@ export function daysRemaining(record: Pick<DelayedResolution, 'resolveBy'>, now:
 /** A delay that stands past its resolveBy is owed. */
 export function isOwed(record: DelayedResolution, now: number = Date.now()): boolean {
   return !record.endedAt && Date.parse(record.resolveBy) < now;
+}
+
+/**
+ * Completing a delayed step ends its delay (design rule 4b): the open record is kept
+ * and closed with outcome "resolved", endedBy whoever completed the step, and endNote
+ * "completed". Returns the step's metadata with the delay closed, or the same object
+ * when no delay was open. Shared by the manager and the CLI, which writes the store itself.
+ */
+export function closeDelayOnCompletion<M extends Record<string, unknown>>(
+  metadata: M,
+  completedBy: string | undefined,
+  at: string = new Date().toISOString()
+): M {
+  const open = openDelayOf({ name: '', entityType: '', metadata: metadata as Entity['metadata'] });
+  if (!open) return metadata;
+  const endedBy = completedBy?.trim() || UNKNOWN_COMPLETER;
+  return { ...metadata, delayedResolution: { ...open, endedAt: at, endedBy, outcome: 'resolved', endNote: 'completed' } };
 }
 
 /** A step as delay_resolution, end_delayed_resolution and get_action_step report it. */

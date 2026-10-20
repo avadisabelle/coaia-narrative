@@ -1,6 +1,7 @@
 import { Entity, Relation, KnowledgeGraph, WampumBead, WampumBeltMetadata, WampumBeadPosition, WampumCeremonyLink, GithubIssueRef, EntityMetadata, AgentSessionRef, DelayedResolution, DelayedResolutionOutcome } from './types.js';
 import {
   DELAYED_RESOLUTION_OUTCOMES,
+  closeDelayOnCompletion,
   daysRemaining,
   delayRecordOf,
   deriveStepStatus,
@@ -612,7 +613,11 @@ Current Reality: "${currentReality}"
     return { chartId: result.chartId, parentChart: parentChartId };
   }
 
-  async markActionStepComplete(actionStepName: string): Promise<void> {
+  /**
+   * Complete a step. A delay that stands on it ends with it (outcome "resolved",
+   * endedBy `completedBy`, or "mark_action_complete" when the caller does not say who).
+   */
+  async markActionStepComplete(actionStepName: string, options: { completedBy?: string } = {}): Promise<void> {
     const graph = await this.loadGraph();
     // An "action step" can be a 'desired_outcome' of a sub-chart, or a simple 'action_step' entity.
     const actionStep = graph.entities.find(e => e.name === actionStepName && (e.entityType === 'action_step' || e.entityType === 'desired_outcome'));
@@ -630,6 +635,8 @@ Current Reality: "${currentReality}"
     if (actionStep.metadata) {
       actionStep.metadata.completionStatus = true;
       actionStep.metadata.updatedAt = new Date().toISOString();
+      // Resolution reached is the third way a delay ends, next to rehydrated and released.
+      actionStep.metadata = closeDelayOnCompletion(actionStep.metadata, options.completedBy, actionStep.metadata.updatedAt);
     }
 
     const chartEntity = graph.entities.find(e => e.name === `${chartId}_chart`);
@@ -1270,8 +1277,8 @@ Current Reality: "${currentReality}"
    * and on a telescoped step's chart, and leaves the earlier "Completed:" line in
    * current reality: it records that the step was once done.
    */
-  async setActionStepCompletion(actionStepName: string, complete: boolean): Promise<void> {
-    if (complete) return this.markActionStepComplete(actionStepName);
+  async setActionStepCompletion(actionStepName: string, complete: boolean, options: { completedBy?: string } = {}): Promise<void> {
+    if (complete) return this.markActionStepComplete(actionStepName, options);
     const graph = await this.loadGraph();
     const step = graph.entities.find(e => e.name === actionStepName && (e.entityType === 'action_step' || e.entityType === 'desired_outcome'));
     if (!step) throw new Error(`Action step ${actionStepName} not found`);

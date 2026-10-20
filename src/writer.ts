@@ -32,7 +32,7 @@ export { KnowledgeGraphManager, detectProblemFraming, PROBLEM_SOLVING_WORDS } fr
 export type { ChartStatus } from './graph-manager.js';
 export type { Entity, Relation, KnowledgeGraph, GithubIssueRef } from './types.js';
 export {
-  DELAYED_RESOLUTION_OUTCOMES, deriveStepStatus, openDelayOf, delayRecordOf, isOwed, daysRemaining,
+  DELAYED_RESOLUTION_OUTCOMES, UNKNOWN_COMPLETER, closeDelayOnCompletion, deriveStepStatus, openDelayOf, delayRecordOf, isOwed, daysRemaining,
 } from './delayed-resolution.js';
 export type {
   AgentSessionRef, DelayedResolution, DelayedResolutionOutcome, DelayedResolutionEntry, DelayedStepView, StepStatus,
@@ -274,7 +274,8 @@ export async function recordGithubIssueEvent(
           byTitle.set(t.title, { name: added, metadata: { completionStatus: t.done } } as any);
           changes.push('steps-updated');
         } else if (t.done && (step.metadata as any)?.completionStatus !== true) {
-          await manager.markActionStepComplete(step.name);
+          // Whoever checked the item completed the step; a delay on it ends as resolved by them.
+          await manager.markActionStepComplete(step.name, { completedBy: event.actor ? `@${event.actor}` : undefined });
           changes.push('steps-updated');
         }
       }

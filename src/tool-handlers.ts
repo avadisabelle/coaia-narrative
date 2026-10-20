@@ -183,10 +183,10 @@ export async function handleToolCall(
       return noteIgnored({ content: [{ type: "text", text: JSON.stringify(telescopeResult, null, 2) }] }, valResult.ignored);
     }
     case "mark_action_complete": {
-      const valResult = validate(toolArgs, { actionStepName: ValidationSchemas.nonEmptyString() });
+      const valResult = validate(toolArgs, { actionStepName: ValidationSchemas.nonEmptyString(), completedBy: { type: 'string' } });
       if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
-      await manager.markActionStepComplete(toolArgs.actionStepName as string);
-      return { content: [{ type: "text", text: `Action step '${toolArgs.actionStepName as string}' marked as complete and current reality updated` }] };
+      await manager.markActionStepComplete(toolArgs.actionStepName as string, { completedBy: toolArgs.completedBy as string | undefined });
+      return noteIgnored({ content: [{ type: "text", text: `Action step '${toolArgs.actionStepName as string}' marked as complete and current reality updated` }] }, valResult.ignored);
     }
     case "get_chart_progress": {
       const valResult = validate(toolArgs, { chartId: ValidationSchemas.nonEmptyString() });

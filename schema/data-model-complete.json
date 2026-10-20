@@ -161,9 +161,10 @@
                   "type": "string",
                   "enum": [
                     "rehydrated",
-                    "released"
+                    "released",
+                    "resolved"
                   ],
-                  "description": "rehydrated: the session was brought back; released: the step went on without it"
+                  "description": "rehydrated: the session was brought back; released: the step went on without it; resolved: the step was completed (written by completion only)"
                 },
                 "endNote": {
                   "type": "string",
