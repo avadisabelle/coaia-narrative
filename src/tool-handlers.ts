@@ -391,6 +391,14 @@ export async function handleToolCall(
             trace: { type: 'string' },
             rehydrateWith: { type: 'string' }
           }
+        },
+        followUpPrompt: {
+          type: 'object',
+          properties: {
+            address: ValidationSchemas.nonEmptyString(),
+            text: { type: 'string' },
+            composedBy: { type: 'string' }
+          }
         }
       });
       if (!valResult.valid) return { content: [{ type: "text", text: `Error: ${valResult.error}` }], isError: true };
@@ -400,9 +408,11 @@ export async function handleToolCall(
         chosenBy: toolArgs.chosenBy as string,
         primaryChoice: toolArgs.primaryChoice as string | undefined,
         wakeOn: toolArgs.wakeOn as string[] | undefined,
-        session: toolArgs.session as { sessionId: string } | undefined
+        session: toolArgs.session as { sessionId: string } | undefined,
+        followUpPrompt: toolArgs.followUpPrompt as { address: string; text?: string; composedBy?: string } | undefined
       });
-      const delayText = `Resolution of '${delayed.actionStepName}' delayed until ${delayed.delayedResolution?.resolveBy}, chosen by ${delayed.delayedResolution?.chosenBy}. Its due date is now that date.`;
+      let delayText = `Resolution of '${delayed.actionStepName}' delayed until ${delayed.delayedResolution?.resolveBy}, chosen by ${delayed.delayedResolution?.chosenBy}. Its due date is now that date.`;
+      if (delayed.delayedResolution?.followUpPrompt) delayText += `\nFollow-up prompt: ${delayed.delayedResolution.followUpPrompt.address}`;
       return noteIgnored({ content: [{ type: "text", text: `${delayText}\n\n${JSON.stringify(delayed, null, 2)}` }] }, valResult.ignored);
     }
     case "list_delayed_resolutions": {
@@ -434,8 +444,9 @@ export async function handleToolCall(
         endNote: toolArgs.endNote as string | undefined
       });
       let endText = `Delayed resolution of '${ended.actionStepName}' ended (${ended.delayedResolution?.outcome}) by ${ended.delayedResolution?.endedBy}. Status: ${ended.status}.`;
+      if (ended.followUpPrompt) endText += `\nFollow-up prompt: ${ended.followUpPrompt.address}`;
       if (ended.resumeCommand) endText += `\nRehydrate with: ${ended.resumeCommand}`;
-      else if (ended.resumeCommand === null) endText += `\nThe delay named no resume command.`;
+      else if (ended.resumeCommand === null) endText += ended.followUpPrompt ? `\nThe delay named no resume command: what is rehydrated is the follow-up prompt.` : `\nThe delay named no resume command.`;
       if (ended.trace) endText += `\nTrace: ${ended.trace}`;
       if (ended.rehydrateWith) endText += `\nPrompt that rehydrates it: ${ended.rehydrateWith}`;
       return noteIgnored({ content: [{ type: "text", text: `${endText}\n\n${JSON.stringify(ended, null, 2)}` }] }, valResult.ignored);

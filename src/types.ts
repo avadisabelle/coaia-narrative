@@ -235,6 +235,23 @@ export interface AgentSessionRef {
 }
 
 /**
+ * The follow-up prompt composed when a delay was chosen. At the date a talking circle
+ * takes it up; what is rehydrated is this prompt, "potentially with the session"
+ * (William, Episode 297, V2). The address is stored as given; resolving it is the
+ * LLMOps package's work.
+ */
+export interface FollowUpPrompt {
+  /** Begins with `miadi-`, e.g. `miadi-prompt:ceremony/<name>@<v>`. */
+  address: string;
+  /** The prompt's text as composed, so a circle can read it without the provider. */
+  text?: string;
+  /** ISO date-time, set by the tool when the delay is chosen. */
+  composedAt: string;
+  /** The person or seat that composed it (an agent may propose it). */
+  composedBy?: string;
+}
+
+/**
  * How a delay ended: its session was brought back (rehydrated), the step went on
  * without it (released), or the step was completed (resolved, written by completion only).
  */
@@ -258,6 +275,8 @@ export interface DelayedResolution {
   /** Event cues, in words. */
   wakeOn?: string[];
   session?: AgentSessionRef;
+  /** The follow-up prompt composed when the delay was chosen. */
+  followUpPrompt?: FollowUpPrompt;
   endedAt?: string;
   endedBy?: string;
   outcome?: DelayedResolutionOutcome;

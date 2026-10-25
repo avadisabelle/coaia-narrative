@@ -17,9 +17,9 @@
  * Design: miadi-chronicle Episode 297, delayed-resolution-design-261019.md.
  */
 
-import type { AgentSessionRef, DelayedResolution, DelayedResolutionOutcome, Entity } from './types.js';
+import type { AgentSessionRef, DelayedResolution, DelayedResolutionOutcome, Entity, FollowUpPrompt } from './types.js';
 
-export type { AgentSessionRef, DelayedResolution, DelayedResolutionOutcome };
+export type { AgentSessionRef, DelayedResolution, DelayedResolutionOutcome, FollowUpPrompt };
 
 /**
  * The outcomes end_delayed_resolution accepts. `resolved` is not among them: only
@@ -134,6 +134,8 @@ export interface DelayedResolutionEntry {
   chosenAt: string;
   wakeOn: string[];
   session: AgentSessionRef | null;
+  /** The follow-up prompt composed when the delay was chosen (0.26.0), or null. */
+  followUpPrompt: FollowUpPrompt | null;
   endedAt?: string;
   endedBy?: string;
   outcome?: DelayedResolutionOutcome;

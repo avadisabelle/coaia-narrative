@@ -1,4 +1,4 @@
-import { Entity, Relation, KnowledgeGraph, WampumBead, WampumBeltMetadata, WampumBeadPosition, WampumCeremonyLink, GithubIssueRef, EntityMetadata, AgentSessionRef, DelayedResolution, DelayedResolutionOutcome } from './types.js';
+import { Entity, Relation, KnowledgeGraph, WampumBead, WampumBeltMetadata, WampumBeadPosition, WampumCeremonyLink, GithubIssueRef, EntityMetadata, AgentSessionRef, DelayedResolution, DelayedResolutionOutcome, FollowUpPrompt } from './types.js';
 import {
   DELAYED_RESOLUTION_OUTCOMES,
   closeDelayOnCompletion,
@@ -123,6 +123,28 @@ function normalizeAgentSession(value: unknown): AgentSessionRef | undefined {
     session.resumeCommand = `cd ${shellWord(session.cwd)} && claude --resume ${shellWord(sessionId)}`;
   }
   return session;
+}
+
+/**
+ * The follow-up prompt composed when the delay is chosen (0.26.0). `address` is
+ * required and must begin with `miadi-`; it is stored as given, since resolving it is
+ * the LLMOps package's work. `composedAt` is set here, never taken from the caller.
+ */
+function normalizeFollowUpPrompt(value: unknown, composedAt: string): FollowUpPrompt | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== 'object' || Array.isArray(value)) throw new Error('followUpPrompt must be an object carrying at least address');
+  const raw = value as Record<string, unknown>;
+  const address = requiredText(raw.address, 'followUpPrompt.address');
+  if (!address.startsWith('miadi-')) {
+    throw new Error(`followUpPrompt.address must be an address beginning with "miadi-" (e.g. miadi-prompt:ceremony/<name>@<v>): got "${address}"`);
+  }
+  const prompt: FollowUpPrompt = { address, composedAt };
+  const text = optionalText(raw.text, 'followUpPrompt.text');
+  if (text) prompt.text = text;
+  const composedBy = optionalText(raw.composedBy, 'followUpPrompt.composedBy');
+  if (composedBy) prompt.composedBy = composedBy;
+  assertNoUnparsedCallSyntax([prompt.address, prompt.text, prompt.composedBy].filter(Boolean), 'followUpPrompt');
+  return prompt;
 }
 
 export class KnowledgeGraphManager {
@@ -1126,6 +1148,8 @@ Current Reality: "${currentReality}"
       primaryChoice?: string;
       wakeOn?: string[];
       session?: Partial<AgentSessionRef> & { sessionId: string };
+      /** The follow-up prompt composed now, for the circle at the date. `composedAt` is set by the tool. */
+      followUpPrompt?: { address: string; text?: string; composedBy?: string };
     }
   ): Promise<DelayedStepView> {
     const reason = requiredText(input?.reason, 'reason');
@@ -1133,6 +1157,8 @@ Current Reality: "${currentReality}"
     const givenPrimary = optionalText(input?.primaryChoice, 'primaryChoice');
     const wakeOn = textList(input?.wakeOn, 'wakeOn');
     const session = normalizeAgentSession(input?.session);
+    const timestamp = new Date().toISOString();
+    const followUpPrompt = normalizeFollowUpPrompt(input?.followUpPrompt, timestamp);
     assertNoUnparsedCallSyntax(reason, 'reason');
     assertNoUnparsedCallSyntax(givenPrimary, 'primaryChoice');
     assertNoUnparsedCallSyntax(wakeOn, 'wakeOn');
@@ -1163,7 +1189,6 @@ Current Reality: "${currentReality}"
       e.name === `${ref.chartId}_desired_outcome` && e.entityType === 'desired_outcome'
     )?.observations[0];
 
-    const timestamp = new Date().toISOString();
     const metadata: EntityMetadata = { ...(ref.step.metadata || {}) };
     const previous = metadata.delayedResolution;
     if (previous && typeof previous === 'object') {
@@ -1177,7 +1202,8 @@ Current Reality: "${currentReality}"
       reason,
       ...(primaryChoice ? { primaryChoice } : {}),
       ...(wakeOn.length > 0 ? { wakeOn } : {}),
-      ...(session ? { session } : {})
+      ...(session ? { session } : {}),
+      ...(followUpPrompt ? { followUpPrompt } : {})
     };
     metadata.delayedResolution = record;
     metadata.dueDate = resolveBy;
@@ -1240,6 +1266,7 @@ Current Reality: "${currentReality}"
         chosenAt: record.chosenAt,
         wakeOn: Array.isArray(record.wakeOn) ? record.wakeOn : [],
         session: record.session ?? null,
+        followUpPrompt: record.followUpPrompt ?? null,
         ...(record.endedAt ? { endedAt: record.endedAt } : {}),
         ...(record.endedBy ? { endedBy: record.endedBy } : {}),
         ...(record.outcome ? { outcome: record.outcome } : {}),
@@ -1252,16 +1279,19 @@ Current Reality: "${currentReality}"
   }
 
   /**
-   * End a step's delay, by rehydrating its session or by releasing the step. The
-   * record stays, with `endedAt`, `endedBy` and `outcome`; the step returns to the
-   * status it had (pending, since a completed step is never delayed). When the outcome
-   * is `rehydrated`, the result carries the session's `resumeCommand`, `trace` and
-   * `rehydrateWith` (each null when the delay named no session or the session named none).
+   * End a step's delay, by rehydrating it or by releasing the step. The record stays,
+   * with `endedAt`, `endedBy` and `outcome`; the step returns to the status it had
+   * (pending, since a completed step is never delayed). When the outcome is
+   * `rehydrated`, the result carries the delay's `followUpPrompt` beside the session's
+   * `resumeCommand`, `trace` and `rehydrateWith` (each null when the delay named none).
+   * What is rehydrated is the follow-up prompt, potentially with the session, so a delay
+   * with a follow-up prompt and no session can end as `rehydrated`. A delay with neither
+   * can too: this package has never refused that case (coaiajs does).
    */
   async endDelayedResolution(
     actionStepName: string,
     input: { endedBy: string; outcome: DelayedResolutionOutcome; endNote?: string }
-  ): Promise<DelayedStepView & { resumeCommand?: string | null; trace?: string | null; rehydrateWith?: string | null }> {
+  ): Promise<DelayedStepView & { resumeCommand?: string | null; trace?: string | null; rehydrateWith?: string | null; followUpPrompt?: FollowUpPrompt | null }> {
     const endedBy = requiredText(input?.endedBy, 'endedBy');
     const outcome = input?.outcome;
     if (!DELAYED_RESOLUTION_OUTCOMES.includes(outcome)) {
@@ -1287,7 +1317,8 @@ Current Reality: "${currentReality}"
           ...view,
           resumeCommand: closed.session?.resumeCommand ?? null,
           trace: closed.session?.trace ?? null,
-          rehydrateWith: closed.session?.rehydrateWith ?? null
+          rehydrateWith: closed.session?.rehydrateWith ?? null,
+          followUpPrompt: closed.followUpPrompt ?? null
         }
       : view;
   }

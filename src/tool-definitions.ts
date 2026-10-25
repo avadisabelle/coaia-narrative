@@ -433,7 +433,7 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "delay_resolution",
-    description: "Record on an action step that someone strategically chose to delay its resolution in favour of a longer-term goal: until when (resolveBy), why (reason), who chose (chosenBy) and what the delay serves (primaryChoice). The step's due date becomes resolveBy and its status reads 'delayed'. Optionally names the agent session to rehydrate when the date or an event (wakeOn) comes. A completed step cannot be delayed. Delaying a step again moves its earlier record into delayedResolutionHistory; nothing is overwritten.",
+    description: "Record on an action step that someone strategically chose to delay its resolution in favour of a longer-term goal: until when (resolveBy), why (reason), who chose (chosenBy) and what the delay serves (primaryChoice). The step's due date becomes resolveBy and its status reads 'delayed'. Optionally names the agent session to rehydrate when the date or an event (wakeOn) comes, and the follow-up prompt composed now for the talking circle held at that date (followUpPrompt). A completed step cannot be delayed. Delaying a step again moves its earlier record into delayedResolutionHistory; nothing is overwritten.",
     inputSchema: {
       type: "object",
       properties: {
@@ -458,6 +458,16 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
             rehydrateWith: { type: "string", description: "The pinned prompt version that rehydrates the session (e.g. 'miadi-tracing:ceremony/prompt/miadiRun-<name>@<N>'), as 'llmops rehydrate' prints it. Must begin with 'miadi-'; stored as given." }
           },
           required: ["sessionId"]
+        },
+        followUpPrompt: {
+          type: "object",
+          description: "The follow-up prompt composed when the delay is chosen. At the date a talking circle takes it up: what is rehydrated is this prompt, potentially with the session. composedAt is set by the tool.",
+          properties: {
+            address: { type: "string", description: "The prompt's address (e.g. 'miadi-prompt:ceremony/<name>@<v>'). Must begin with 'miadi-'; stored as given." },
+            text: { type: "string", description: "The prompt's text as composed, so a circle can read it without the provider" },
+            composedBy: { type: "string", description: "The person or seat that composed it (an agent may propose it)" }
+          },
+          required: ["address"]
         }
       },
       required: ["actionStepName", "resolveBy", "reason", "chosenBy"]
@@ -465,7 +475,7 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "list_delayed_resolutions",
-    description: "List the steps whose resolution was chosen to be delayed, sorted by resolveBy, each with daysRemaining, whether it is now owed (resolveBy has passed), primaryChoice, wakeOn and the session to rehydrate.",
+    description: "List the steps whose resolution was chosen to be delayed, sorted by resolveBy, each with daysRemaining, whether it is now owed (resolveBy has passed), primaryChoice, wakeOn, the session to rehydrate and the follow-up prompt (followUpPrompt, with its address).",
     inputSchema: {
       type: "object",
       properties: {
@@ -476,13 +486,13 @@ export const ALL_TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "end_delayed_resolution",
-    description: "End a step's delayed resolution, either by rehydrating its agent session or by releasing the step. The record stays with endedAt, endedBy and outcome, and the step's status returns to what it was. When the outcome is 'rehydrated', the result gives back the session's resumeCommand, trace and rehydrateWith.",
+    description: "End a step's delayed resolution, either by rehydrating it or by releasing the step. The record stays with endedAt, endedBy and outcome, and the step's status returns to what it was. When the outcome is 'rehydrated', the result gives back the delay's followUpPrompt beside the session's resumeCommand, trace and rehydrateWith. What is rehydrated is the follow-up prompt, potentially with the session, so a delay with a follow-up prompt and no session can end as 'rehydrated'.",
     inputSchema: {
       type: "object",
       properties: {
         actionStepName: { type: "string", description: "The delayed step, named as for delay_resolution" },
         endedBy: { type: "string", description: "The person or seat ending the delay" },
-        outcome: { type: "string", enum: ["rehydrated", "released"], description: "'rehydrated': the session was brought back to resolve the step. 'released': the step goes on without it." },
+        outcome: { type: "string", enum: ["rehydrated", "released"], description: "'rehydrated': the follow-up prompt, potentially with the session, was brought back to resolve the step. 'released': the step goes on without it." },
         endNote: { type: "string", description: "Optional note on how the delay ended" }
       },
       required: ["actionStepName", "endedBy", "outcome"]

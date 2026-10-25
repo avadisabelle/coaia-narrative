@@ -269,6 +269,89 @@ try {
   const cTBad = cli('delay', c3, inDays(5).slice(0, 10), '--reason', 'r', '--by', 'b', '--session-id', 'd-3', '--rehydrate-with', 'miadiRun-x.v1');
   check('cnarrative delay refuses an address outside miadi-', cTBad.status === 1 && /beginning with "miadi-"/.test(cTBad.stdout + cTBad.stderr), cTBad.stdout + cTBad.stderr);
 
+  console.log('\n📋 a delay names the follow-up prompt composed when it was chosen (0.26.0)');
+  const followAddr = 'miadi-prompt:ceremony/ep297-follow-up-circle@1';
+  const followText = 'At the date, open a talking circle on the companion seat: what did the delay serve, and is the step still wanted?';
+  const { chartId: F } = await m.createStructuralTensionChart(
+    'A delay is followed up by a circle that takes up its prompt', 'A delay names a session only', inDays(30),
+    ['Follow up with a prompt and no session', 'Follow up with a prompt and a session', 'Rehydrate with neither', 'Through the MCP tool', 'Through the CLI', 'Refused addresses']
+  );
+  const [f1, f2, f3, f4, f5, f6] = [1, 2, 3, 4, 5, 6].map((i) => `${F}_action_${i}`);
+  const fp1 = await m.delayResolution(f1, {
+    resolveBy: inDays(4), reason: 'a circle decides at the date', chosenBy: 'mia',
+    followUpPrompt: { address: followAddr, text: followText, composedBy: 'mia', composedAt: '2001-01-01T00:00:00Z' }
+  });
+  const fpRecord = fp1.delayedResolution.followUpPrompt;
+  check('followUpPrompt is stored with address, text and composedBy', fpRecord?.address === followAddr && fpRecord.text === followText && fpRecord.composedBy === 'mia', JSON.stringify(fpRecord));
+  check('composedAt is set by the tool, not taken from the caller', fpRecord?.composedAt === fp1.delayedResolution.chosenAt && fpRecord.composedAt !== '2001-01-01T00:00:00Z', JSON.stringify(fpRecord));
+  check('the store keeps it', store().entities.get(f1)?.metadata?.delayedResolution?.followUpPrompt?.address === followAddr);
+  const fpBare = await m.delayResolution(f2, { resolveBy: inDays(5), reason: 'address only, then a session', chosenBy: 'mia', followUpPrompt: { address: followAddr } });
+  check('text and composedBy are optional', fpBare.delayedResolution.followUpPrompt.address === followAddr && !('text' in fpBare.delayedResolution.followUpPrompt) && !('composedBy' in fpBare.delayedResolution.followUpPrompt), JSON.stringify(fpBare.delayedResolution.followUpPrompt));
+
+  await refuses('an address that does not begin with miadi-', () => m.delayResolution(f6, { resolveBy: inDays(5), reason: 'x', chosenBy: 'mia', followUpPrompt: { address: 'ceremony/ep297-follow-up-circle@1' } }), /followUpPrompt\.address must be an address beginning with "miadi-"/);
+  await refuses('a follow-up prompt with no address', () => m.delayResolution(f6, { resolveBy: inDays(5), reason: 'x', chosenBy: 'mia', followUpPrompt: { text: 'no address' } }), /followUpPrompt\.address is required/);
+  await refuses('a follow-up prompt that is not an object', () => m.delayResolution(f6, { resolveBy: inDays(5), reason: 'x', chosenBy: 'mia', followUpPrompt: followAddr }), /followUpPrompt must be an object/);
+  await refuses('a follow-up prompt text carrying unparsed call syntax', () => m.delayResolution(f6, { resolveBy: inDays(5), reason: 'x', chosenBy: 'mia', followUpPrompt: { address: followAddr, text: 'open the circle</reason>' } }), /Malformed call refused/);
+  check('a refused follow-up prompt wrote nothing', !store().entities.get(f6)?.metadata?.delayedResolution);
+
+  console.log('\n📋 re-delay keeps the follow-up prompt in history');
+  const fpAgain = await m.delayResolution(f2, {
+    resolveBy: inDays(8), reason: 'the session joins the follow-up', chosenBy: 'william',
+    session: { sessionId: 'f-2', cwd: '/srv/miadi/episodes' }, followUpPrompt: { address: 'miadi-prompt:ceremony/ep297-follow-up-circle@2', composedBy: 'william' }
+  });
+  check('the earlier record moves to history with its follow-up prompt', fpAgain.delayedResolutionHistory.length === 1 && fpAgain.delayedResolutionHistory[0].followUpPrompt?.address === followAddr, JSON.stringify(fpAgain.delayedResolutionHistory));
+  check('the new record carries the new follow-up prompt', fpAgain.delayedResolution.followUpPrompt?.address === 'miadi-prompt:ceremony/ep297-follow-up-circle@2' && fpAgain.delayedResolution.followUpPrompt.composedBy === 'william');
+  await m.delayResolution(f3, { resolveBy: inDays(6), reason: 'neither session nor prompt', chosenBy: 'mia' });
+
+  console.log('\n📋 listing shows the follow-up prompt\'s address');
+  const fpList = (await m.listDelayedResolutions()).filter((e) => e.chartId === F);
+  const entryOf = (name) => fpList.find((e) => e.actionStepName === name);
+  check('listDelayedResolutions carries followUpPrompt with its address', entryOf(f1)?.followUpPrompt?.address === followAddr && entryOf(f2)?.followUpPrompt?.address === 'miadi-prompt:ceremony/ep297-follow-up-circle@2', JSON.stringify(fpList.map((e) => e.followUpPrompt)));
+  check('a delay with no follow-up prompt lists it as null', entryOf(f3)?.followUpPrompt === null, JSON.stringify(entryOf(f3)));
+  const fpListText = text(await handleToolCall('list_delayed_resolutions', {}, m));
+  const fpListMcp = JSON.parse(fpListText.slice(fpListText.indexOf('[')));
+  check('list_delayed_resolutions carries it too', fpListMcp.find((e) => e.actionStepName === f1)?.followUpPrompt?.address === followAddr);
+  const fpListCli = cli('delayed');
+  check('cnarrative delayed shows the address', fpListCli.status === 0 && fpListCli.stdout.includes(`Follow-up prompt: ${followAddr}`), fpListCli.stdout);
+
+  console.log('\n📋 rehydrated returns the follow-up prompt');
+  const fpEnd1 = await m.endDelayedResolution(f1, { endedBy: 'circle', outcome: 'rehydrated' });
+  check('a delay with a follow-up prompt and no session ends as rehydrated', fpEnd1.delayedResolution.outcome === 'rehydrated' && fpEnd1.status === 'pending', JSON.stringify(fpEnd1.delayedResolution));
+  check('it returns followUpPrompt, with resumeCommand null', fpEnd1.followUpPrompt?.address === followAddr && fpEnd1.followUpPrompt.text === followText && fpEnd1.resumeCommand === null, JSON.stringify({ f: fpEnd1.followUpPrompt, r: fpEnd1.resumeCommand }));
+  const fpEnd2 = await handleToolCall('end_delayed_resolution', { actionStepName: f2, endedBy: 'circle', outcome: 'rehydrated' }, m);
+  const fpEnd2Json = jsonOf(fpEnd2);
+  check('with a session too, followUpPrompt comes back beside resumeCommand', !fpEnd2.isError && fpEnd2Json.followUpPrompt?.address === 'miadi-prompt:ceremony/ep297-follow-up-circle@2' && fpEnd2Json.resumeCommand === 'cd /srv/miadi/episodes && claude --resume f-2', JSON.stringify(fpEnd2Json));
+  check('end_delayed_resolution names the follow-up prompt in its text', text(fpEnd2).includes('Follow-up prompt: miadi-prompt:ceremony/ep297-follow-up-circle@2'), text(fpEnd2));
+  const fpEnd3 = await m.endDelayedResolution(f3, { endedBy: 'circle', outcome: 'rehydrated' });
+  check('a delay with neither still ends as rehydrated, as before 0.26.0, returning nulls', fpEnd3.delayedResolution.outcome === 'rehydrated' && fpEnd3.followUpPrompt === null && fpEnd3.resumeCommand === null, JSON.stringify({ f: fpEnd3.followUpPrompt, r: fpEnd3.resumeCommand }));
+  await m.delayResolution(f3, { resolveBy: inDays(6), reason: 'released this time', chosenBy: 'mia', followUpPrompt: { address: followAddr } });
+  const fpReleased = await m.endDelayedResolution(f3, { endedBy: 'mia', outcome: 'released' });
+  check('released returns no followUpPrompt', !('followUpPrompt' in fpReleased) && fpReleased.delayedResolution.followUpPrompt?.address === followAddr);
+
+  console.log('\n📋 the follow-up prompt through MCP and CLI');
+  const fpMcp = await handleToolCall('delay_resolution', {
+    actionStepName: f4, resolveBy: inDays(6), reason: 'through MCP', chosenBy: 'mia',
+    followUpPrompt: { address: followAddr, text: followText, composedBy: 'agent-proposal' }
+  }, m);
+  check('delay_resolution accepts followUpPrompt, with no argument ignored', !fpMcp.isError && jsonOf(fpMcp).delayedResolution.followUpPrompt.composedBy === 'agent-proposal' && !/ignored/.test(text(fpMcp)) && text(fpMcp).includes(`Follow-up prompt: ${followAddr}`), text(fpMcp));
+  await refuses('delay_resolution refuses an address outside miadi-', () => handleToolCall('delay_resolution', {
+    actionStepName: f6, resolveBy: inDays(6), reason: 'x', chosenBy: 'mia', followUpPrompt: { address: 'https://prompts.example/abc' }
+  }, m), /followUpPrompt\.address must be an address beginning with "miadi-"/);
+  const fpMcpNoAddr = await handleToolCall('delay_resolution', { actionStepName: f6, resolveBy: inDays(6), reason: 'x', chosenBy: 'mia', followUpPrompt: { text: 'no address' } }, m);
+  check('delay_resolution refuses a follow-up prompt with no address', fpMcpNoAddr.isError === true && /followUpPrompt/.test(text(fpMcpNoAddr)), text(fpMcpNoAddr));
+  const fpSchema = ALL_TOOL_DEFINITIONS.find((t) => t.name === 'delay_resolution').inputSchema.properties.followUpPrompt;
+  check('the delay_resolution schema names followUpPrompt, address required', fpSchema?.type === 'object' && fpSchema.required?.includes('address') && fpSchema.properties.text?.type === 'string' && fpSchema.properties.composedBy?.type === 'string' && !('composedAt' in fpSchema.properties));
+
+  const fpCli = cli('delay', f5, inDays(5).slice(0, 10), '--reason', 'through the CLI', '--by', 'cli-seat', '--follow-up-prompt', followAddr, '--follow-up-text', followText, '--follow-up-by', 'cli-seat');
+  const fpCliRecord = store().entities.get(f5)?.metadata?.delayedResolution?.followUpPrompt;
+  check('cnarrative delay --follow-up-prompt --follow-up-text --follow-up-by records it', fpCli.status === 0 && fpCli.stdout.includes(`Follow-up prompt: ${followAddr} (composed by cli-seat)`) && fpCliRecord?.text === followText && fpCliRecord.composedBy === 'cli-seat', fpCli.stdout + fpCli.stderr);
+  const fpCliEnd = cli('end-delay', f5, '--outcome', 'rehydrated', '--by', 'cli-seat');
+  check('cnarrative end-delay prints the follow-up prompt with no session', fpCliEnd.status === 0 && fpCliEnd.stdout.includes(`Follow-up prompt: ${followAddr}`) && /what is rehydrated is the follow-up prompt/.test(fpCliEnd.stdout), fpCliEnd.stdout + fpCliEnd.stderr);
+  const fpCliOrphan = cli('delay', f6, inDays(5).slice(0, 10), '--reason', 'r', '--by', 'b', '--follow-up-text', followText);
+  check('cnarrative delay refuses --follow-up-text without --follow-up-prompt', fpCliOrphan.status === 1 && /--follow-up-prompt/.test(fpCliOrphan.stdout + fpCliOrphan.stderr), fpCliOrphan.stdout + fpCliOrphan.stderr);
+  const fpCliBad = cli('delay', f6, inDays(5).slice(0, 10), '--reason', 'r', '--by', 'b', '--follow-up-prompt', 'prompt:ceremony/x@1');
+  check('cnarrative delay refuses a follow-up address outside miadi-', fpCliBad.status === 1 && /beginning with "miadi-"/.test(fpCliBad.stdout + fpCliBad.stderr), fpCliBad.stdout + fpCliBad.stderr);
+
   console.log('\n📋 the tools are published');
   for (const name of ['delay_resolution', 'list_delayed_resolutions', 'end_delayed_resolution']) {
     check(`${name} is defined and in STC_TOOLS`, ALL_TOOL_DEFINITIONS.some((t) => t.name === name) && TOOL_GROUPS.STC_TOOLS.includes(name));

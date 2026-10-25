@@ -5,6 +5,34 @@ All notable changes to COAIA Memory will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.0] - 2026-10-25
+
+### 🗣️ A delay names the follow-up prompt composed when it was chosen
+
+At the date a delay comes due, a talking circle takes up a prompt composed when the delay was
+chosen. What is rehydrated is that prompt, "potentially with the session" (William, Episode 297
+screenwalk, V1 and V2).
+
+- `delayResolution` takes `followUpPrompt`: `address` (required, refused unless it begins with
+  `miadi-`, stored as given, e.g. `miadi-prompt:ceremony/<name>@<v>`), `text` and `composedBy`
+  (optional). `composedAt` is set by the tool, equal to the delay's `chosenAt`.
+- A re-delay moves the open record into `delayedResolutionHistory` with its follow-up prompt.
+- `listDelayedResolutions` carries `followUpPrompt` (or `null`) on each entry.
+- `endDelayedResolution` with outcome `rehydrated` returns `followUpPrompt` (or `null`) beside
+  `resumeCommand`, `trace` and `rehydrateWith`. A delay with a follow-up prompt and no session
+  ends as `rehydrated`. A delay with neither still ends as `rehydrated` with both `null`: the
+  package never refused that case and keeps it.
+- MCP: `delay_resolution` gains `followUpPrompt` (`address` required); `delay_resolution` and
+  `end_delayed_resolution` name the address in their text.
+- CLI: `cnarrative delay … --follow-up-prompt <addr> [--follow-up-text <text>] [--follow-up-by
+  <who>]`; `delayed` and `end-delay` show the address. `--follow-up-text` or `--follow-up-by`
+  without `--follow-up-prompt` is refused.
+- Data model schema: `delayedResolution.followUpPrompt`, address pattern `^miadi-`.
+- `FollowUpPrompt` is exported as a type from `coaia-narrative/writer`.
+
+Design: miadi-chronicle Episode 297, `delayed-resolution-design-261019.md`, section "The
+follow-up prompt", lane L4 of the feedback map, commit 27e8025e.
+
 ## [0.25.0] - 2026-10-20
 
 ### 🔁 A delay's session carries its LLMOps trace and the prompt that rehydrates it

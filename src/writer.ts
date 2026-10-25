@@ -35,7 +35,7 @@ export {
   DELAYED_RESOLUTION_OUTCOMES, UNKNOWN_COMPLETER, closeDelayOnCompletion, deriveStepStatus, openDelayOf, delayRecordOf, isOwed, daysRemaining,
 } from './delayed-resolution.js';
 export type {
-  AgentSessionRef, DelayedResolution, DelayedResolutionOutcome, DelayedResolutionEntry, DelayedStepView, StepStatus,
+  AgentSessionRef, DelayedResolution, DelayedResolutionOutcome, DelayedResolutionEntry, DelayedStepView, FollowUpPrompt, StepStatus,
 } from './delayed-resolution.js';
 
 export interface GithubIssueEvent {

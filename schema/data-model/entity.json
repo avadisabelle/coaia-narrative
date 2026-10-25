@@ -153,6 +153,34 @@
                 }
               }
             },
+            "followUpPrompt": {
+              "type": "object",
+              "description": "The follow-up prompt composed when the delay was chosen (0.26.0). At the date a talking circle takes it up: what is rehydrated is this prompt, potentially with the session.",
+              "required": [
+                "address",
+                "composedAt"
+              ],
+              "properties": {
+                "address": {
+                  "type": "string",
+                  "pattern": "^miadi-",
+                  "description": "The prompt's address (e.g. 'miadi-prompt:ceremony/<name>@<v>'). Stored as given."
+                },
+                "text": {
+                  "type": "string",
+                  "description": "The prompt's text as composed, so a circle can read it without the provider"
+                },
+                "composedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When it was composed; set by the tool when the delay is chosen"
+                },
+                "composedBy": {
+                  "type": "string",
+                  "description": "The person or seat that composed it (an agent may propose it)"
+                }
+              }
+            },
             "endedAt": {
               "type": "string",
               "format": "date-time",

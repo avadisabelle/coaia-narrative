@@ -555,6 +555,7 @@ COMMANDS:
                                   --session-id <id> --cwd <dir> --host <host> --tmux <pane>
                                   --agent <name> --resume-command <cmd> --inventory-record <path>
                                   --trace <miadi-addr> --rehydrate-with <miadi-addr>  (LLMOps, need --session-id)
+                                  --follow-up-prompt <miadi-addr> --follow-up-text <text> --follow-up-by <who>
   delayed                       List delayed steps by date (--within <days>, --all)
   end-delay <step>              End a delay: --outcome rehydrated|released --by <who> [--note]
 
@@ -1056,6 +1057,16 @@ async function delayStep(actionStepName: string, resolveBy: string, memoryPath: 
     console.log('\n❌ Error: --trace and --rehydrate-with belong to a session: give --session-id too\n');
     process.exit(1);
   }
+  const followUpAddress = flagText(args['follow-up-prompt']);
+  if (!followUpAddress && (flagText(args['follow-up-text']) || flagText(args['follow-up-by']))) {
+    console.log('\n❌ Error: --follow-up-text and --follow-up-by belong to a follow-up prompt: give --follow-up-prompt <address> too\n');
+    process.exit(1);
+  }
+  const followUpPrompt = followUpAddress ? {
+    address: followUpAddress,
+    text: flagText(args['follow-up-text']),
+    composedBy: flagText(args['follow-up-by'])
+  } : undefined;
   const session = sessionId ? {
     sessionId,
     agent: flagText(args.agent),
@@ -1070,7 +1081,7 @@ async function delayStep(actionStepName: string, resolveBy: string, memoryPath: 
 
   const manager = new KnowledgeGraphManager(memoryPath);
   const step = await manager.delayResolution(actionStepName, {
-    resolveBy, reason, chosenBy, primaryChoice: flagText(args.primary), wakeOn, session
+    resolveBy, reason, chosenBy, primaryChoice: flagText(args.primary), wakeOn, session, followUpPrompt
   });
   await manager.asterionIdle();
 
@@ -1091,6 +1102,9 @@ async function delayStep(actionStepName: string, resolveBy: string, memoryPath: 
     if (record.session.resumeCommand) console.log(`   Rehydrate: ${record.session.resumeCommand}`);
     if (record.session.trace) console.log(`   Trace: ${record.session.trace}`);
     if (record.session.rehydrateWith) console.log(`   Rehydrate with prompt: ${record.session.rehydrateWith}`);
+  }
+  if (record.followUpPrompt) {
+    console.log(`   Follow-up prompt: ${record.followUpPrompt.address}${record.followUpPrompt.composedBy ? ` (composed by ${record.followUpPrompt.composedBy})` : ''}`);
   }
   if (step.delayedResolutionHistory.length > 0) console.log(`   Earlier delays kept: ${step.delayedResolutionHistory.length}`);
   console.log('');
@@ -1133,6 +1147,7 @@ async function listDelayed(memoryPath: string, args: minimist.ParsedArgs, jsonOu
     else if (entry.session) console.log(`     Session: ${entry.session.sessionId} (${entry.session.agent})`);
     if (entry.session?.trace) console.log(`     Trace: ${entry.session.trace}`);
     if (entry.session?.rehydrateWith) console.log(`     Rehydrate with prompt: ${entry.session.rehydrateWith}`);
+    if (entry.followUpPrompt) console.log(`     Follow-up prompt: ${entry.followUpPrompt.address}`);
     console.log('');
   });
 
@@ -1160,7 +1175,13 @@ async function endDelay(actionStepName: string, memoryPath: string, args: minimi
   console.log(`   Step: ${ended.actionStepName} | Status: ${ended.status}`);
   console.log(`   Ended by: ${endedBy}`);
   if (outcome === 'rehydrated') {
-    console.log(ended.resumeCommand ? `   Rehydrate with: ${ended.resumeCommand}` : '   No resume command was recorded for this delay.');
+    if (ended.followUpPrompt) console.log(`   Follow-up prompt: ${ended.followUpPrompt.address}`);
+    if (ended.followUpPrompt?.text) console.log(`   Prompt text: ${ended.followUpPrompt.text}`);
+    console.log(ended.resumeCommand
+      ? `   Rehydrate with: ${ended.resumeCommand}`
+      : ended.followUpPrompt
+        ? '   No resume command was recorded: what is rehydrated is the follow-up prompt.'
+        : '   No resume command was recorded for this delay.');
     if (ended.trace) console.log(`   Trace: ${ended.trace}`);
     if (ended.rehydrateWith) console.log(`   Prompt that rehydrates it: ${ended.rehydrateWith}`);
   }
