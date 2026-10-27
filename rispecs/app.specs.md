@@ -22,7 +22,7 @@ COAIA Memory enables users to **manifest desired outcomes** through structural t
 The system creates productive tension between:
 - **Current Reality**: Honest assessment of where you are now
 - **Desired Outcome**: Clear vision of what you want to create
-- **Structural Tension**: The unresolved gap that naturally seeks resolution through advancement
+- **Structural Tension**: The unresolved discrepancy between current reality and the desired outcome, which naturally seeks resolution through advancement
 
 This tension generates natural progression toward outcomes when properly structured.
 

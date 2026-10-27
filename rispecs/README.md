@@ -87,7 +87,7 @@ This directory contains comprehensive RISE (Reverse-engineer, Intent-extract, Sp
 - Visible momentum toward goals through structural advancement
 - Clear understanding of how present actions advance future outcomes
 
-**Key Principle**: Users achieve goals through **structural tension dynamics** rather than problem-solving. The gap between honest current reality and desired outcome creates natural forces that guide advancement when properly structured.
+**Key Principle**: Users achieve goals through **structural tension dynamics** rather than problem-solving. The tension between current reality, stated as fact, and the desired outcome creates natural forces that guide advancement when properly structured.
 
 ---
 
@@ -102,7 +102,7 @@ This directory contains comprehensive RISE (Reverse-engineer, Intent-extract, Sp
 ### 2. Structural Tension (Current Reality ↔ Desired Outcome)
 - **Current Reality**: Honest assessment of where you are now
 - **Desired Outcome**: Clear vision of what you want to create
-- **Tension**: The gap that naturally seeks resolution
+- **Tension**: The discrepancy between current reality and the desired outcome, which naturally seeks resolution
 - **Advancement**: Natural progression when properly respected
 
 ### 3. Advancing Patterns (Not Oscillating)
@@ -308,7 +308,7 @@ When rebuilding COAIA Memory from these specifications, verify:
 
 COAIA Memory implements principles from Robert Fritz's work on structural tension and creative process:
 
-- **Structural Tension**: The unresolved gap between current reality and desired outcome
+- **Structural Tension**: The unresolved discrepancy between current reality and the desired outcome, which action steps resolve
 - **Creative Orientation**: Focusing on what you want to create vs what you want to eliminate
 - **Delayed Resolution**: Tolerating productive tension rather than prematurely resolving it. Since 0.24.0 a step can also record a strategic choice to delay its resolution in favour of a primary choice ("a secondary choice to our primary choice"); see `delayed_resolution.spec.md`
 - **Advancing Patterns**: Structural designs that create continuous forward movement

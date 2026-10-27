@@ -9,7 +9,7 @@
 
 - **Creative Foundation**: Clear articulation of what they want to manifest (not what they want to fix)
 - **Honest Structural Position**: Factual assessment of current reality without false readiness assumptions
-- **Productive Tension**: The gap between current and desired that naturally seeks resolution through advancement
+- **Productive Tension**: The discrepancy between current reality and the desired outcome, which naturally seeks resolution through advancement
 - **Paced Action Steps**: Strategic intermediate results with automatically distributed due dates
 - **Creative Advancement Framework**: Structure that prevents oscillating patterns and supports natural progression
 
@@ -30,7 +30,7 @@
    - Measurable and meaningful
    - Focused on what you want, not what you want to stop
 
-3. **Structural Tension**: The unresolved gap
+3. **Structural Tension**: The unresolved discrepancy between the two, which seeks resolution
    - Natural dynamic seeking resolution
    - Creates momentum toward outcome
    - Functions independently of willpower
@@ -40,7 +40,7 @@
 ❌ **Problem-Solving Language**: "Fix our communication problems" → Focus on elimination, not creation  
 ❌ **False Readiness**: "I'm ready to learn Django" → Assumes resolution of tension before it's begun  
 ❌ **Vague Outcomes**: "Be happier" → Not specific enough to create structural dynamics  
-❌ **Disconnected Reality**: "I want to be successful" without understanding current position → No structural gap to resolve
+❌ **Disconnected Reality**: "I want to be successful" without understanding current position → No structural tension to resolve
 
 ---
 
@@ -65,7 +65,7 @@ Initial action steps would be: research deployment options, build recommendation
 2. **Current Reality Assessment**:
    - Detects "I have 3 years Python" - specific knowledge
    - "completed one ML course" - specific experience
-   - "never deployed" - honest assessment of gap
+   - "never deployed" - a factual statement of current reality
    - NOT "I'm ready to build" or "I'm prepared to..." - good!
    - System confirms this is factual, not readiness assumption
 
@@ -200,7 +200,7 @@ Creative orientation creates advancing patterns toward desired outcomes.
 **Chart Elements Created**:
 - Master Chart: Portfolio website (live, custom domain, showing work)
 - Current Reality: HTML/CSS basics, no full site experience, no hosting
-- Structural Tension: Knowledge gap + missing infrastructure
+- Structural Tension: a live portfolio site is wanted; today there is HTML/CSS knowledge and no hosting or deployment experience
 - Action Steps (auto-distributed):
   1. Learn web hosting & deployment (Due: 2 weeks)
   2. Build portfolio site structure (Due: 4 weeks)
@@ -278,7 +278,7 @@ Creative orientation creates advancing patterns toward desired outcomes.
 - ✅ Tension is clear between current and desired
 
 ### Structural Dynamics Maintained
-- ✅ Gap between current and desired is specific
+- ✅ The tension between current reality and the desired outcome is specific
 - ✅ Action steps progress toward outcome, not just complete work
 - ✅ Due dates distributed naturally across timeline
 - ✅ Chart structure enables advancing pattern

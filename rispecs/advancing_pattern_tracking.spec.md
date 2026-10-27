@@ -41,7 +41,7 @@ Solution: "Learn scaling"
      ↓ (Try scaling)
 Problem: "Don't have server"
 Solution: "Get server"
-     ↓ (Back and forth, never resolving the fundamental structural gap)
+     ↓ (Back and forth, never resolving the structural tension)
 CYCLES without reaching creative destination
 ```
 

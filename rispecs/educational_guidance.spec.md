@@ -188,9 +188,9 @@ Current Reality: "[user's reality quoted]"
 - Use: "Have project requirements, no code written yet"
 
 **Why This Matters**: Readiness assumptions prematurely resolve the structural 
-tension needed for creative advancement. The system NEEDS the honest gap 
-(current vs desired) to create productive tension that naturally drives 
-advancement.
+tension needed for creative advancement. The system NEEDS a factual current 
+reality beside the desired outcome: the tension between them is what each 
+action step resolves, and it naturally drives advancement.
 
 💡 **Next Step**: Describe what you actually know/have now, not what you're 
                   ready to do.
@@ -380,7 +380,7 @@ User has learned: Creative orientation with structural tension creates momentum
 ## 🎓 Methodology Principles Taught
 
 1. **Creative Orientation**: Focus on what you want to CREATE, not what you want to fix
-2. **Structural Tension**: Gap between current and desired creates natural advancement
+2. **Structural Tension**: The tension between current reality and the desired outcome seeks resolution, and each action step resolves part of it
 3. **Delayed Resolution**: Honor the productive tension by not assuming readiness
 4. **Advancing Patterns**: Completed actions become facts, changing structural position
 5. **Natural Progression**: Each action flows naturally from changed structural reality
