@@ -55,7 +55,7 @@ The returned text is designed to be added to the LLM's system prompt or context 
 
 **Structural Tension:**
 ```
-The productive gap between:
+The productive tension, or discrepancy, between:
 - WHERE YOU ARE (current reality)
 - WHERE YOU WANT TO BE (desired outcome)
 

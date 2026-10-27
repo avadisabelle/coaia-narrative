@@ -88,7 +88,7 @@ Relations are the **edges** connecting entities. They define typed, directional 
   "to": "chart_123_desired_outcome",
   "relationType": "creates_tension_with",
   "metadata": {
-    "description": "The gap creates productive structural tension",
+    "description": "The discrepancy creates productive structural tension",
     "createdAt": "2026-02-13T07:00:00Z"
   }
 }
@@ -332,7 +332,7 @@ The sub-chart maintains metadata:
       "to": "chart_123_desired_outcome",
       "relationType": "creates_tension_with",
       "metadata": {
-        "description": "The gap between current skills and desired outcome creates productive tension"
+        "description": "The discrepancy between current skills and desired outcome creates productive tension"
       }
     },
     {

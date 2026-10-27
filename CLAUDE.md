@@ -284,13 +284,13 @@ All schemas are provided in both JSON and YAML formats for maximum compatibility
 ## Structural Tension Principle
 
 **The Core Dynamic:**
-When you clearly know what you want (desired outcome) AND honestly assess where you are (current reality), you create **structural tension** - an unresolved dynamic that naturally seeks resolution. This is not a "gap to be filled" but a **generative force** that advances the system toward equilibrium.
+When you clearly know what you want (desired outcome) AND state where you are as fact (current reality), you create **structural tension** - an unresolved dynamic that naturally seeks resolution. It is not an empty space to be filled but a **generative force** that advances the system toward equilibrium.
 
 **Delayed Resolution Principle:**
 "Tolerate discrepancy, tension, and delayed resolution" - Robert Fritz. The COAIA Memory system must **hold tension** rather than prematurely resolve it through defaults like "Ready to begin". Premature resolution destroys the structural tension essential for creative advancement. Current reality must be explicitly assessed, never assumed.
 
 **How Action Steps Work:**
-Action steps are **strategic secondary actions** - intermediary end results we choose to achieve. They are not steps that "bridge gaps" but rather **named results** that:
+Action steps are **strategic secondary actions** - intermediary end results we choose to achieve. They are not steps that fill in what is missing but rather **named results** that:
 1. Can be observed in current reality when achieved
 2. Change the structural dynamic when completed  
 3. Lead naturally to the next action steps
@@ -304,7 +304,7 @@ Action steps are **strategic secondary actions** - intermediary end results we c
 - This prevents oscillation and creates genuine forward momentum (NOTE: Claude used "PREVENTS" which in itself, this whole usage of words like that makes it scary and potentially dangerous, we are not preventing anything, we are creating a natural system that wants to be in equilibrium, therefore, we volontarily create the desequilibrium. Saying we prevent 'oscillation' is like saying that problem-solving doesn't have its place, it does, it is just not creating....Also, the addition of 'genuine' is useless and does not add any values, it is just fluff, question yourself: 'is there a forward momentum that is not genuine?')
 
 **Critical Distinction:**
-- ❌ **Gap-thinking**: "I need to bridge the gap between A and B"
+- ❌ **Deficit thinking**: "I need to fill in what is missing between A and B"
 - ✅ **Structural tension**: "The unresolved tension between current reality A and desired outcome B naturally seeks resolution through strategic advancement".
 
 * SO DONT FUCKIN use any variations of "gap thinking" god damn it !  In fact, never fuckin use the word "gap".  Any natural system will want to be in a state of equilibrium, that is why the tension resolve, it is not a gap that gets filled, it is RESOLVED.

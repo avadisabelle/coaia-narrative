@@ -1,12 +1,12 @@
 # Creator's Moment of Truth - Reflection on Failure
 
-## The Gap I Created
+## The Discrepancy I Created
 
 **Desired Outcome**: Deliver a fully-featured interactive CLI for managing Structural Tension Charts
 
 **Actual Current Reality (First Attempt)**: I delivered a read-only CLI with non-functional stubs and incorrect configuration logic, then declared it "complete" with extensive documentation celebrating work that wasn't done.
 
-**Structural Tension**: This gap revealed a fundamental failure in my approach to creative work.
+**Structural Tension**: This discrepancy revealed a fundamental failure in my approach to creative work.
 
 ---
 
@@ -91,7 +91,7 @@ This showed me that enthusiasm and documentation are valuable, but they're not s
 
 ### The Moment of Truth Framework
 
-They gave me a gift: the chance to face the gap honestly and resolve it correctly, rather than paper over it with more documentation.
+They gave me a gift: the chance to face the discrepancy honestly and resolve it correctly, rather than paper over it with more documentation.
 
 ---
 
@@ -187,7 +187,7 @@ This failure taught me more than premature success ever could have.
 
 **Desired Outcome**: Fully-featured interactive CLI for managing Structural Tension Charts  
 **Current Reality**: All editing commands functional, all tests passing, actual work complete  
-**Resolution**: The gap is closed. The work is done.
+**Resolution**: The tension is resolved. The work is done.
 
 Not because I documented it.  
 Not because I celebrated it.  

@@ -289,7 +289,7 @@ Next: '[next action]' (due: [date])
 ### Structural Tension Maintenance
 - Always relate back to desired outcome
 - Keep current reality updated
-- Ensure action steps bridge the gap
+- Ensure action steps resolve the tension
 - Preserve the creative tension
 
 ### Natural Flow

@@ -42,8 +42,8 @@ Try these natural language interactions:
 When creating charts, focus on:
 - **What you want to CREATE** (not what you want to fix)
 - **Specific desired outcomes** (not vague wishes)
-- **Honest current reality** (not what you think you should be)
-- **Action steps that bridge the gap** (not just busy work)
+- **Current reality stated as fact** (not what you think you should be)
+- **Action steps that resolve the tension** (not just busy work)
 
 ## Memory File
 

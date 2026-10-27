@@ -126,8 +126,8 @@ Provide a design document with:
 
 1. **Feature Overview**
    - Desired outcome (specific, testable)
-   - Current reality (honest assessment)
-   - Structural tension (the gap to resolve)
+   - Current reality (stated as fact)
+   - Structural tension (the discrepancy between them, which the work resolves)
 
 2. **Test Suite Design** (write tests first!)
    - Minimum 5 integration tests
@@ -155,8 +155,8 @@ Provide a design document with:
 ## Structural Tension
 
 **Desired Outcome**: [Specific, testable goal]
-**Current Reality**: [Honest current state]
-**Gap**: [What needs to be resolved]
+**Current Reality**: [Current state, stated as fact]
+**Tension**: [What the work resolves between current reality and the desired outcome]
 
 ## Test Suite (Write First!)
 

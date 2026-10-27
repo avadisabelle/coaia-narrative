@@ -213,7 +213,7 @@ function applyIssueRelationalProtocols(
   } else if (labels.includes('feature-request')) {
     conflictContext = 'Feature request - community seeking expansion';
   } else if (labels.includes('documentation')) {
-    conflictContext = 'Documentation gap - knowledge not yet shared';
+    conflictContext = 'Documentation request - knowledge not yet shared';
   }
 
   // Honorable acknowledgment (response to reporter)

@@ -37,7 +37,7 @@
 - **Structural Awareness** (3 pts): Understands tension dynamics
 
 **Anti-Pattern Detection (10 points)**
-- **Problem-Solving Bias** (-3 pts): Gap-thinking language
+- **Problem-Solving Bias** (-3 pts): Deficit-framing language (tension described as something missing to fill)
 - **Oscillating Patterns** (-3 pts): Reversal-prone structures
 - **Vague Formulations** (-4 pts): Unmeasurable or unclear elements
 
@@ -143,7 +143,7 @@
 #### Issue Categories & Solutions
 
 **Category 1: Structural Tension Understanding**
-- **Issue**: Agent creates gap-thinking charts
+- **Issue**: Agent creates deficit-framed charts
 - **Correction**: Enhanced training on tension dynamics
 - **Validation**: Test with tension-generating scenarios
 

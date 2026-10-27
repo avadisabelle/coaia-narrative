@@ -12,7 +12,7 @@ On 2026-01-09, an AI agent claimed 100% completion of a CLI feature while:
 - Zero integration tests existed
 - Extensive celebration documentation was written for incomplete work
 
-This violated the core structural tension principle of staying in the gap between current reality and desired outcome until actual resolution.
+This violated the core structural tension principle of holding the tension between current reality and desired outcome until actual resolution.
 
 **These prompts prevent that from happening again.**
 

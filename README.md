@@ -112,7 +112,7 @@ This system is meticulously crafted to embody Robert Fritz's core principles for
     *   **Avoid**: "What needs fixing?" "The **PROBLEM** is..." Problem-solving creates oscillating patterns; creation fosters advancing patterns.
 
 ✅   **Structural Tension: The Dynamic Force**:
-    *   An **Honest Current Reality** paired with a **Clear Desired Outcome** creates an **unresolved dynamic** that naturally seeks resolution through advancement. This is the generative force that propels the creative process. It is **NOT a "gap to fill."**
+    *   A **Current Reality stated as fact** paired with a **Clear Desired Outcome** creates an **unresolved dynamic** that naturally seeks resolution through advancement. This is the generative force that propels the creative process. It is **not an empty space to fill**: action steps resolve it.
 
 ✅   **Advancing Patterns: Momentum Made Visible**:
     *   Each **completed Action Step** transforms into a **new aspect of Current Reality**, shifting the structural dynamic forward. This builds momentum and naturally guides towards the next action, rather than cycling without true progression.

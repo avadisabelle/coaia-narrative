@@ -339,7 +339,7 @@ Create documentation with:
 2. **Test results** showing actual output
 3. **Usage examples** that were tested
 4. **Before/after** showing real file changes
-5. **Limitations** being honest about gaps
+5. **Limitations** stating what is missing or unverified
 6. **Version info** with accurate changelog
 
 ## 🧠🌸 Final Check

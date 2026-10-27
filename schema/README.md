@@ -179,7 +179,7 @@ Choose the format that works best for your tooling.
 COAIA is built on Robert Fritz's structural tension methodology:
 
 **Structural Tension** = Desired Outcome + Current Reality
-- The gap creates productive tension
+- The discrepancy between them is productive tension
 - System naturally moves toward resolution
 - Action steps are strategic choices that change the structure
 

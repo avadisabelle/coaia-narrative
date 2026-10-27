@@ -5,6 +5,28 @@ All notable changes to COAIA Memory will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.1] - 2026-10-26
+
+### 🗣️ The method's words: tension resolves
+
+William, 2026-10-26: "Structural Tension GAP ... that fucking gap you agent puts here and
+there... ensure that is not into the specification, code or whatever". Lane K9a2 of the Mino
+witness seat's plan (`261026-factory-next-step-lane.md`, row K9), following K9a, which cleared
+`rispecs/` in f27ca6c.
+
+- The space between current reality and the desired outcome is now named tension or
+  discrepancy, which action steps resolve, in every text a model or a person reads: the packaged
+  skill (`src/skill.ts`), `llms.txt`, `llms-full.txt`, `README.md`, `CLAUDE.md`,
+  `test-environment/CLAUDE.md`, the `.github` prompts, `docs/`, `schema/` (READMEs, relation
+  examples, the basic chart example) and the evaluation and analysis documents. 47 sentences
+  were rewritten, each keeping its meaning.
+- Current reality is stated as fact, never "honest", in each sentence rewritten here.
+- The issues handler's documentation context reads "Documentation request - knowledge not yet
+  shared".
+- No identifier, MCP tool, field, flag or schema property changed. The remaining matches in
+  the repository are William's own words, kept as he wrote them: his note in `CLAUDE.md` and the
+  quotation above.
+
 ## [0.26.0] - 2026-10-25
 
 ### 🗣️ A delay names the follow-up prompt composed when it was chosen

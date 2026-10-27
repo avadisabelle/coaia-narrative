@@ -16,7 +16,7 @@ COAIA Narrative provides an MCP (Model Context Protocol) server and CLI toolset 
 Focuses on what you want to **CREATE** rather than what you want to eliminate. Creative orientation generates advancing patterns, while problem-solving generates oscillating patterns that return to the status quo.
 
 ### Structural Tension {#structural-tension}
-The productive gap between **Current Reality** (where you are) and **Desired Outcome** (where you want to be). This tension naturally seeks resolution through the path of least resistance—advancing the system toward the goal.
+The productive tension, or discrepancy, between **Current Reality** (where you are) and **Desired Outcome** (where you want to be). This tension naturally seeks resolution through the path of least resistance—advancing the system toward the goal.
 
 ### Advancing Patterns {#advancing-patterns}
 A structural design where completed actions flow into current reality, changing the structural dynamic and making the next steps naturally adjacent and easier to achieve.
@@ -49,7 +49,7 @@ Detailed "prose code" specifications for rebuilding or extending the system:
 
 ### Language Patterns
 - ✅ **DO**: "What do you want to create?", "What is the current reality?", "This action advances toward..."
-- ❌ **DON'T**: "How do we fix this problem?", "Bridge the gap", "I'm ready to begin" (use factual assessment instead).
+- ❌ **DON'T**: "How do we fix this problem?", "What is missing between here and there?", "I'm ready to begin" (use factual assessment instead).
 
 ## Anti-Patterns {#anti-patterns}
 - **Reactive Resolution**: Prematurely assuming "readiness" or "completeness" without factual evidence.
@@ -114,7 +114,7 @@ Solution: "Learn scaling"
      ↓ (Try scaling)
 Problem: "Don't have server"
 Solution: "Get server"
-     ↓ (Back and forth, never resolving the fundamental structural gap)
+     ↓ (Back and forth, never resolving the structural tension)
 CYCLES without reaching creative destination
 ```
 
@@ -826,9 +826,9 @@ Current Reality: "[user's reality quoted]"
 - Use: "Have project requirements, no code written yet"
 
 **Why This Matters**: Readiness assumptions prematurely resolve the structural 
-tension needed for creative advancement. The system NEEDS the honest gap 
-(current vs desired) to create productive tension that naturally drives 
-advancement.
+tension needed for creative advancement. The system NEEDS a factual current 
+reality beside the desired outcome: the tension between them is what each 
+action step resolves, and it naturally drives advancement.
 
 💡 **Next Step**: Describe what you actually know/have now, not what you're 
                   ready to do.
@@ -1018,7 +1018,7 @@ User has learned: Creative orientation with structural tension creates momentum
 ## 🎓 Methodology Principles Taught
 
 1. **Creative Orientation**: Focus on what you want to CREATE, not what you want to fix
-2. **Structural Tension**: Gap between current and desired creates natural advancement
+2. **Structural Tension**: The tension between current reality and the desired outcome seeks resolution, and each action step resolves part of it
 3. **Delayed Resolution**: Honor the productive tension by not assuming readiness
 4. **Advancing Patterns**: Completed actions become facts, changing structural position
 5. **Natural Progression**: Each action flows naturally from changed structural reality
@@ -3352,7 +3352,7 @@ Monitoring:
 
 - **Creative Foundation**: Clear articulation of what they want to manifest (not what they want to fix)
 - **Honest Structural Position**: Factual assessment of current reality without false readiness assumptions
-- **Productive Tension**: The gap between current and desired that naturally seeks resolution through advancement
+- **Productive Tension**: The discrepancy between current reality and the desired outcome, which naturally seeks resolution through advancement
 - **Paced Action Steps**: Strategic intermediate results with automatically distributed due dates
 - **Creative Advancement Framework**: Structure that prevents oscillating patterns and supports natural progression
 
@@ -3373,7 +3373,7 @@ Monitoring:
    - Measurable and meaningful
    - Focused on what you want, not what you want to stop
 
-3. **Structural Tension**: The unresolved gap
+3. **Structural Tension**: The unresolved discrepancy between the two, which seeks resolution
    - Natural dynamic seeking resolution
    - Creates momentum toward outcome
    - Functions independently of willpower
@@ -3383,7 +3383,7 @@ Monitoring:
 ❌ **Problem-Solving Language**: "Fix our communication problems" → Focus on elimination, not creation  
 ❌ **False Readiness**: "I'm ready to learn Django" → Assumes resolution of tension before it's begun  
 ❌ **Vague Outcomes**: "Be happier" → Not specific enough to create structural dynamics  
-❌ **Disconnected Reality**: "I want to be successful" without understanding current position → No structural gap to resolve
+❌ **Disconnected Reality**: "I want to be successful" without understanding current position → No structural tension to resolve
 
 ---
 
@@ -3408,7 +3408,7 @@ Initial action steps would be: research deployment options, build recommendation
 2. **Current Reality Assessment**:
    - Detects "I have 3 years Python" - specific knowledge
    - "completed one ML course" - specific experience
-   - "never deployed" - honest assessment of gap
+   - "never deployed" - a factual statement of current reality
    - NOT "I'm ready to build" or "I'm prepared to..." - good!
    - System confirms this is factual, not readiness assumption
 
@@ -3541,7 +3541,7 @@ Creative orientation creates advancing patterns toward desired outcomes.
 **Chart Elements Created**:
 - Master Chart: Portfolio website (live, custom domain, showing work)
 - Current Reality: HTML/CSS basics, no full site experience, no hosting
-- Structural Tension: Knowledge gap + missing infrastructure
+- Structural Tension: a live portfolio site is wanted; today there is HTML/CSS knowledge and no hosting or deployment experience
 - Action Steps (auto-distributed):
   1. Learn web hosting & deployment (Due: 2 weeks)
   2. Build portfolio site structure (Due: 4 weeks)
@@ -3619,7 +3619,7 @@ Creative orientation creates advancing patterns toward desired outcomes.
 - ✅ Tension is clear between current and desired
 
 ### Structural Dynamics Maintained
-- ✅ Gap between current and desired is specific
+- ✅ The tension between current reality and the desired outcome is specific
 - ✅ Action steps progress toward outcome, not just complete work
 - ✅ Due dates distributed naturally across timeline
 - ✅ Chart structure enables advancing pattern

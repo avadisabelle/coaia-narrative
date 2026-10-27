@@ -63,7 +63,9 @@ examples:
     to: chart_123_desired_outcome
     relationType: creates_tension_with
     metadata:
-      description: The gap between current reality and desired outcome creates productive structural tension
+      description: >-
+        The discrepancy between current reality and desired outcome creates productive structural
+        tension
       createdAt: '2026-02-13T07:00:00Z'
   - from: chart_123_action_1
     to: chart_123_desired_outcome

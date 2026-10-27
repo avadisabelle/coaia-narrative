@@ -26,7 +26,7 @@ An AI agent claimed 100% completion of a CLI feature implementation while:
 ```
 Desired Outcome: Fully-featured interactive CLI
 Current Reality: Stubs exist, need implementation
-Structural Tension: STAY IN THIS GAP until tests pass
+Structural Tension: STAY IN THIS TENSION until tests pass
 Resolution: Only claim done when tests verify functionality
 ```
 

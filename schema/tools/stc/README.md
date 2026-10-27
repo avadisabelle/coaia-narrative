@@ -197,7 +197,7 @@ list_active_charts
 }
 
 // Current reality updated
-// Structural tension increased (gap widened)
+// Structural tension increased (the discrepancy widened)
 // May want to add new actions
 ```
 
