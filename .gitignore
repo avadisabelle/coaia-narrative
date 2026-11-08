@@ -55,6 +55,7 @@ coverage/
 # Memory files (except examples)
 *.jsonl
 !example*.jsonl
+!.miadi/capabilities.jsonl
 
 # Local documentation
 PUBLISHING.md
