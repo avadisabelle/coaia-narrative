@@ -200,7 +200,6 @@ Narrative Beat {
 4. **Assess Relational Alignment**
    - Were relationships honored?
    - Was boundary integrity maintained?
-   - Did the moment honor Two-Eyed Seeing?
 
 ### Telescoping Beats
 
