@@ -299,7 +299,7 @@ function createDefaultNarrativeBeat(event: PushEvent, parentChartId: string): Na
       season: 1,
       episode: 1,
       beatNumber: 1,
-      arcType: 'advancement'
+      arcType: 'setup'
     },
     characterTracking: {
       builder_revealed: ['Manifest action', 'Technical execution'],

@@ -7,7 +7,7 @@
  * Checks: relationship, proportion, coherence
  */
 
-interface WebhookEvent {
+export interface WebhookEvent {
   eventType: string;
   timestamp: string;
   actor: string;
@@ -16,7 +16,7 @@ interface WebhookEvent {
   [key: string]: unknown;
 }
 
-interface CeremonyPerspectiveAssessment {
+export interface CeremonyPerspectiveAssessment {
   eventId: string;
   relationalAlignment: {
     assessed: boolean;
